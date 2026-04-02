@@ -36,6 +36,11 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - `--thinking` — inject `think:true` into requests (default injects `think:false`)
 - `--debug-labels` — dump first user message for job-label tuning
 - `--log-file [path]` — append `[done]` summary lines to a file (default: `./proxy-done.log`)
+- `--power` — enable GPU power monitoring and energy cost tracking
+- `--power-provider path` — path to power provider module (default: `./power-nvidia-smi.js`)
+- `--electric-rate N` — electricity rate in $/kWh (default: 0.18947)
+- `--gpu-idle N` — GPU idle watts to subtract for incremental cost calculation (default: 0)
+- `--power-interval N` — power sampling interval in ms (default: 1000)
 
 ### Architecture notes
 
@@ -43,3 +48,4 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - **Session tracking**: Groups requests by job label (extracted from `[cron:...]`, `[agent:...]`, `[session:...]` tags in the first user message). Sessions accumulate prompt/gen token counts and expire after 60s of inactivity.
 - **Context pressure**: When `num_ctx` is known, the `[done]` line shows what percentage of the context window was consumed and flags HIGH/OVER LIMIT.
 - **Tool call logging**: Both handlers accumulate streamed tool-call fragments and flush them as formatted blocks on completion.
+- **Power monitoring**: Modular power provider system. The default `power-nvidia-smi.js` reads GPU wattage via `nvidia-smi`. Custom providers can be swapped in via `--power-provider` for AMD GPUs, Intel Arc, or other platforms. Providers export `{ name, test(cb), sample(cb) }`. The proxy tracks per-request energy (Wh) and cost ($), accumulating both in sessions.

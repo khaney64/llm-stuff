@@ -10,6 +10,11 @@
 //   --thinking           inject think:true into requests (default: injects think:false)
 //   --log-file [path]    append [done] lines to file (default: ./proxy-done.log)
 //   --backend ollama|llamacpp   force backend mode (default: auto-detect from port)
+//   --power              enable GPU power monitoring and energy cost tracking
+//   --power-provider P   path to power provider module (default: ./power-nvidia-smi.js)
+//   --electric-rate N    electricity rate in $/kWh (default: 0.18947)
+//   --gpu-idle N         GPU idle watts to subtract for incremental cost (default: 0)
+//   --power-interval N   power sampling interval in ms (default: 1000)
 //
 // Port config:
 //   Ollama mode:    PROXY_PORT=11434, BACKEND_PORT=11435
@@ -37,6 +42,19 @@ const INJECT_THINKING = args.includes('--thinking');
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
 const BACKEND_ARG     = argVal('--backend'); // 'ollama' | 'llamacpp' | null
+
+// Power monitoring
+const POWER_ENABLED    = args.includes('--power');
+const POWER_PROVIDER_PATH = argVal('--power-provider') || './power-nvidia-smi.js';
+const ELECTRIC_RATE    = argVal('--electric-rate') != null ? parseFloat(argVal('--electric-rate')) : 0.18947;
+const GPU_IDLE         = argVal('--gpu-idle')      != null ? parseFloat(argVal('--gpu-idle'))      : 0;
+const POWER_INTERVAL   = argVal('--power-interval') != null ? parseInt(argVal('--power-interval'), 10) : 1000;
+
+let powerProvider = null;
+if (POWER_ENABLED) {
+  try { powerProvider = require(path.resolve(POWER_PROVIDER_PATH)); }
+  catch (e) { console.error(`⚠ Power provider not found: ${POWER_PROVIDER_PATH} (${e.message})`); }
+}
 
 // Port overrides
 const PROXY_PORT_ARG   = argVal('--proxy-port')   ? parseInt(argVal('--proxy-port'),   10) : null;
@@ -71,6 +89,7 @@ const C = {
   gray:    '\x1b[90m',
   magenta: '\x1b[35m',
   red:     '\x1b[31m',
+  blue:    '\x1b[34m',
 };
 
 function stripAnsi(s) { return s.replace(/\x1b\[[0-9;]*m/g, ''); }
@@ -91,6 +110,7 @@ function modeLabel() {
   parts.push(INJECT_THINKING ? `${C.green}think:true${C.reset}` : `${C.red}think:false${C.reset}`);
   if (DEBUG_LABELS) parts.push(`${C.yellow}debug-labels${C.reset}`);
   if (LOG_FILE) parts.push(`${C.green}log-file${C.reset}`);
+  if (powerProvider) parts.push(`${C.blue}power${C.reset}`);
   return `[${parts.join(' + ')}]`;
 }
 
@@ -101,7 +121,7 @@ const SESSION_GAP = 60000;
 function getSession(label, requestStart) {
   let s = sessions.get(label);
   if (!s || (s.lastDoneTime && (requestStart || Date.now()) - s.lastDoneTime > SESSION_GAP)) {
-    s = { sessionStart: requestStart || Date.now(), lastDoneTime: 0, sessionGen: 0, sessionPrompt: 0, requestCount: 0 };
+    s = { sessionStart: requestStart || Date.now(), lastDoneTime: 0, sessionGen: 0, sessionPrompt: 0, requestCount: 0, sessionEnergyWh: 0, sessionCost: 0 };
     sessions.set(label, s);
   }
   return s;
@@ -111,6 +131,53 @@ setInterval(() => {
   const now = Date.now();
   for (const [k, s] of sessions) if (now - s.lastDoneTime > 5 * 60 * 1000) sessions.delete(k);
 }, 5 * 60 * 1000).unref();
+
+// ── Power tracker ────────────────────────────────────────────────────────────
+function createPowerTracker(provider) {
+  const samples = [];
+  let interval = null;
+  let startTime = null;
+  let stopTime = null;
+  let stopped = false;
+
+  function takeSample() {
+    provider.sample((watts) => { if (watts !== null) samples.push(watts); });
+  }
+
+  return {
+    start() {
+      startTime = Date.now();
+      takeSample();
+      interval = setInterval(takeSample, POWER_INTERVAL);
+    },
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      if (interval) { clearInterval(interval); interval = null; }
+      stopTime = Date.now();
+      takeSample();
+    },
+    summary() {
+      const durationSec = ((stopTime || Date.now()) - (startTime || Date.now())) / 1000;
+      if (!samples.length) return null;
+      const avgWatts  = samples.reduce((a, b) => a + b, 0) / samples.length;
+      const peakWatts = Math.max(...samples);
+      const energyWh  = avgWatts * durationSec / 3600;
+      const incrWatts = Math.max(0, avgWatts - GPU_IDLE);
+      const incrWh    = incrWatts * durationSec / 3600;
+      return {
+        avgWatts:  Math.round(avgWatts * 10) / 10,
+        peakWatts: Math.round(peakWatts * 10) / 10,
+        sampleCount: samples.length,
+        durationSec: Math.round(durationSec * 100) / 100,
+        energyWh:    Math.round(energyWh * 10000) / 10000,
+        incrementalWh: Math.round(incrWh * 10000) / 10000,
+        costTotal:       energyWh / 1000 * ELECTRIC_RATE,
+        costIncremental: incrWh   / 1000 * ELECTRIC_RATE,
+      };
+    }
+  };
+}
 
 // ── Thinking buffer flush ─────────────────────────────────────────────────────
 function flushThinkingBuffer(buf) {
@@ -164,13 +231,14 @@ function transformRequestBody(bodyStr) {
 }
 
 // ── [done] line logger (shared between Ollama and llama.cpp paths) ────────────
-function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx }) {
+function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power }) {
   const elapsed = ((Date.now() - requestStart) / 1000).toFixed(2);
   const session = getSession(jobLabel, requestStart);
   session.lastDoneTime = Date.now();
   session.requestCount += 1;
   if (prompt) session.sessionPrompt += prompt;
   if (gen)    session.sessionGen    += gen;
+  if (power)  { session.sessionEnergyWh += power.energyWh; session.sessionCost += power.costTotal; }
   const sessionElapsed = ((Date.now() - session.sessionStart) / 1000).toFixed(2);
 
   let pressurePart = '';
@@ -195,7 +263,22 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     timingStr = ` tok/s=${tokSec}${durationSec ? ` duration=${durationSec}s` : ''}`;
   }
 
-  const sessionPart = ` ${C.yellow}session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s${C.reset}`;
+  // Build power/energy string
+  let powerStr = '';
+  let powerStrPlain = '';
+  if (power) {
+    const incrPart = GPU_IDLE ? `(+${(power.avgWatts - GPU_IDLE).toFixed(1)}W) ` : '';
+    const incrWhPart = GPU_IDLE ? `(+${power.incrementalWh}Wh)` : '';
+    const costStr = `$${power.costTotal.toFixed(6)}`;
+    const incrCostPart = GPU_IDLE ? `(+$${power.costIncremental.toFixed(6)})` : '';
+    powerStr = ` ${C.blue}gpu=${power.avgWatts}W${incrPart}peak=${power.peakWatts}W ${power.energyWh}Wh${incrWhPart} ${costStr}${incrCostPart} (${power.sampleCount}samples)${C.reset}`;
+    powerStrPlain = ` gpu=${power.avgWatts}W${incrPart}peak=${power.peakWatts}W ${power.energyWh}Wh${incrWhPart} ${costStr}${incrCostPart} (${power.sampleCount}samples)`;
+  }
+
+  const sessionEnergyPart = session.sessionEnergyWh > 0
+    ? ` energy=${session.sessionEnergyWh.toFixed(4)}Wh cost=$${session.sessionCost.toFixed(6)}`
+    : '';
+  const sessionPart = ` ${C.yellow}session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s${sessionEnergyPart}${C.reset}`;
 
   const line =
     `${C.gray}[done]${jobLabel}${modelName ? ` ${C.cyan}${modelName}${C.reset}` : ''} ` +
@@ -203,6 +286,7 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     `${C.gray}prompt=${prompt ?? '?'}${C.reset}${pressurePart} ` +
     `${C.gray}gen=${gen ?? '?'}${ratio ? ` ratio=${ratio}%` : ''}` +
     `${timingStr} elapsed=${elapsed}s${C.reset}` +
+    powerStr +
     sessionPart;
 
   console.log(line);
@@ -210,13 +294,14 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     `[done]${jobLabel}${modelName ? ` ${modelName}` : ''} reason=${doneReason} ` +
     `prompt=${prompt ?? '?'}${numCtx && prompt ? ` (${((prompt/numCtx)*100).toFixed(1)}% of ${numCtx} ctx)` : ''} ` +
     `gen=${gen ?? '?'}${ratio ? ` ratio=${ratio}%` : ''}` +
-    `${stripAnsi(timingStr)} elapsed=${elapsed}s ` +
-    `session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s`
+    `${stripAnsi(timingStr)} elapsed=${elapsed}s` +
+    `${powerStrPlain} ` +
+    `session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s${sessionEnergyPart}`
   );
 }
 
 // ── SSE / llama.cpp response handler ─────────────────────────────────────────
-function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx }) {
+function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -341,8 +426,10 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx })
         const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
         const modelName     = json.model ?? '';
 
+        if (powerTracker) powerTracker.stop();
+        const power = powerTracker ? powerTracker.summary() : null;
         logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason: finishReason,
-                  durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx });
+                  durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power });
       }
     }
   });
@@ -364,13 +451,14 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx })
       if (flushTimer) clearTimeout(flushTimer);
       if (contentBuf.length) console.log(`${C.green}<content>${C.reset} ${contentBuf.join('')}`);
     }
+    if (powerTracker) powerTracker.stop(); // safety: ensure interval is cleared
     console.log(`${C.cyan}<== [stream end]${C.reset}`);
     res.end();
   });
 }
 
 // ── NDJSON / Ollama response handler (original logic) ─────────────────────────
-function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx }) {
+function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -472,7 +560,9 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx }) {
         const doneReason  = json.done_reason ?? 'stop';
         const modelName   = json.model ?? '';
 
-        logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx });
+        if (powerTracker) powerTracker.stop();
+        const power = powerTracker ? powerTracker.summary() : null;
+        logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx, power });
       }
     }
   });
@@ -490,6 +580,7 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx }) {
       if (flushTimer) clearTimeout(flushTimer);
       if (contentBuf.length) console.log(`${C.green}<content>${C.reset} ${contentBuf.join('')}`);
     }
+    if (powerTracker) powerTracker.stop(); // safety: ensure interval is cleared
     console.log(`${C.cyan}<== [stream end]${C.reset}`);
     res.end();
   });
@@ -592,6 +683,11 @@ const proxy = http.createServer((req, res) => {
           if (msg.tool_calls?.length) {
             for (const tc of msg.tool_calls) {
               console.log(`  ${C.cyan}tool_call: ${C.yellow}${tc.function?.name ?? '(unknown)'}${C.reset}`);
+              const args = tc.function?.arguments;
+              if (args) {
+                try { console.log(`  ${C.gray}${JSON.stringify(JSON.parse(args), null, 2)}${C.reset}`); }
+                catch { console.log(`  ${C.gray}${args}${C.reset}`); }
+              }
             }
           }
           // tool result messages
@@ -621,7 +717,9 @@ const proxy = http.createServer((req, res) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       console.log(`${C.green}<== Status: ${proxyRes.statusCode}${C.reset}`);
 
-      const ctx = { requestStart, jobLabel, numCtx };
+      const powerTracker = powerProvider ? createPowerTracker(powerProvider) : null;
+      if (powerTracker) powerTracker.start();
+      const ctx = { requestStart, jobLabel, numCtx, powerTracker };
       if (IS_LLAMACPP) {
         handleLlamaCppStream(proxyRes, res, ctx);
       } else {
@@ -657,6 +755,21 @@ proxy.listen(PROXY_PORT, () => {
   console.log('  --default-ctx N             fallback context size for pressure calc');
   console.log('  --thinking                  inject think:true (default: think:false)');
   console.log('  --debug-labels              dump first user message for label tuning');
-  console.log('  --log-file [path]           append [done] lines to file\n');
+  console.log('  --log-file [path]           append [done] lines to file');
+  console.log('  --power                     enable GPU power monitoring');
+  console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
+  console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
+  console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
+  console.log('  --power-interval N          sampling interval in ms (default: 1000)\n');
   if (LOG_FILE) console.log(`Log file: ${path.resolve(LOG_FILE)}`);
+  if (powerProvider) {
+    powerProvider.test((result) => {
+      if (result.ok) {
+        console.log(`Power: ${powerProvider.name} — current ${result.watts}W | rate $${ELECTRIC_RATE}/kWh | idle baseline ${GPU_IDLE}W | poll ${POWER_INTERVAL}ms`);
+      } else {
+        console.error(`Power: ${powerProvider.name} — FAILED: ${result.reason} (power tracking disabled)`);
+        powerProvider = null;
+      }
+    });
+  }
 });
