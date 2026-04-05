@@ -15,6 +15,11 @@
 //   --electric-rate N    electricity rate in $/kWh (default: 0.18947)
 //   --gpu-idle N         GPU idle watts to subtract for incremental cost (default: 0)
 //   --power-interval N   power sampling interval in ms (default: 1000)
+//   --log-mode M         logging mode: file|influxdb|none (default: none; auto 'file' if --log-file)
+//   --influxdb-url URL   InfluxDB server URL (or env INFLUXDB_URL)
+//   --influxdb-org ORG   InfluxDB organization (or env INFLUXDB_ORG)
+//   --influxdb-bucket B  InfluxDB bucket (or env INFLUXDB_BUCKET)
+//   --influxdb-token T   InfluxDB auth token (or env INFLUXDB_TOKEN)
 //
 // Port config:
 //   Ollama mode:    PROXY_PORT=11434, BACKEND_PORT=11435
@@ -24,6 +29,7 @@
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
+const os   = require('os');
 
 const args = process.argv.slice(2);
 
@@ -42,6 +48,30 @@ const INJECT_THINKING = args.includes('--thinking');
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
 const BACKEND_ARG     = argVal('--backend'); // 'ollama' | 'llamacpp' | null
+
+// Logging mode: file | influxdb | none
+const LOG_MODE = argVal('--log-mode') || (LOG_FILE ? 'file' : 'none');
+
+// InfluxDB config (env vars take precedence over CLI flags)
+const INFLUXDB_URL    = process.env.INFLUXDB_URL    || argVal('--influxdb-url');
+const INFLUXDB_ORG    = process.env.INFLUXDB_ORG    || argVal('--influxdb-org');
+const INFLUXDB_BUCKET = process.env.INFLUXDB_BUCKET || argVal('--influxdb-bucket');
+const INFLUXDB_TOKEN  = process.env.INFLUXDB_TOKEN  || argVal('--influxdb-token');
+
+if (LOG_MODE === 'influxdb') {
+  const missing = [['url', INFLUXDB_URL], ['org', INFLUXDB_ORG], ['bucket', INFLUXDB_BUCKET], ['token', INFLUXDB_TOKEN]]
+    .filter(([, v]) => !v).map(([k]) => k);
+  if (missing.length) {
+    console.error(`Error: --log-mode influxdb requires ${missing.map(k => `--influxdb-${k} or INFLUXDB_${k.toUpperCase()}`).join(', ')}`);
+    process.exit(1);
+  }
+}
+
+let influxClient = null;
+if (LOG_MODE === 'influxdb') {
+  const { createInfluxClient } = require('./influxdb-client.js');
+  influxClient = createInfluxClient({ url: INFLUXDB_URL, org: INFLUXDB_ORG, bucket: INFLUXDB_BUCKET, token: INFLUXDB_TOKEN });
+}
 
 // Power monitoring
 const POWER_ENABLED    = args.includes('--power');
@@ -95,7 +125,7 @@ const C = {
 function stripAnsi(s) { return s.replace(/\x1b\[[0-9;]*m/g, ''); }
 
 function logDoneLine(line) {
-  if (!LOG_FILE) return;
+  if (LOG_MODE !== 'file' || !LOG_FILE) return;
   fs.appendFileSync(LOG_FILE, `${new Date().toISOString()} ${stripAnsi(line)}\n`);
 }
 
@@ -109,7 +139,8 @@ function modeLabel() {
   if (DUMP_MESSAGES)    parts.push(`${C.cyan}dump-messages${C.reset}`);
   parts.push(INJECT_THINKING ? `${C.green}think:true${C.reset}` : `${C.red}think:false${C.reset}`);
   if (DEBUG_LABELS) parts.push(`${C.yellow}debug-labels${C.reset}`);
-  if (LOG_FILE) parts.push(`${C.green}log-file${C.reset}`);
+  if (LOG_MODE === 'file')     parts.push(`${C.green}log-file${C.reset}`);
+  if (LOG_MODE === 'influxdb') parts.push(`${C.green}log-influxdb${C.reset}`);
   if (powerProvider) parts.push(`${C.blue}power${C.reset}`);
   return `[${parts.join(' + ')}]`;
 }
@@ -298,6 +329,58 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     `${powerStrPlain} ` +
     `session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s${sessionEnergyPart}`
   );
+
+  // InfluxDB logging
+  if (influxClient) {
+    const labelMatch = jobLabel.trim().match(/^(\w+)=(.+)$/);
+    const jobType = labelMatch ? labelMatch[1] : 'unknown';
+    const jobName = labelMatch ? labelMatch[2] : jobLabel.trim() || 'unknown';
+
+    const tags = {
+      backend: IS_LLAMACPP ? 'llamacpp' : 'ollama',
+      model: modelName || 'unknown',
+      job_type: jobType,
+      job_name: jobName,
+      done_reason: doneReason || 'unknown',
+      host: os.hostname(),
+    };
+
+    const fields = {};
+    const addInt   = (k, v) => { if (v != null && !isNaN(v)) fields[k] = { value: Math.round(v), type: 'i' }; };
+    const addFloat = (k, v) => { if (v != null && !isNaN(v)) fields[k] = { value: parseFloat(v), type: 'f' }; };
+
+    addInt('prompt_tokens', prompt);
+    addInt('gen_tokens', gen);
+    addFloat('gen_prompt_ratio', prompt && gen ? (gen / prompt) * 100 : null);
+    addFloat('elapsed_sec', parseFloat(elapsed));
+    addFloat('duration_sec', durationSec ? parseFloat(durationSec) : null);
+    addFloat('tok_per_sec', tokSec ? parseFloat(tokSec) : null);
+    addFloat('prompt_tok_per_sec', promptTokSec ? parseFloat(promptTokSec) : null);
+    addFloat('prompt_ms', promptMs ? parseFloat(promptMs) : null);
+    addFloat('total_sec', totalMs ? parseFloat(totalMs) : null);
+    addInt('num_ctx', numCtx);
+    addFloat('context_pressure_pct', numCtx && prompt ? (prompt / numCtx) * 100 : null);
+
+    if (power) {
+      addFloat('gpu_avg_watts', power.avgWatts);
+      addFloat('gpu_peak_watts', power.peakWatts);
+      addFloat('gpu_energy_wh', power.energyWh);
+      addFloat('gpu_incremental_wh', power.incrementalWh);
+      addFloat('gpu_cost_total', power.costTotal);
+      addFloat('gpu_cost_incremental', power.costIncremental);
+      addInt('gpu_sample_count', power.sampleCount);
+    }
+
+    addInt('session_prompt_tokens', session.sessionPrompt);
+    addInt('session_gen_tokens', session.sessionGen);
+    addInt('session_request_count', session.requestCount);
+    addFloat('session_elapsed_sec', parseFloat(sessionElapsed));
+    if (session.sessionEnergyWh) addFloat('session_energy_wh', session.sessionEnergyWh);
+    if (session.sessionCost)     addFloat('session_cost', session.sessionCost);
+
+    influxClient.writePoints([{ measurement: 'llm_request', tags, fields }])
+      .catch(err => console.error(`InfluxDB write error: ${err.message}`));
+  }
 }
 
 // ── SSE / llama.cpp response handler ─────────────────────────────────────────
