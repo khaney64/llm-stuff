@@ -265,19 +265,21 @@ function transformRequestBody(bodyStr) {
 }
 
 // ── [done] line logger (shared between Ollama and llama.cpp paths) ────────────
-function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power }) {
+function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast }) {
   const elapsed = ((Date.now() - requestStart) / 1000).toFixed(2);
   const session = getSession(jobLabel, requestStart);
   session.lastDoneTime = Date.now();
   session.requestCount += 1;
   if (prompt) session.sessionPrompt += prompt;
   if (gen)    session.sessionGen    += gen;
+  if (promptPast) session.sessionPromptPast = (session.sessionPromptPast || 0) + promptPast;
   if (power)  { session.sessionEnergyWh += power.energyWh; session.sessionCost += power.costTotal; }
   const sessionElapsed = ((Date.now() - session.sessionStart) / 1000).toFixed(2);
 
   let pressurePart = '';
-  if (numCtx && prompt) {
-    const pct = (prompt / numCtx) * 100;
+  const promptTotal = (promptPast || 0) + (prompt || 0);
+  if (numCtx && promptTotal) {
+    const pct = (promptTotal / numCtx) * 100;
     const [label, color] =
       pct > 100 ? ['OVER LIMIT', C.red] :
       pct > 90  ? ['HIGH',       C.yellow] :
@@ -295,6 +297,16 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     timingStr = ` pp=${promptTokSec}tok/s(${promptMs}ms) tg=${tokSec}tok/s(${durationSec}s)${totalMs ? ` total=${totalMs}s` : ''}`;
   } else if (tokSec) {
     timingStr = ` tok/s=${tokSec}${durationSec ? ` duration=${durationSec}s` : ''}`;
+  }
+
+  // Build cache string — only for llama.cpp (promptPast comes from timings)
+  let cacheStr = '';
+  let cacheStrPlain = '';
+  if (promptPast != null && prompt != null) {
+    const totalPrompt = promptPast + prompt;
+    const hitPct = totalPrompt > 0 ? ((promptPast / totalPrompt) * 100).toFixed(1) : '0.0';
+    cacheStr = ` ${C.magenta}cache=${promptPast}reused+${prompt}computed(${hitPct}%)${C.reset}`;
+    cacheStrPlain = ` cache=${promptPast}reused+${prompt}computed(${hitPct}%)`;
   }
 
   // Build power/energy string
@@ -319,16 +331,16 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     `${doneColor}reason=${doneReason}${C.reset} ` +
     `${C.gray}prompt=${prompt ?? '?'}${C.reset}${pressurePart} ` +
     `${C.gray}gen=${gen ?? '?'}${ratio ? ` ratio=${ratio}%` : ''}` +
-    `${timingStr} elapsed=${elapsed}s${C.reset}` +
+    `${timingStr}${cacheStr} elapsed=${elapsed}s${C.reset}` +
     powerStr +
     sessionPart;
 
   console.log(line);
   logDoneLine(
     `[done]${jobLabel}${modelName ? ` ${modelName}` : ''} reason=${doneReason} ` +
-    `prompt=${prompt ?? '?'}${numCtx && prompt ? ` (${((prompt/numCtx)*100).toFixed(1)}% of ${numCtx} ctx)` : ''} ` +
+    `prompt=${prompt ?? '?'}${numCtx && promptTotal ? ` (${((promptTotal/numCtx)*100).toFixed(1)}% of ${numCtx} ctx)` : ''} ` +
     `gen=${gen ?? '?'}${ratio ? ` ratio=${ratio}%` : ''}` +
-    `${stripAnsi(timingStr)} elapsed=${elapsed}s` +
+    `${stripAnsi(timingStr)}${cacheStrPlain} elapsed=${elapsed}s` +
     `${powerStrPlain} ` +
     `session: prompt=${session.sessionPrompt} gen=${session.sessionGen} elapsed=${sessionElapsed}s${sessionEnergyPart}`
   );
@@ -362,7 +374,11 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     addFloat('prompt_ms', promptMs ? parseFloat(promptMs) : null);
     addFloat('total_sec', totalMs ? parseFloat(totalMs) : null);
     addInt('num_ctx', numCtx);
-    addFloat('context_pressure_pct', numCtx && prompt ? (prompt / numCtx) * 100 : null);
+    addFloat('context_pressure_pct', numCtx && promptTotal ? (promptTotal / numCtx) * 100 : null);
+    addInt('prompt_tokens_past', promptPast);
+    addInt('prompt_tokens_total', promptPast != null && prompt != null ? promptPast + prompt : null);
+    addFloat('cache_hit_pct', promptPast != null && prompt != null && (promptPast + prompt) > 0
+      ? (promptPast / (promptPast + prompt)) * 100 : null);
 
     if (power) {
       addFloat('gpu_avg_watts', power.avgWatts);
@@ -378,6 +394,7 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     addInt('session_gen_tokens', session.sessionGen);
     addInt('session_request_count', session.requestCount);
     addFloat('session_elapsed_sec', parseFloat(sessionElapsed));
+    if (session.sessionPromptPast) addInt('session_prompt_tokens_past', session.sessionPromptPast);
     if (session.sessionEnergyWh) addFloat('session_energy_wh', session.sessionEnergyWh);
     if (session.sessionCost)     addFloat('session_cost', session.sessionCost);
 
@@ -519,12 +536,13 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
         const promptMs      = t.prompt_ms           ? t.prompt_ms.toFixed(0)           : null;
         const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
         const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
+        const promptPast    = t.prompt_n_past        ?? null;
         const modelName     = json.model ?? '';
 
         if (powerTracker) powerTracker.stop();
         const power = powerTracker ? powerTracker.summary() : null;
         logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason: finishReason,
-                  durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power });
+                  durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast });
       }
     }
   });
