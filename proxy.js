@@ -68,6 +68,9 @@ if (LOG_MODE === 'influxdb') {
 }
 
 let influxClient = null;
+let influxErrorCount = 0;
+let influxLastErrorTime = 0;
+const INFLUX_ERROR_LOG_INTERVAL = 60000; // only log InfluxDB errors once per 60s
 if (LOG_MODE === 'influxdb') {
   const { createInfluxClient } = require('./influxdb-client.js');
   influxClient = createInfluxClient({ url: INFLUXDB_URL, org: INFLUXDB_ORG, bucket: INFLUXDB_BUCKET, token: INFLUXDB_TOKEN });
@@ -379,7 +382,16 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     if (session.sessionCost)     addFloat('session_cost', session.sessionCost);
 
     influxClient.writePoints([{ measurement: 'llm_request', tags, fields }])
-      .catch(err => console.error(`InfluxDB write error: ${err.message}`));
+      .catch(err => {
+        influxErrorCount++;
+        const now = Date.now();
+        if (now - influxLastErrorTime >= INFLUX_ERROR_LOG_INTERVAL) {
+          const suppressed = influxErrorCount > 1 ? ` (${influxErrorCount} errors suppressed)` : '';
+          console.error(`InfluxDB write error: ${err.message}${suppressed}`);
+          influxErrorCount = 0;
+          influxLastErrorTime = now;
+        }
+      });
   }
 }
 

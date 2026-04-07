@@ -1,2 +1,4 @@
 proxy-done.log
 .grepai/*
+.claude
+influxdb-env*.ps1
