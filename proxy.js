@@ -536,7 +536,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
         const promptMs      = t.prompt_ms           ? t.prompt_ms.toFixed(0)           : null;
         const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
         const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
-        const promptPast    = t.prompt_n_past        ?? null;
+        const promptPast    = t.cache_n               ?? null;
         const modelName     = json.model ?? '';
 
         if (powerTracker) powerTracker.stop();
