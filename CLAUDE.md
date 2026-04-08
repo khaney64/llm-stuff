@@ -41,6 +41,11 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - `--electric-rate N` — electricity rate in $/kWh (default: 0.18947)
 - `--gpu-idle N` — GPU idle watts to subtract for incremental cost calculation (default: 0)
 - `--power-interval N` — power sampling interval in ms (default: 1000)
+- `--log-mode M` — logging mode: `file` | `influxdb` | `none` (default: `none`)
+- `--influxdb-url URL` — InfluxDB server URL (or env `INFLUXDB_URL`)
+- `--influxdb-org ORG` — InfluxDB organization (or env `INFLUXDB_ORG`)
+- `--influxdb-bucket B` — InfluxDB bucket (or env `INFLUXDB_BUCKET`)
+- `--influxdb-token T` — InfluxDB auth token (or env `INFLUXDB_TOKEN`)
 
 ### Architecture notes
 
@@ -49,3 +54,12 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - **Context pressure**: When `num_ctx` is known, the `[done]` line shows what percentage of the context window was consumed and flags HIGH/OVER LIMIT.
 - **Tool call logging**: Both handlers accumulate streamed tool-call fragments and flush them as formatted blocks on completion.
 - **Power monitoring**: Modular power provider system. The default `power-nvidia-smi.js` reads GPU wattage via `nvidia-smi`. Custom providers can be swapped in via `--power-provider` for AMD GPUs, Intel Arc, or other platforms. Providers export `{ name, test(cb), sample(cb) }`. The proxy tracks per-request energy (Wh) and cost ($), accumulating both in sessions.
+- **KV cache tracking**: For llama.cpp backends, the proxy tracks `prompt_past` (cached/reused prompt tokens) vs newly computed tokens. The `[done]` line shows cache hit rate as a percentage. These metrics are written to InfluxDB when enabled (`prompt_tokens_past`, `prompt_tokens_total`, `cache_hit_pct`) and accumulated per session as `session_prompt_tokens_past`.
+- **InfluxDB logging**: When `--log-mode influxdb` is active, each completed request writes a point to the `llm_request` measurement via `influxdb-client.js`. Tags include backend, model, job type/name, and hostname. Fields cover tokens, timing, context pressure, cache hit rate, GPU power, and energy cost. Sessions accumulate totals across related requests.
+
+### Supporting files
+
+- `influxdb-client.js` — Zero-dependency InfluxDB v2 line protocol writer using native `http`/`https`.
+- `explore-influxdb.js` — CLI tool to query InfluxDB and explore stored proxy metrics.
+- `grafana-llm-dashboard.json` — Importable Grafana dashboard for visualizing proxy metrics from InfluxDB.
+- `power-nvidia-smi.js` — Default GPU power provider; reads wattage via `nvidia-smi`.
