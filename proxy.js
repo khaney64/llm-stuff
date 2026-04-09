@@ -111,6 +111,8 @@ const BACKEND_PORT = BACKEND_PORT_ARG ?? DEFAULT_BACKEND_PORT;
 const IS_LLAMACPP = IS_LLAMACPP_ARG || (!BACKEND_ARG && PROXY_PORT === 8080);
 const IS_OLLAMA   = !IS_LLAMACPP; // derived
 
+let serverCtx = null; // auto-detected from llama.cpp /props endpoint
+
 const BUFFER_THINKING = !FILTER_THINKING && !RAW_MODE;
 
 // ── ANSI colors ───────────────────────────────────────────────────────────────
@@ -717,7 +719,7 @@ const proxy = http.createServer((req, res) => {
 
       // numCtx: for llama.cpp use max_tokens as proxy; for ollama use options.num_ctx
       numCtx = IS_LLAMACPP
-        ? (DEFAULT_CTX || 4096)
+        ? (serverCtx || DEFAULT_CTX || 4096)
         : (parsed.options?.num_ctx || DEFAULT_CTX || 4096);
 
       const summary = {
@@ -851,38 +853,75 @@ const proxy = http.createServer((req, res) => {
   });
 });
 
-proxy.listen(PROXY_PORT, () => {
-  const backendName = IS_LLAMACPP ? 'llama.cpp' : 'Ollama';
-  console.log(`\nDebug proxy ${modeLabel()}`);
-  console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}\n`);
-  console.log('Options:');
-  console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
-  console.log('  --proxy-port N              proxy listen port (default: 11434)');
-  console.log('  --backend-port N            backend port (default: 11435)');
-  console.log('  --filter-thinking           hide thinking chunks entirely');
-  console.log('  --buffer-thinking           reassemble thinking into blocks (default)');
-  console.log('  --raw                       show every raw chunk');
-  console.log('  --dump-messages             print full messages array');
-  console.log('  --dump-request              print full transformed request body');
-  console.log('  --message-size N            max chars per message preview (default 300)');
-  console.log('  --default-ctx N             fallback context size for pressure calc');
-  console.log('  --thinking                  inject think:true (default: think:false)');
-  console.log('  --debug-labels              dump first user message for label tuning');
-  console.log('  --log-file [path]           append [done] lines to file');
-  console.log('  --power                     enable GPU power monitoring');
-  console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
-  console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
-  console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
-  console.log('  --power-interval N          sampling interval in ms (default: 1000)\n');
-  if (LOG_FILE) console.log(`Log file: ${path.resolve(LOG_FILE)}`);
-  if (powerProvider) {
-    powerProvider.test((result) => {
-      if (result.ok) {
-        console.log(`Power: ${powerProvider.name} — current ${result.watts}W | rate $${ELECTRIC_RATE}/kWh | idle baseline ${GPU_IDLE}W | poll ${POWER_INTERVAL}ms`);
-      } else {
-        console.error(`Power: ${powerProvider.name} — FAILED: ${result.reason} (power tracking disabled)`);
-        powerProvider = null;
-      }
+// Fetch n_ctx from llama.cpp /props endpoint; calls cb() when done
+function fetchServerCtx(cb) {
+  const req = http.get(`http://localhost:${BACKEND_PORT}/props`, (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      try {
+        const props = JSON.parse(data);
+        const ctx = props.default_generation_settings?.n_ctx || null;
+        if (ctx && ctx !== serverCtx) {
+          console.log(`${serverCtx ? 'Updated' : 'Detected'} llama.cpp server n_ctx: ${ctx}`);
+          serverCtx = ctx;
+        }
+      } catch (e) { /* ignore parse errors */ }
+      if (cb) cb();
     });
-  }
-});
+  });
+  req.on('error', () => {
+    if (!serverCtx) console.log('Could not fetch /props from llama.cpp — using --default-ctx fallback');
+    if (cb) cb();
+  });
+  req.setTimeout(3000, () => { req.destroy(); });
+}
+
+function startProxy() {
+  proxy.listen(PROXY_PORT, () => {
+    const backendName = IS_LLAMACPP ? 'llama.cpp' : 'Ollama';
+    console.log(`\nDebug proxy ${modeLabel()}`);
+    console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}`);
+    if (serverCtx) console.log(`Server n_ctx: ${serverCtx} (auto-detected from /props)`);
+    console.log('');
+    console.log('Options:');
+    console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
+    console.log('  --proxy-port N              proxy listen port (default: 11434)');
+    console.log('  --backend-port N            backend port (default: 11435)');
+    console.log('  --filter-thinking           hide thinking chunks entirely');
+    console.log('  --buffer-thinking           reassemble thinking into blocks (default)');
+    console.log('  --raw                       show every raw chunk');
+    console.log('  --dump-messages             print full messages array');
+    console.log('  --dump-request              print full transformed request body');
+    console.log('  --message-size N            max chars per message preview (default 300)');
+    console.log('  --default-ctx N             fallback context size for pressure calc');
+    console.log('  --thinking                  inject think:true (default: think:false)');
+    console.log('  --debug-labels              dump first user message for label tuning');
+    console.log('  --log-file [path]           append [done] lines to file');
+    console.log('  --power                     enable GPU power monitoring');
+    console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
+    console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
+    console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
+    console.log('  --power-interval N          sampling interval in ms (default: 1000)\n');
+    if (LOG_FILE) console.log(`Log file: ${path.resolve(LOG_FILE)}`);
+    if (powerProvider) {
+      powerProvider.test((result) => {
+        if (result.ok) {
+          console.log(`Power: ${powerProvider.name} — current ${result.watts}W | rate $${ELECTRIC_RATE}/kWh | idle baseline ${GPU_IDLE}W | poll ${POWER_INTERVAL}ms`);
+        } else {
+          console.error(`Power: ${powerProvider.name} — FAILED: ${result.reason} (power tracking disabled)`);
+          powerProvider = null;
+        }
+      });
+    }
+    // Periodically re-check /props to detect server restarts with different context
+    if (IS_LLAMACPP) setInterval(() => fetchServerCtx(null), 60000);
+  });
+}
+
+// For llama.cpp, auto-detect n_ctx from /props before starting
+if (IS_LLAMACPP) {
+  fetchServerCtx(() => startProxy());
+} else {
+  startProxy();
+}
