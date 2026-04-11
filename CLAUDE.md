@@ -31,9 +31,12 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 
 - `--dump-messages` — prints the full messages array from each request
 - `--dump-request` — prints the full transformed request body (params + all messages)
+- `--dump-request-file [path]` — write raw request body and headers to files (default dir: `./request-dumps`)
+- `--dump-transformed-request-file [path]` — write transformed request body to files (default dir: `./request-dumps`)
 - `--message-size N` — max chars per message preview (default 300, 0 = no limit)
 - `--default-ctx N` — fallback context size for context-pressure calculation
-- `--thinking` — inject `think:true` into requests (default injects `think:false`)
+- `--thinking` — inject `think:true` (Ollama) or enable thinking via `chat_template_kwargs` (llama.cpp); default injects `think:false`
+- `--thinking-budget N` — thinking budget tokens for llama.cpp (default: 8192)
 - `--debug-labels` — dump first user message for job-label tuning
 - `--log-file [path]` — append `[done]` summary lines to a file (default: `./proxy-done.log`)
 - `--power` — enable GPU power monitoring and energy cost tracking
@@ -55,7 +58,8 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - **Tool call logging**: Both handlers accumulate streamed tool-call fragments and flush them as formatted blocks on completion.
 - **Power monitoring**: Modular power provider system. The default `power-nvidia-smi.js` reads GPU wattage via `nvidia-smi`. Custom providers can be swapped in via `--power-provider` for AMD GPUs, Intel Arc, or other platforms. Providers export `{ name, test(cb), sample(cb) }`. The proxy tracks per-request energy (Wh) and cost ($), accumulating both in sessions.
 - **KV cache tracking**: For llama.cpp backends, the proxy tracks `prompt_past` (cached/reused prompt tokens) vs newly computed tokens. The `[done]` line shows cache hit rate as a percentage. These metrics are written to InfluxDB when enabled (`prompt_tokens_past`, `prompt_tokens_total`, `cache_hit_pct`) and accumulated per session as `session_prompt_tokens_past`.
-- **InfluxDB logging**: When `--log-mode influxdb` is active, each completed request writes a point to the `llm_request` measurement via `influxdb-client.js`. Tags include backend, model, job type/name, and hostname. Fields cover tokens, timing, context pressure, cache hit rate, GPU power, and energy cost. Sessions accumulate totals across related requests.
+- **Build info tracking**: For llama.cpp backends, the proxy auto-detects the server build number from `/props` and includes it as a `build` tag in InfluxDB points.
+- **InfluxDB logging**: When `--log-mode influxdb` is active, each completed request writes a point to the `llm_request` measurement via `influxdb-client.js`. Tags include backend, model, job type/name, hostname, and build number. Fields cover tokens, timing, context pressure, cache hit rate, GPU power, and energy cost. Sessions accumulate totals across related requests.
 
 ### Supporting files
 
@@ -63,3 +67,4 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - `explore-influxdb.js` — CLI tool to query InfluxDB and explore stored proxy metrics.
 - `grafana-llm-dashboard.json` — Importable Grafana dashboard for visualizing proxy metrics from InfluxDB.
 - `power-nvidia-smi.js` — Default GPU power provider; reads wattage via `nvidia-smi`.
+- `model-test-report-*.md` — Model test comparison reports benchmarking local models against the test suite.

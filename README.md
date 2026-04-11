@@ -37,9 +37,12 @@ Pick one (mutually exclusive):
 | `--backend-port N` | Override backend port |
 | `--dump-messages` | Print the full messages array from each request |
 | `--dump-request` | Print the full transformed request body (params + all messages) |
+| `--dump-request-file [path]` | Write raw request body and headers to files (default dir: `./request-dumps`) |
+| `--dump-transformed-request-file [path]` | Write transformed request body to files (default dir: `./request-dumps`) |
 | `--message-size N` | Max chars per message preview (default: 300, 0 = no limit) |
 | `--default-ctx N` | Fallback context size for context-pressure calculation |
-| `--thinking` | Inject `think:true` into requests (default: injects `think:false`) |
+| `--thinking` | Inject `think:true` (Ollama) or enable thinking via `chat_template_kwargs` (llama.cpp); default: `think:false` |
+| `--thinking-budget N` | Thinking budget tokens for llama.cpp (default: 8192) |
 | `--debug-labels` | Dump first user message for job-label tuning |
 | `--log-file [path]` | Append `[done]` summary lines to a file (default: `./proxy-done.log`) |
 | `--power` | Enable GPU power monitoring and energy cost tracking |
@@ -60,7 +63,7 @@ The proxy can write per-request metrics to InfluxDB for long-term storage and da
 | `--influxdb-bucket B` | InfluxDB bucket (or env `INFLUXDB_BUCKET`) |
 | `--influxdb-token T` | InfluxDB auth token (or env `INFLUXDB_TOKEN`) |
 
-Each completed request writes a point to the `llm_request` measurement with tags for backend, model, job type/name, and hostname, plus fields for tokens, timing, context pressure, cache hit rate, GPU power, and energy cost.
+Each completed request writes a point to the `llm_request` measurement with tags for backend, model, job type/name, hostname, and build number, plus fields for tokens, timing, context pressure, cache hit rate, GPU power, and energy cost.
 
 ```bash
 # Example: proxy with InfluxDB logging and GPU power tracking
@@ -115,3 +118,4 @@ Cache hit rate gauge and time series, cached vs computed token comparison, cache
 | `explore-influxdb.js` | CLI tool to query and explore stored proxy metrics |
 | `grafana-llm-dashboard.json` | Importable Grafana dashboard definition |
 | `power-nvidia-smi.js` | Default GPU power provider (nvidia-smi) |
+| `model-test-report-*.md` | Model test comparison reports benchmarking local models against the test suite |
