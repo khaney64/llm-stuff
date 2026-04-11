@@ -55,6 +55,17 @@ llama-server.exe \
   --port 8081 --host 0.0.0.0 --batch-size 512 --ubatch-size 512
 ```
 
+### Model Files & Hashes
+
+All models are Q4_K_M GGUF quantizations from [Unsloth](https://huggingface.co/unsloth) on Hugging Face. Gemma models were freshly downloaded on 2026-04-11 (newer versions available). Qwen models were downloaded in March 2026 and verified against current Hugging Face hashes (matched).
+
+| Model | File | SHA-256 |
+|-------|------|---------|
+| gemma4-26b | `gemma-4-26B-A4B-it-UD-Q4_K_M.gguf` | `b8707e57f676d8dd1b80f623b45200cc92e6966b0e95275e606f412095a49fde` |
+| gemma4-31b | `gemma-4-31B-it-Q4_K_M.gguf` | `3bf13fff7c0d4deff809b7ab168428f54855f3ef0279339dda278a81ea853474` |
+| qwen35-27b | `Qwen3.5-27B-Q4_K_M.gguf` | `84b5f7f112156d63836a01a69dc3f11a6ba63b10a23b8ca7a7efaf52d5a2d806` |
+| qwen35-35b-a3b | `qwen35-35b-a3b` | `3b46d1066bc91cc2d613e3bc22ce691dd77e6f0d33c9060690d24ce6de494375` |
+
 ### Common Parameters
 | Parameter | Value | Notes |
 |-----------|-------|-------|
