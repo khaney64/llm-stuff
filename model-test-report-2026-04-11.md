@@ -81,7 +81,9 @@ llama-server.exe \
 | gemma4-26b | 12:54 | 13:05 | ~11 min | 34 | 32 | 1 | 1 | 94.1% |
 | gemma4-31b | 13:27 | *(incomplete)* | *(incomplete)* | 12 | 11 | 0 | 1 | 91.7%* |
 | qwen35-27b | 13:54 | 14:00 | ~6 min | 34 | 33 | 0 | 1 | 97.1% |
-| qwen35-35b-a3b | 14:24 | *(header not updated)* | *(header not updated)* | 34 | 33 | 0 | 1 | 97.1% |
+| qwen35-35b-a3b | 14:24 | ~14:27* | ~3 min* | 34 | 33 | 0 | 1 | 97.1% |
+
+> \* qwen35-35b-a3b completion time inferred from InfluxDB (last request at 18:27:40 UTC). The model did not update the results file header with Completed/Elapsed times as required by the test instructions — a minor procedural failure worth noting.
 
 > \* gemma4-31b only completed 12 of 34 tests before the session ended. Pass rate is out of tests attempted.
 > All models skipped test 1.4 (today's memory file didn't exist yet — expected early-day behavior, not a failure).
