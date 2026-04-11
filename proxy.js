@@ -45,8 +45,11 @@ const DUMP_REQUEST    = args.includes('--dump-request');
 const MESSAGE_SIZE    = argVal('--message-size') != null ? parseInt(argVal('--message-size'), 10) : 300;
 const DEFAULT_CTX     = argVal('--default-ctx')  != null ? parseInt(argVal('--default-ctx'),  10) : null;
 const INJECT_THINKING = args.includes('--thinking');
+const THINKING_BUDGET = argVal('--thinking-budget') != null ? parseInt(argVal('--thinking-budget'), 10) : 8192;
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
+const DUMP_REQUEST_FILE     = argVal('--dump-request-file') ?? (args.includes('--dump-request-file') ? './request-dumps' : null);
+const DUMP_TRANSFORMED_FILE = argVal('--dump-transformed-request-file') ?? (args.includes('--dump-transformed-request-file') ? './request-dumps' : null);
 const BACKEND_ARG     = argVal('--backend'); // 'ollama' | 'llamacpp' | null
 
 // Logging mode: file | influxdb | none
@@ -112,6 +115,7 @@ const IS_LLAMACPP = IS_LLAMACPP_ARG || (!BACKEND_ARG && PROXY_PORT === 8080);
 const IS_OLLAMA   = !IS_LLAMACPP; // derived
 
 let serverCtx = null; // auto-detected from llama.cpp /props endpoint
+let serverBuildInfo = null; // auto-detected from llama.cpp /props endpoint (release number only)
 
 const BUFFER_THINKING = !FILTER_THINKING && !RAW_MODE;
 
@@ -132,6 +136,37 @@ function stripAnsi(s) { return s.replace(/\x1b\[[0-9;]*m/g, ''); }
 function logDoneLine(line) {
   if (LOG_MODE !== 'file' || !LOG_FILE) return;
   fs.appendFileSync(LOG_FILE, `${new Date().toISOString()} ${stripAnsi(line)}\n`);
+}
+
+// --- request dump helpers ---
+function tsFilePart() {
+  return new Date().toISOString().replace(/:/g, '-');
+}
+
+function safePath(urlPath) {
+  return (urlPath || '/').replace(/\//g, '_');
+}
+
+function resolveDumpPath(basePath, filename) {
+  // If basePath has a file extension, treat as direct file path
+  if (path.extname(basePath)) return basePath;
+  // Otherwise treat as directory
+  fs.mkdirSync(basePath, { recursive: true });
+  return path.join(basePath, filename);
+}
+
+function writeDumpFile(basePath, prefix, req, bodyStr) {
+  const filename = `${prefix}-${tsFilePart()}-${req.method}${safePath(req.url)}.json`;
+  const filePath = resolveDumpPath(basePath, filename);
+  fs.writeFileSync(filePath, bodyStr);
+  console.log(`${C.green}[dump] ${prefix} body -> ${filePath}${C.reset}`);
+}
+
+function writeHeadersFile(basePath, prefix, req) {
+  const filename = `${prefix}-${tsFilePart()}-${req.method}${safePath(req.url)}.headers.json`;
+  const filePath = resolveDumpPath(basePath, filename);
+  fs.writeFileSync(filePath, JSON.stringify(req.headers, null, 2));
+  console.log(`${C.green}[dump] ${prefix} headers -> ${filePath}${C.reset}`);
 }
 
 function modeLabel() {
@@ -235,8 +270,10 @@ function transformRequestBody(bodyStr) {
 
   } else {
     // llama.cpp / OpenAI-compat mode
-    // 1. think -> (llama.cpp ignores it, but keep for logging; strip options wrapper)
-    p.think = INJECT_THINKING;
+    // 1. thinking -> pass enable_thinking via chat_template_kwargs (Qwen3, etc.)
+    if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
+    p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
+    delete p.think; // remove Ollama-style think field if client sent it
 
     // 2. Ollama options block -> top-level OpenAI fields
     if (p.options) {
@@ -360,6 +397,7 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
       job_name: jobName,
       done_reason: doneReason || 'unknown',
       host: os.hostname(),
+      build: serverBuildInfo || 'unknown',
     };
 
     const fields = {};
@@ -706,8 +744,20 @@ const proxy = http.createServer((req, res) => {
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', () => {
+    const rawBody = body;
+
+    // Dump raw request body + headers to file before any transformation
+    if (DUMP_REQUEST_FILE) {
+      writeDumpFile(DUMP_REQUEST_FILE, 'raw-request', req, rawBody);
+      writeHeadersFile(DUMP_REQUEST_FILE, 'raw-request', req);
+    }
 
     body = transformRequestBody(body);
+
+    // Dump transformed request body to file
+    if (DUMP_TRANSFORMED_FILE) {
+      writeDumpFile(DUMP_TRANSFORMED_FILE, 'transformed-request', req, body);
+    }
 
     let numCtx       = DEFAULT_CTX;
     let jobLabel     = '';
@@ -866,6 +916,11 @@ function fetchServerCtx(cb) {
           console.log(`${serverCtx ? 'Updated' : 'Detected'} llama.cpp server n_ctx: ${ctx}`);
           serverCtx = ctx;
         }
+        const build = props.build_info ? props.build_info.split('-')[0] : null;
+        if (build && build !== serverBuildInfo) {
+          console.log(`${serverBuildInfo ? 'Updated' : 'Detected'} llama.cpp build: ${build}`);
+          serverBuildInfo = build;
+        }
       } catch (e) { /* ignore parse errors */ }
       if (cb) cb();
     });
@@ -883,6 +938,7 @@ function startProxy() {
     console.log(`\nDebug proxy ${modeLabel()}`);
     console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}`);
     if (serverCtx) console.log(`Server n_ctx: ${serverCtx} (auto-detected from /props)`);
+    if (serverBuildInfo) console.log(`Server build: ${serverBuildInfo}`);
     console.log('');
     console.log('Options:');
     console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
@@ -895,7 +951,8 @@ function startProxy() {
     console.log('  --dump-request              print full transformed request body');
     console.log('  --message-size N            max chars per message preview (default 300)');
     console.log('  --default-ctx N             fallback context size for pressure calc');
-    console.log('  --thinking                  inject think:true (default: think:false)');
+    console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
+    console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
     console.log('  --debug-labels              dump first user message for label tuning');
     console.log('  --log-file [path]           append [done] lines to file');
     console.log('  --power                     enable GPU power monitoring');
