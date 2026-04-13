@@ -86,7 +86,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> count()\n  |> yield(name: \"count\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> count()\n  |> yield(name: \"count\")",
           "refId": "A"
         }
       ],
@@ -145,7 +145,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
           "refId": "A"
         }
       ],
@@ -204,7 +204,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
           "refId": "A"
         }
       ],
@@ -264,7 +264,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> yield(name: \"sum\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> yield(name: \"sum\")",
           "refId": "A"
         }
       ],
@@ -324,7 +324,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sum()\n  |> yield(name: \"sum\")",
           "refId": "A"
         }
       ],
@@ -384,7 +384,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -466,7 +466,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -535,7 +535,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _field: r.job_name + \" (\" + r._field + \")\"}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _field: r.job_name + \" (\" + r._field + \")\"}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -604,7 +604,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> map(fn: (r) => ({r with _field: r.job_name}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> map(fn: (r) => ({r with _field: r.job_name}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -802,7 +802,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "import \"experimental\"\n\npromptData = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"elapsed_sec\" or r._field == \"gpu_energy_wh\" or r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> reduce(fn: (r, accumulator) => ({\n      sum: accumulator.sum + r._value,\n      count: accumulator.count + 1.0\n    }),\n    identity: {sum: 0.0, count: 0.0}\n  )\n  |> map(fn: (r) => ({r with _value: if r._field == \"tok_per_sec\" then r.sum / r.count else r.sum}))\n  |> drop(columns: [\"sum\", \"count\"])\n  |> group(columns: [\"job_name\"])\n  |> pivot(rowKey: [\"job_name\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: r.gpu_energy_wh / 1000.0 * ${kWhPrice}}))\n\nreqCount = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> rename(columns: {_value: \"request_count\"})\n\njoin(tables: {d: promptData, c: reqCount}, on: [\"job_name\"])",
+          "query": "import \"experimental\"\n\npromptData = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"elapsed_sec\" or r._field == \"gpu_energy_wh\" or r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> reduce(fn: (r, accumulator) => ({\n      sum: accumulator.sum + r._value,\n      count: accumulator.count + 1.0\n    }),\n    identity: {sum: 0.0, count: 0.0}\n  )\n  |> map(fn: (r) => ({r with _value: if r._field == \"tok_per_sec\" then r.sum / r.count else r.sum}))\n  |> drop(columns: [\"sum\", \"count\"])\n  |> group(columns: [\"job_name\"])\n  |> pivot(rowKey: [\"job_name\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: r.gpu_energy_wh / 1000.0 * ${kWhPrice}}))\n\nreqCount = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> rename(columns: {_value: \"request_count\"})\n\njoin(tables: {d: promptData, c: reqCount}, on: [\"job_name\"])",
           "refId": "A"
         }
       ],
@@ -911,7 +911,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -1013,7 +1013,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"context_pressure_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"context_pressure_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -1109,7 +1109,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
           "refId": "A"
         },
         {
@@ -1117,7 +1117,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
           "refId": "B"
         }
       ],
@@ -1213,7 +1213,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"elapsed_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"elapsed_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -1347,7 +1347,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_avg_watts\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_avg_watts\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         },
         {
@@ -1355,7 +1355,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_peak_watts\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_peak_watts\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
           "refId": "B"
         }
       ],
@@ -1425,7 +1425,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}, _field: r.job_name}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}, _field: r.job_name}))\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -1523,7 +1523,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()",
           "refId": "A"
         }
       ],
@@ -1621,7 +1621,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()",
           "refId": "A"
         }
       ],
@@ -1876,7 +1876,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"tok_per_sec\" or r._field == \"elapsed_sec\" or r._field == \"context_pressure_pct\" or r._field == \"gpu_avg_watts\" or r._field == \"gpu_energy_wh\" or r._field == \"cache_hit_pct\" or r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: if exists r.gpu_energy_wh then r.gpu_energy_wh / 1000.0 * ${kWhPrice} else 0.0}))\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)\n  |> keep(columns: [\"_time\", \"job_name\", \"model\", \"done_reason\", \"prompt_tokens\", \"prompt_tokens_past\", \"cache_hit_pct\", \"gen_tokens\", \"tok_per_sec\", \"elapsed_sec\", \"context_pressure_pct\", \"gpu_avg_watts\", \"cost\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"tok_per_sec\" or r._field == \"elapsed_sec\" or r._field == \"context_pressure_pct\" or r._field == \"gpu_avg_watts\" or r._field == \"gpu_energy_wh\" or r._field == \"cache_hit_pct\" or r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: if exists r.gpu_energy_wh then r.gpu_energy_wh / 1000.0 * ${kWhPrice} else 0.0}))\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)\n  |> keep(columns: [\"_time\", \"job_name\", \"model\", \"done_reason\", \"prompt_tokens\", \"prompt_tokens_past\", \"cache_hit_pct\", \"gen_tokens\", \"tok_per_sec\", \"elapsed_sec\", \"context_pressure_pct\", \"gpu_avg_watts\", \"cost\"])",
           "refId": "A"
         }
       ],
@@ -1956,7 +1956,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"cache_hit_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"cache_hit_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -2061,7 +2061,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"cache_hit_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"cache_hit_pct\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -2194,7 +2194,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
           "refId": "A"
         },
         {
@@ -2202,7 +2202,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
           "refId": "B"
         }
       ],
@@ -2268,7 +2268,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> rename(columns: {job_name: \"Job\", _value: \"Cached Tokens\"})",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> group(columns: [\"job_name\"])\n  |> sum()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> rename(columns: {job_name: \"Job\", _value: \"Cached Tokens\"})",
           "refId": "A"
         }
       ],
@@ -2388,6 +2388,29 @@
         "name": "build",
         "options": [],
         "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"${bucket}\", tag: \"build\", predicate: (r) => r._measurement == \"llm_request\")",
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "1l1mYxpDz"
+        },
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "host",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"${bucket}\", tag: \"host\", predicate: (r) => r._measurement == \"llm_request\")",
         "refresh": 2,
         "regex": "",
         "regexApplyTo": "value",
