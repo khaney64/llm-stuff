@@ -959,8 +959,30 @@ function startProxy() {
     console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
     console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
     console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
-    console.log('  --power-interval N          sampling interval in ms (default: 1000)\n');
-    if (LOG_FILE) console.log(`Log file: ${path.resolve(LOG_FILE)}`);
+    console.log('  --power-interval N          sampling interval in ms (default: 1000)');
+    console.log('  --dump-request-file [path]  write raw request body to files (default: ./request-dumps)');
+    console.log('  --dump-transformed-request-file [path]');
+    console.log('                              write transformed request to files (default: ./request-dumps)');
+    console.log('  --log-mode M                logging mode: file | influxdb | none (default: none)');
+    console.log('  --influxdb-url URL          InfluxDB server URL (or env INFLUXDB_URL)');
+    console.log('  --influxdb-org ORG          InfluxDB organization (or env INFLUXDB_ORG)');
+    console.log('  --influxdb-bucket B         InfluxDB bucket (or env INFLUXDB_BUCKET)');
+    console.log('  --influxdb-token T          InfluxDB auth token (or env INFLUXDB_TOKEN)\n');
+    // Active configuration summary
+    const outputMode = FILTER_THINKING ? 'filter-thinking' : (RAW_MODE ? 'raw' : 'buffer-thinking');
+    console.log('Active config:');
+    console.log(`  Output mode:    ${outputMode}`);
+    console.log(`  Message size:   ${MESSAGE_SIZE === 0 ? 'unlimited' : MESSAGE_SIZE}`);
+    console.log(`  Log mode:       ${LOG_MODE}`);
+    if (INJECT_THINKING) console.log(`  Thinking:       on (budget: ${THINKING_BUDGET})`);
+    if (DEFAULT_CTX) console.log(`  Default ctx:    ${DEFAULT_CTX}`);
+    if (DUMP_MESSAGES) console.log(`  Dump messages:  on`);
+    if (DUMP_REQUEST) console.log(`  Dump request:   on`);
+    if (DUMP_REQUEST_FILE) console.log(`  Dump request file:  ${path.resolve(DUMP_REQUEST_FILE)}`);
+    if (DUMP_TRANSFORMED_FILE) console.log(`  Dump transformed:   ${path.resolve(DUMP_TRANSFORMED_FILE)}`);
+    if (DEBUG_LABELS) console.log(`  Debug labels:   on`);
+    if (LOG_MODE === 'file' && LOG_FILE) console.log(`  Log file:       ${path.resolve(LOG_FILE)}`);
+    if (LOG_MODE === 'influxdb') console.log(`  InfluxDB:       ${INFLUXDB_URL} org=${INFLUXDB_ORG} bucket=${INFLUXDB_BUCKET}`);
     if (powerProvider) {
       powerProvider.test((result) => {
         if (result.ok) {
