@@ -43,6 +43,7 @@ Pick one (mutually exclusive):
 
 | Flag | Description |
 |------|-------------|
+| `--help`, `-h` | Print the full options list and exit |
 | `--backend ollama\|llamacpp` | Force backend mode (default: auto-detect from port) |
 | `--proxy-port N` | Override proxy listen port |
 | `--backend-port N` | Override backend port |
