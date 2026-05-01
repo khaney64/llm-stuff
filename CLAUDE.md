@@ -16,7 +16,7 @@ Run with: `node proxy.js [options]`
 
 The proxy auto-detects the backend from the listen port, or it can be forced:
 - **Ollama mode** (default): proxy listens on `:11434`, forwards to Ollama on `:11435`. Ollama must be reconfigured to listen on 11435.
-- **llama.cpp mode**: proxy listens on `:8080`, forwards to llama.cpp on `:8081`. Activate with `--backend llamacpp` or by setting `--proxy-port 8080`. At startup, the proxy queries the llama-server `/props` endpoint to auto-detect `n_ctx`; `--default-ctx` serves as a fallback if the server is unreachable.
+- **llama.cpp mode**: proxy listens on `:8080`, forwards to llama.cpp on `:8081`. Activate with `--backend llamacpp` or by setting `--proxy-port 8080`. At startup, the proxy queries the llama-server `/props` endpoint to auto-detect `n_ctx`, build number, and model name; these are also re-polled every 60s, and any change is logged. `--default-ctx` serves as a fallback if the server is unreachable.
 - Override any port with `--proxy-port N` and `--backend-port N`.
 
 The proxy translates Ollama-style request fields (e.g. `options.num_predict`) into OpenAI-compat fields (`max_tokens`) when targeting llama.cpp via `transformRequestBody()`.
@@ -29,6 +29,7 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 
 ### Additional flags
 
+- `--help`, `-h` — print the full options list and exit
 - `--dump-messages` — prints the full messages array from each request
 - `--dump-request` — prints the full transformed request body (params + all messages)
 - `--dump-request-file [path]` — write raw request body and headers to files (default dir: `./request-dumps`)

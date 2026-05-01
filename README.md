@@ -18,6 +18,17 @@ node proxy.js --backend llamacpp
 
 For Ollama mode, you must configure Ollama to listen on port **11435** so the proxy can take over the standard 11434 port. Clients need no reconfiguration.
 
+### Launcher scripts
+
+Convenience wrappers around `node proxy.js` with a preset flag combination (buffered thinking, llama.cpp backend, InfluxDB logging, power monitoring, request dumps):
+
+| Script | Platform |
+|--------|----------|
+| `proxy.ps1` | Windows (PowerShell) |
+| `proxy.sh` | Ubuntu / Linux |
+
+Edit the script to adjust flags, or invoke `node proxy.js` directly with your own options. See `ubuntu-setup.md` for the full Linux install walkthrough.
+
 ### Output modes
 
 Pick one (mutually exclusive):
@@ -32,6 +43,7 @@ Pick one (mutually exclusive):
 
 | Flag | Description |
 |------|-------------|
+| `--help`, `-h` | Print the full options list and exit |
 | `--backend ollama\|llamacpp` | Force backend mode (default: auto-detect from port) |
 | `--proxy-port N` | Override proxy listen port |
 | `--backend-port N` | Override backend port |
@@ -118,4 +130,6 @@ Cache hit rate gauge and time series, cached vs computed token comparison, cache
 | `explore-influxdb.js` | CLI tool to query and explore stored proxy metrics |
 | `grafana-llm-dashboard.json` | Importable Grafana dashboard definition |
 | `power-nvidia-smi.js` | Default GPU power provider (nvidia-smi) |
+| `proxy.ps1` | PowerShell launcher for the proxy on Windows |
+| `proxy.sh` | Shell launcher for the proxy on Ubuntu/Linux (see `ubuntu-setup.md`) |
 | `model-test-report-*.md` | Model test comparison reports benchmarking local models against the test suite |

@@ -1,5 +1,6 @@
 // proxy.js - Ollama / llama.cpp debug proxy
 // Usage: node proxy.js [options]
+//   --help               print full options list and exit
 //   --filter-thinking    suppress thinking chunks from log output entirely
 //   --buffer-thinking    buffer and reassemble thinking into larger chunks (default)
 //   --raw                show every raw chunk as-is (original behavior)
@@ -36,6 +37,45 @@ const args = process.argv.slice(2);
 function argVal(flag) {
   const i = args.indexOf(flag);
   return i !== -1 && args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : null;
+}
+
+function printHelp() {
+  console.log('Usage: node proxy.js [options]');
+  console.log('');
+  console.log('Options:');
+  console.log('  --help, -h                  print this help and exit');
+  console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
+  console.log('  --proxy-port N              proxy listen port (default: 11434)');
+  console.log('  --backend-port N            backend port (default: 11435)');
+  console.log('  --filter-thinking           hide thinking chunks entirely');
+  console.log('  --buffer-thinking           reassemble thinking into blocks (default)');
+  console.log('  --raw                       show every raw chunk');
+  console.log('  --dump-messages             print full messages array');
+  console.log('  --dump-request              print full transformed request body');
+  console.log('  --message-size N            max chars per message preview (default 300)');
+  console.log('  --default-ctx N             fallback context size for pressure calc');
+  console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
+  console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
+  console.log('  --debug-labels              dump first user message for label tuning');
+  console.log('  --log-file [path]           append [done] lines to file');
+  console.log('  --power                     enable GPU power monitoring');
+  console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
+  console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
+  console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
+  console.log('  --power-interval N          sampling interval in ms (default: 1000)');
+  console.log('  --dump-request-file [path]  write raw request body to files (default: ./request-dumps)');
+  console.log('  --dump-transformed-request-file [path]');
+  console.log('                              write transformed request to files (default: ./request-dumps)');
+  console.log('  --log-mode M                logging mode: file | influxdb | none (default: none)');
+  console.log('  --influxdb-url URL          InfluxDB server URL (or env INFLUXDB_URL)');
+  console.log('  --influxdb-org ORG          InfluxDB organization (or env INFLUXDB_ORG)');
+  console.log('  --influxdb-bucket B         InfluxDB bucket (or env INFLUXDB_BUCKET)');
+  console.log('  --influxdb-token T          InfluxDB auth token (or env INFLUXDB_TOKEN)');
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+  printHelp();
+  process.exit(0);
 }
 
 const FILTER_THINKING = args.includes('--filter-thinking');
@@ -116,6 +156,7 @@ const IS_OLLAMA   = !IS_LLAMACPP; // derived
 
 let serverCtx = null; // auto-detected from llama.cpp /props endpoint
 let serverBuildInfo = null; // auto-detected from llama.cpp /props endpoint (release number only)
+let serverModel = null; // auto-detected from llama.cpp /props endpoint (basename, .gguf stripped)
 
 const BUFFER_THINKING = !FILTER_THINKING && !RAW_MODE;
 
@@ -933,6 +974,15 @@ function fetchServerCtx(cb) {
           console.log(`${serverBuildInfo ? 'Updated' : 'Detected'} llama.cpp build: ${build}`);
           serverBuildInfo = build;
         }
+        const rawModel = props.default_generation_settings?.model
+                      || props.model_path
+                      || props.default_generation_settings?.model_path
+                      || null;
+        const model = rawModel ? rawModel.split(/[\\/]/).pop().replace(/\.gguf$/i, '') : null;
+        if (model && model !== serverModel) {
+          console.log(`${serverModel ? 'Updated' : 'Detected'} llama.cpp model: ${model}`);
+          serverModel = model;
+        }
       } catch (e) { /* ignore parse errors */ }
       if (cb) cb();
     });
@@ -949,37 +999,10 @@ function startProxy() {
     const backendName = IS_LLAMACPP ? 'llama.cpp' : 'Ollama';
     console.log(`\nDebug proxy ${modeLabel()}`);
     console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}`);
+    if (serverModel) console.log(`Server model: ${serverModel}`);
     if (serverCtx) console.log(`Server n_ctx: ${serverCtx} (auto-detected from /props)`);
     if (serverBuildInfo) console.log(`Server build: ${serverBuildInfo}`);
     console.log('');
-    console.log('Options:');
-    console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
-    console.log('  --proxy-port N              proxy listen port (default: 11434)');
-    console.log('  --backend-port N            backend port (default: 11435)');
-    console.log('  --filter-thinking           hide thinking chunks entirely');
-    console.log('  --buffer-thinking           reassemble thinking into blocks (default)');
-    console.log('  --raw                       show every raw chunk');
-    console.log('  --dump-messages             print full messages array');
-    console.log('  --dump-request              print full transformed request body');
-    console.log('  --message-size N            max chars per message preview (default 300)');
-    console.log('  --default-ctx N             fallback context size for pressure calc');
-    console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
-    console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
-    console.log('  --debug-labels              dump first user message for label tuning');
-    console.log('  --log-file [path]           append [done] lines to file');
-    console.log('  --power                     enable GPU power monitoring');
-    console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
-    console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
-    console.log('  --gpu-idle N                GPU idle watts to subtract (default: 0)');
-    console.log('  --power-interval N          sampling interval in ms (default: 1000)');
-    console.log('  --dump-request-file [path]  write raw request body to files (default: ./request-dumps)');
-    console.log('  --dump-transformed-request-file [path]');
-    console.log('                              write transformed request to files (default: ./request-dumps)');
-    console.log('  --log-mode M                logging mode: file | influxdb | none (default: none)');
-    console.log('  --influxdb-url URL          InfluxDB server URL (or env INFLUXDB_URL)');
-    console.log('  --influxdb-org ORG          InfluxDB organization (or env INFLUXDB_ORG)');
-    console.log('  --influxdb-bucket B         InfluxDB bucket (or env INFLUXDB_BUCKET)');
-    console.log('  --influxdb-token T          InfluxDB auth token (or env INFLUXDB_TOKEN)\n');
     // Active configuration summary
     const outputMode = FILTER_THINKING ? 'filter-thinking' : (RAW_MODE ? 'raw' : 'buffer-thinking');
     console.log('Active config:');
