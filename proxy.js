@@ -289,10 +289,16 @@ function transformRequestBody(bodyStr) {
       delete p.options;
     }
 
-    // 3. Ensure max_tokens has a sensible default
+    // 3. Translate max_completion_tokens (newer OpenAI field) -> max_tokens
+    if (p.max_tokens == null && p.max_completion_tokens != null) {
+      p.max_tokens = p.max_completion_tokens;
+      delete p.max_completion_tokens;
+    }
+
+    // 4. Ensure max_tokens has a sensible default
     if (p.max_tokens == null) p.max_tokens = 8192;
 
-    // 4. num_predict at top level (some OpenClaw versions send it top-level)
+    // 5. num_predict at top level (some OpenClaw versions send it top-level)
     if (p.num_predict != null && p.max_tokens == null) {
       p.max_tokens = p.num_predict;
     }
@@ -780,10 +786,16 @@ const proxy = http.createServer((req, res) => {
           ? (parsed.temperature ?? '(not set)')
           : (parsed.options?.temperature ?? '(not set)'),
         max_tokens:  IS_LLAMACPP
-          ? (parsed.max_tokens ?? '(not set)')
+          ? (parsed.max_tokens ?? parsed.max_completion_tokens ?? '(not set)')
           : (parsed.options?.num_predict ?? '(not set)'),
         messages: parsed.messages
           ? `[${parsed.messages.length} messages, last role: ${parsed.messages.at(-1)?.role}]`
+          : undefined,
+        stream_options: parsed.stream_options
+          ? JSON.stringify(parsed.stream_options)
+          : undefined,
+        tools: parsed.tools?.length
+          ? `[${parsed.tools.length} tools]`
           : undefined,
       };
       console.log(JSON.stringify(summary, null, 2));

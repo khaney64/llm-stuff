@@ -5,3 +5,4 @@ influxdb-env*.ps1
 requests/
 env.sh
 influxdb-env.sh
+.grepai/
