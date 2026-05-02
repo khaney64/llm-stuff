@@ -506,8 +506,41 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
   let contentBuf  = [];
   let flushTimer  = null;
   let doneLogged  = false;
+  let responseFinished = false;
+  let finalReason = 'stop';
+  let finalModelName = '';
+  let finalTimings = null;
+  let finalUsage = null;
   // Tool call accumulator: map of index -> {name, arguments}
   const toolCallBufs = new Map();
+
+  function captureMetrics(json) {
+    if (json.model) finalModelName = json.model;
+    if (json.timings) finalTimings = json.timings;
+    if (json.usage) finalUsage = json.usage;
+  }
+
+  function logDoneOnce() {
+    if (doneLogged) return;
+    doneLogged = true;
+
+    const t = finalTimings ?? {};
+    const u = finalUsage ?? {};
+    const promptDetails = u.prompt_tokens_details ?? {};
+    const prompt        = u.prompt_tokens     ?? t.prompt_n    ?? null;
+    const gen           = u.completion_tokens ?? t.predicted_n ?? null;
+    const promptTokSec  = t.prompt_per_second   ? t.prompt_per_second.toFixed(1)    : null;
+    const tokSec        = t.predicted_per_second ? t.predicted_per_second.toFixed(1) : null;
+    const promptMs      = t.prompt_ms           ? t.prompt_ms.toFixed(0)             : null;
+    const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
+    const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
+    const promptPast    = promptDetails.cached_tokens ?? t.cache_n ?? null;
+
+    if (powerTracker) powerTracker.stop();
+    const power = powerTracker ? powerTracker.summary() : null;
+    logDone({ jobLabel, modelName: finalModelName, requestStart, prompt, gen, doneReason: finalReason,
+              durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast });
+  }
 
   // Accumulate content and flush on natural boundaries
   function scheduleContentFlush(token) {
@@ -550,13 +583,17 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
 
       // SSE format: strip "data: " prefix
       const dataStr = trimmed.startsWith('data: ') ? trimmed.slice(6) : trimmed;
-      if (dataStr === '[DONE]') continue;
+      if (dataStr === '[DONE]') {
+        logDoneOnce();
+        continue;
+      }
 
       let json;
       try { json = JSON.parse(dataStr); }
       catch { console.log(`${C.gray}(unparseable) ${trimmed}${C.reset}`); continue; }
 
       // Extract content from OpenAI-compat delta
+      captureMetrics(json);
       const delta        = json.choices?.[0]?.delta ?? {};
       const contentToken = delta.content ?? '';
       const finishReason = json.choices?.[0]?.finish_reason;
@@ -594,8 +631,9 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       }
 
       // Done — llama.cpp sends finish_reason on last chunk, then [DONE]
-      if (finishReason && !doneLogged) {
-        doneLogged = true;
+      if (finishReason && !responseFinished) {
+        responseFinished = true;
+        finalReason = finishReason;
         if (thinkingBuf.length) { flushThinkingBuffer(thinkingBuf); thinkingBuf = []; }
         if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
         if (contentBuf.length) {
@@ -613,23 +651,6 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
           }
           toolCallBufs.clear();
         }
-
-        // llama.cpp puts timing in the final chunk's `timings` field
-        const t = json.timings ?? {};
-        const prompt        = t.prompt_n            ?? null;
-        const gen           = t.predicted_n         ?? null;
-        const promptTokSec  = t.prompt_per_second   ? t.prompt_per_second.toFixed(1)   : null;
-        const tokSec        = t.predicted_per_second ? t.predicted_per_second.toFixed(1) : null;
-        const promptMs      = t.prompt_ms           ? t.prompt_ms.toFixed(0)           : null;
-        const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
-        const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
-        const promptPast    = t.cache_n               ?? null;
-        const modelName     = json.model ?? '';
-
-        if (powerTracker) powerTracker.stop();
-        const power = powerTracker ? powerTracker.summary() : null;
-        logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason: finishReason,
-                  durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast });
       }
     }
   });
@@ -641,8 +662,11 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       if (dataStr && dataStr !== '[DONE]') {
         try {
           const json = JSON.parse(dataStr);
+          captureMetrics(json);
           const delta = json.choices?.[0]?.delta ?? {};
           if (delta.content) contentBuf.push(delta.content);
+          const finishReason = json.choices?.[0]?.finish_reason;
+          if (finishReason) finalReason = finishReason;
         } catch {}
       }
     }
@@ -650,6 +674,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       if (thinkingBuf.length) flushThinkingBuffer(thinkingBuf);
       if (flushTimer) clearTimeout(flushTimer);
       if (contentBuf.length) console.log(`${C.green}<content>${C.reset} ${contentBuf.join('')}`);
+      logDoneOnce();
     }
     if (powerTracker) powerTracker.stop(); // safety: ensure interval is cleared
     console.log(`${C.cyan}<== [stream end]${C.reset}`);
