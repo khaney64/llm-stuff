@@ -235,7 +235,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 12,
         "y": 1
       },
@@ -295,8 +295,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 16,
+        "w": 3,
+        "x": 15,
         "y": 1
       },
       "id": 5,
@@ -355,8 +355,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
+        "w": 3,
+        "x": 18,
         "y": 1
       },
       "id": 6,
@@ -389,6 +389,66 @@
         }
       ],
       "title": "Avg tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 1
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Prompt Tok/s",
       "type": "stat"
     },
     {
@@ -755,6 +815,22 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "prompt_tok_per_sec"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Avg Prompt tok/s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "request_count"
             },
             "properties": [
@@ -802,11 +878,225 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "base = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> keep(columns: [\"_field\", \"_value\", \"job_name\"])\n\nsums = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"elapsed_sec\" or r._field == \"gpu_energy_wh\")\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> sum()\n\navgs = base\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> mean()\n\ncounts = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> map(fn: (r) => ({ job_name: r.job_name, _field: \"request_count\", _value: float(v: r._value) }))\n  |> group(columns: [\"job_name\", \"_field\"])\n\nunion(tables: [sums, avgs, counts])\n  |> group(columns: [\"job_name\"])\n  |> pivot(rowKey: [\"job_name\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({r with cost: r.gpu_energy_wh / 1000.0 * ${kWhPrice}}))",
+          "query": "base = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> keep(columns: [\"_field\", \"_value\", \"job_name\"])\n\nsums = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"elapsed_sec\" or r._field == \"gpu_energy_wh\")\n  |> toFloat()\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> sum()\n\navgs = base\n  |> filter(fn: (r) => r._field == \"tok_per_sec\" or r._field == \"prompt_tok_per_sec\")\n  |> group(columns: [\"job_name\", \"_field\"])\n  |> mean()\n\ncounts = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> group(columns: [\"job_name\"])\n  |> count()\n  |> map(fn: (r) => ({ job_name: r.job_name, _field: \"request_count\", _value: float(v: r._value) }))\n  |> group(columns: [\"job_name\", \"_field\"])\n\nunion(tables: [sums, avgs, counts])\n  |> group(columns: [\"job_name\"])\n  |> pivot(rowKey: [\"job_name\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({r with cost: r.gpu_energy_wh / 1000.0 * ${kWhPrice}}))",
           "refId": "A"
         }
       ],
       "title": "Job Summary Table",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Model"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt_tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "locale"
+              },
+              {
+                "id": "displayName",
+                "value": "Prompt Tokens"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gen_tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "locale"
+              },
+              {
+                "id": "displayName",
+                "value": "Gen Tokens"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 6
+              },
+              {
+                "id": "displayName",
+                "value": "Cost ($)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "elapsed_sec"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Elapsed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gpu_energy_wh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watth"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Energy (Wh)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tok_per_sec"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Avg tok/s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt_tok_per_sec"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Avg Prompt tok/s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_count"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Requests"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 14,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Requests"
+          }
+        ]
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "base = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> keep(columns: [\"_field\", \"_value\", \"model\"])\n\nsums = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"elapsed_sec\" or r._field == \"gpu_energy_wh\")\n  |> toFloat()\n  |> group(columns: [\"model\", \"_field\"])\n  |> sum()\n\navgs = base\n  |> filter(fn: (r) => r._field == \"tok_per_sec\" or r._field == \"prompt_tok_per_sec\")\n  |> group(columns: [\"model\", \"_field\"])\n  |> mean()\n\ncounts = base\n  |> filter(fn: (r) => r._field == \"prompt_tokens\")\n  |> group(columns: [\"model\"])\n  |> count()\n  |> map(fn: (r) => ({ model: r.model, _field: \"request_count\", _value: float(v: r._value) }))\n  |> group(columns: [\"model\", \"_field\"])\n\nunion(tables: [sums, avgs, counts])\n  |> group(columns: [\"model\"])\n  |> pivot(rowKey: [\"model\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> map(fn: (r) => ({r with cost: r.gpu_energy_wh / 1000.0 * ${kWhPrice}}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Model Summary Table",
       "type": "table"
     },
     {
@@ -815,7 +1105,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 35
       },
       "id": 102,
       "panels": [],
@@ -888,7 +1178,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 36
       },
       "id": 20,
       "options": {
@@ -990,7 +1280,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 36
       },
       "id": 21,
       "options": {
@@ -1086,7 +1376,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 44
       },
       "id": 22,
       "options": {
@@ -1190,7 +1480,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 44
       },
       "id": 23,
       "options": {
@@ -1226,7 +1516,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 52
       },
       "id": 103,
       "panels": [],
@@ -1324,7 +1614,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 43
+        "y": 53
       },
       "id": 30,
       "options": {
@@ -1391,7 +1681,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 43
+        "y": 53
       },
       "id": 31,
       "options": {
@@ -1500,7 +1790,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 61
       },
       "id": 32,
       "options": {
@@ -1598,7 +1888,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 61
       },
       "id": 33,
       "options": {
@@ -1634,7 +1924,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 69
       },
       "id": 104,
       "panels": [],
@@ -1731,6 +2021,22 @@
               {
                 "id": "displayName",
                 "value": "tok/s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt_tok_per_sec"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Prompt tok/s"
               }
             ]
           },
@@ -1856,7 +2162,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 70
       },
       "id": 40,
       "options": {
@@ -1876,7 +2182,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"tok_per_sec\" or r._field == \"elapsed_sec\" or r._field == \"context_pressure_pct\" or r._field == \"gpu_avg_watts\" or r._field == \"gpu_energy_wh\" or r._field == \"cache_hit_pct\" or r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: if exists r.gpu_energy_wh then r.gpu_energy_wh / 1000.0 * ${kWhPrice} else 0.0}))\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)\n  |> keep(columns: [\"_time\", \"job_name\", \"model\", \"done_reason\", \"prompt_tokens\", \"prompt_tokens_past\", \"cache_hit_pct\", \"gen_tokens\", \"tok_per_sec\", \"elapsed_sec\", \"context_pressure_pct\", \"gpu_avg_watts\", \"cost\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"prompt_tokens\" or r._field == \"gen_tokens\" or r._field == \"tok_per_sec\" or r._field == \"prompt_tok_per_sec\" or r._field == \"elapsed_sec\" or r._field == \"context_pressure_pct\" or r._field == \"gpu_avg_watts\" or r._field == \"gpu_energy_wh\" or r._field == \"cache_hit_pct\" or r._field == \"prompt_tokens_past\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> toFloat()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with cost: if exists r.gpu_energy_wh then r.gpu_energy_wh / 1000.0 * ${kWhPrice} else 0.0}))\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)\n  |> keep(columns: [\"_time\", \"job_name\", \"model\", \"done_reason\", \"prompt_tokens\", \"prompt_tokens_past\", \"cache_hit_pct\", \"gen_tokens\", \"tok_per_sec\", \"prompt_tok_per_sec\", \"elapsed_sec\", \"context_pressure_pct\", \"gpu_avg_watts\", \"cost\"])",
           "refId": "A"
         }
       ],
@@ -1889,7 +2195,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 80
       },
       "id": 110,
       "panels": [],
@@ -1929,7 +2235,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 71
+        "y": 81
       },
       "id": 111,
       "options": {
@@ -2035,7 +2341,7 @@
         "h": 8,
         "w": 18,
         "x": 6,
-        "y": 71
+        "y": 81
       },
       "id": 112,
       "options": {
@@ -2169,7 +2475,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 89
       },
       "id": 113,
       "options": {
@@ -2237,7 +2543,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 89
       },
       "id": 114,
       "options": {
