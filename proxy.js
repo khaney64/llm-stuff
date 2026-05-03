@@ -947,8 +947,18 @@ const proxy = http.createServer((req, res) => {
         console.log(`${C.red}(message parse error: ${innerErr.message})${C.reset}`);
       }
     } catch {
-      if (RAW_MODE && body) console.log(body);
-      else console.log(`${C.red}(request body is not JSON)${C.reset}`);
+      if (body.length === 0) {
+        console.log(`${C.gray}(no body)${C.reset}`);
+      } else if (RAW_MODE) {
+        console.log(body);
+      } else {
+        const cap = MESSAGE_SIZE > 0 ? MESSAGE_SIZE : 300;
+        const preview = body.length > cap
+          ? body.slice(0, cap) + `... [+${body.length - cap} chars]`
+          : body;
+        console.log(`${C.red}(non-JSON body, ${body.length} bytes)${C.reset}`);
+        console.log(`${C.gray}${preview}${C.reset}`);
+      }
     }
 
     const options = {
