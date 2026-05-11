@@ -10,6 +10,7 @@
 //   --default-ctx N      fallback context size for pressure calc (default: none)
 //   --thinking           inject think:true into requests (default: injects think:false)
 //   --log-file [path]    append [done] lines to file (default: ./proxy-done.log)
+//   --usage-probe-file [path] append compact OpenAI usage/timings probe JSONL
 //   --backend ollama|llamacpp   force backend mode (default: auto-detect from port)
 //   --power              enable GPU power monitoring and energy cost tracking
 //   --power-provider P   path to power provider module (default: ./power-nvidia-smi.js)
@@ -58,6 +59,7 @@ function printHelp() {
   console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
   console.log('  --debug-labels              dump first user message for label tuning');
   console.log('  --log-file [path]           append [done] lines to file');
+  console.log('  --usage-probe-file [path]   append compact OpenAI usage/timings probe JSONL');
   console.log('  --power                     enable GPU power monitoring');
   console.log('  --power-provider P          power provider module (default: ./power-nvidia-smi.js)');
   console.log('  --electric-rate N           electricity rate in $/kWh (default: 0.18947)');
@@ -88,6 +90,7 @@ const INJECT_THINKING = args.includes('--thinking');
 const THINKING_BUDGET = argVal('--thinking-budget') != null ? parseInt(argVal('--thinking-budget'), 10) : 8192;
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
+const USAGE_PROBE_FILE = argVal('--usage-probe-file') ?? (args.includes('--usage-probe-file') ? './proxy-usage-probe.jsonl' : null);
 const DUMP_REQUEST_FILE     = argVal('--dump-request-file') ?? (args.includes('--dump-request-file') ? './request-dumps' : null);
 const DUMP_TRANSFORMED_FILE = argVal('--dump-transformed-request-file') ?? (args.includes('--dump-transformed-request-file') ? './request-dumps' : null);
 const BACKEND_ARG     = argVal('--backend'); // 'ollama' | 'llamacpp' | null
@@ -157,6 +160,7 @@ const IS_OLLAMA   = !IS_LLAMACPP; // derived
 let serverCtx = null; // auto-detected from llama.cpp /props endpoint
 let serverBuildInfo = null; // auto-detected from llama.cpp /props endpoint (release number only)
 let serverModel = null; // auto-detected from llama.cpp /props endpoint (basename, .gguf stripped)
+let serverSlots = null; // auto-detected from llama.cpp /props or /slots endpoint
 
 const BUFFER_THINKING = !FILTER_THINKING && !RAW_MODE;
 
@@ -177,6 +181,15 @@ function stripAnsi(s) { return s.replace(/\x1b\[[0-9;]*m/g, ''); }
 function logDoneLine(line) {
   if (LOG_MODE !== 'file' || !LOG_FILE) return;
   fs.appendFileSync(LOG_FILE, `${new Date().toISOString()} ${stripAnsi(line)}\n`);
+}
+
+function appendUsageProbe(record) {
+  if (!USAGE_PROBE_FILE) return;
+  try {
+    fs.appendFileSync(USAGE_PROBE_FILE, JSON.stringify(record) + '\n');
+  } catch (e) {
+    console.error(`${C.red}Failed to write usage probe file: ${e.message}${C.reset}`);
+  }
 }
 
 // --- request dump helpers ---
@@ -500,24 +513,66 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
 }
 
 // ── SSE / llama.cpp response handler ─────────────────────────────────────────
-function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker }) {
+function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
   let flushTimer  = null;
   let doneLogged  = false;
   let responseFinished = false;
+  let doneSeen = false;
   let finalReason = 'stop';
   let finalModelName = '';
   let finalTimings = null;
   let finalUsage = null;
+  let sawUsageAfterFinish = false;
+  let sawTimingsAfterFinish = false;
   // Tool call accumulator: map of index -> {name, arguments}
   const toolCallBufs = new Map();
 
+  function pickNumericFields(source) {
+    const out = {};
+    if (!source || typeof source !== 'object') return out;
+    for (const [key, value] of Object.entries(source)) {
+      if (typeof value === 'number' && Number.isFinite(value)) out[key] = value;
+    }
+    return out;
+  }
+
+  function buildUsageProbeRecord() {
+    const promptDetails = finalUsage?.prompt_tokens_details;
+    return {
+      ts: new Date().toISOString(),
+      job: jobLabel.trim() || null,
+      model: finalModelName || null,
+      request: { stream_options_include_usage: requestHadUsageInclude === true },
+      response: { finish_reason: finalReason, done_seen: doneSeen },
+      usage: {
+        seen: Boolean(finalUsage),
+        after_finish_reason: sawUsageAfterFinish,
+        keys: finalUsage ? Object.keys(finalUsage) : [],
+        values: pickNumericFields(finalUsage),
+        prompt_tokens_details: promptDetails && typeof promptDetails === 'object' ? pickNumericFields(promptDetails) : {},
+      },
+      timings: {
+        seen: Boolean(finalTimings),
+        after_finish_reason: sawTimingsAfterFinish,
+        keys: finalTimings ? Object.keys(finalTimings) : [],
+        values: pickNumericFields(finalTimings),
+      },
+    };
+  }
+
   function captureMetrics(json) {
     if (json.model) finalModelName = json.model;
-    if (json.timings) finalTimings = json.timings;
-    if (json.usage) finalUsage = json.usage;
+    if (json.timings) {
+      if (responseFinished) sawTimingsAfterFinish = true;
+      finalTimings = json.timings;
+    }
+    if (json.usage) {
+      if (responseFinished) sawUsageAfterFinish = true;
+      finalUsage = json.usage;
+    }
   }
 
   function logDoneOnce() {
@@ -587,6 +642,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       // SSE format: strip "data: " prefix
       const dataStr = trimmed.startsWith('data: ') ? trimmed.slice(6) : trimmed;
       if (dataStr === '[DONE]') {
+        doneSeen = true;
         logDoneOnce();
         continue;
       }
@@ -680,6 +736,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       logDoneOnce();
     }
     if (powerTracker) powerTracker.stop(); // safety: ensure interval is cleared
+    appendUsageProbe(buildUsageProbeRecord());
     console.log(`${C.cyan}<== [stream end]${C.reset}`);
     res.end();
   });
@@ -836,6 +893,7 @@ const proxy = http.createServer((req, res) => {
 
     let numCtx       = DEFAULT_CTX;
     let jobLabel     = '';
+    let requestHadUsageInclude = false;
     const requestStart = Date.now();
 
     console.log(`\n${C.cyan}==> ${req.method} ${req.url}${C.reset}`);
@@ -868,6 +926,7 @@ const proxy = http.createServer((req, res) => {
           : undefined,
       };
       console.log(JSON.stringify(summary, null, 2));
+      requestHadUsageInclude = parsed.stream_options?.include_usage === true;
 
       // --dump-request: print full transformed request body with complete message content
       if (DUMP_REQUEST) {
@@ -975,7 +1034,7 @@ const proxy = http.createServer((req, res) => {
 
       const powerTracker = powerProvider ? createPowerTracker(powerProvider) : null;
       if (powerTracker) powerTracker.start();
-      const ctx = { requestStart, jobLabel, numCtx, powerTracker };
+      const ctx = { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude };
       if (IS_LLAMACPP) {
         handleLlamaCppStream(proxyRes, res, ctx);
       } else {
@@ -994,12 +1053,38 @@ const proxy = http.createServer((req, res) => {
   });
 });
 
-// Fetch n_ctx from llama.cpp /props endpoint; calls cb() when done
+function updateServerSlots(slots) {
+  if (Number.isFinite(slots) && slots > 0 && slots !== serverSlots) {
+    console.log(`${serverSlots ? 'Updated' : 'Detected'} llama.cpp slots: ${slots}`);
+    serverSlots = slots;
+  }
+}
+
+function fetchServerSlots(cb) {
+  const req = http.get(`http://localhost:${BACKEND_PORT}/slots`, (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      try {
+        const slots = JSON.parse(data);
+        if (Array.isArray(slots)) updateServerSlots(slots.length);
+      } catch (e) { /* ignore parse errors */ }
+      if (cb) cb();
+    });
+  });
+  req.on('error', () => {
+    if (cb) cb();
+  });
+  req.setTimeout(3000, () => { req.destroy(); });
+}
+
+// Fetch server metadata from llama.cpp /props endpoint; calls cb() when done
 function fetchServerCtx(cb) {
   const req = http.get(`http://localhost:${BACKEND_PORT}/props`, (res) => {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
+      let fetchSlotsFallback = false;
       try {
         const props = JSON.parse(data);
         const ctx = props.default_generation_settings?.n_ctx || null;
@@ -1021,7 +1106,17 @@ function fetchServerCtx(cb) {
           console.log(`${serverModel ? 'Updated' : 'Detected'} llama.cpp model: ${model}`);
           serverModel = model;
         }
+        const slots = Number(props.total_slots);
+        if (Number.isFinite(slots) && slots > 0) {
+          updateServerSlots(slots);
+        } else {
+          fetchSlotsFallback = !!props.endpoint_slots;
+        }
       } catch (e) { /* ignore parse errors */ }
+      if (fetchSlotsFallback) {
+        fetchServerSlots(cb);
+        return;
+      }
       if (cb) cb();
     });
   });
@@ -1039,6 +1134,7 @@ function startProxy() {
     console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}`);
     if (serverModel) console.log(`Server model: ${serverModel}`);
     if (serverCtx) console.log(`Server n_ctx: ${serverCtx} (auto-detected from /props)`);
+    if (serverSlots) console.log(`Server slots: ${serverSlots}`);
     if (serverBuildInfo) console.log(`Server build: ${serverBuildInfo}`);
     console.log('');
     // Active configuration summary
@@ -1053,6 +1149,7 @@ function startProxy() {
     if (DUMP_REQUEST) console.log(`  Dump request:   on`);
     if (DUMP_REQUEST_FILE) console.log(`  Dump request file:  ${path.resolve(DUMP_REQUEST_FILE)}`);
     if (DUMP_TRANSFORMED_FILE) console.log(`  Dump transformed:   ${path.resolve(DUMP_TRANSFORMED_FILE)}`);
+    if (USAGE_PROBE_FILE) console.log(`  Usage probe:    ${path.resolve(USAGE_PROBE_FILE)}`);
     if (DEBUG_LABELS) console.log(`  Debug labels:   on`);
     if (LOG_MODE === 'file' && LOG_FILE) console.log(`  Log file:       ${path.resolve(LOG_FILE)}`);
     if (LOG_MODE === 'influxdb') console.log(`  InfluxDB:       ${INFLUXDB_URL} org=${INFLUXDB_ORG} bucket=${INFLUXDB_BUCKET}`);
@@ -1066,7 +1163,7 @@ function startProxy() {
         }
       });
     }
-    // Periodically re-check /props to detect server restarts with different context
+    // Periodically re-check /props to detect server restarts with different properties
     if (IS_LLAMACPP) setInterval(() => fetchServerCtx(null), 60000);
   });
 }
