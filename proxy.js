@@ -102,7 +102,7 @@ const LOG_MODE = argVal('--log-mode') || (LOG_FILE ? 'file' : 'none');
 const INFLUXDB_URL    = process.env.INFLUXDB_URL    || argVal('--influxdb-url');
 const INFLUXDB_ORG    = process.env.INFLUXDB_ORG    || argVal('--influxdb-org');
 const INFLUXDB_BUCKET = process.env.INFLUXDB_BUCKET || argVal('--influxdb-bucket');
-const INFLUXDB_TOKEN  = process.env.INFLUXDB_TOKEN  || argVal('--influxdb-token');
+const INFLUXDB_TOKEN  = (process.env.INFLUXDB_TOKEN  || argVal('--influxdb-token') || '').trim();
 
 if (LOG_MODE === 'influxdb') {
   const missing = [['url', INFLUXDB_URL], ['org', INFLUXDB_ORG], ['bucket', INFLUXDB_BUCKET], ['token', INFLUXDB_TOKEN]]
@@ -512,8 +512,12 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
   }
 }
 
+function isChatUrl(url) {
+  return /\/(chat\/completions|completions|api\/chat|api\/generate)\b/.test(url);
+}
+
 // ── SSE / llama.cpp response handler ─────────────────────────────────────────
-function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude }) {
+function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude, reqUrl }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -733,7 +737,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       if (thinkingBuf.length) flushThinkingBuffer(thinkingBuf);
       if (flushTimer) clearTimeout(flushTimer);
       if (contentBuf.length) console.log(`${C.green}<content>${C.reset} ${contentBuf.join('')}`);
-      logDoneOnce();
+      if (isChatUrl(reqUrl)) logDoneOnce();
     }
     if (powerTracker) powerTracker.stop(); // safety: ensure interval is cleared
     appendUsageProbe(buildUsageProbeRecord());
@@ -743,7 +747,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
 }
 
 // ── NDJSON / Ollama response handler (original logic) ─────────────────────────
-function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker }) {
+function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, reqUrl }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -829,7 +833,7 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, pow
         }
       }
 
-      if (done && !doneLogged) {
+      if (done && !doneLogged && isChatUrl(reqUrl)) {
         doneLogged = true;
         if (thinkingBuf.length) { flushThinkingBuffer(thinkingBuf); thinkingBuf = []; }
         if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
@@ -1034,7 +1038,7 @@ const proxy = http.createServer((req, res) => {
 
       const powerTracker = powerProvider ? createPowerTracker(powerProvider) : null;
       if (powerTracker) powerTracker.start();
-      const ctx = { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude };
+      const ctx = { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude, reqUrl: req.url };
       if (IS_LLAMACPP) {
         handleLlamaCppStream(proxyRes, res, ctx);
       } else {
