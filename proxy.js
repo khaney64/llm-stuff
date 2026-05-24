@@ -307,7 +307,7 @@ function createPowerTracker(provider) {
 // ── Thinking buffer flush ─────────────────────────────────────────────────────
 function flushThinkingBuffer(buf) {
   if (!buf.length) return;
-  console.log(`${C.magenta}<think>${C.reset} ${C.gray}${buf.join('')}${C.reset}`);
+  console.log(`${C.magenta}<think>${C.reset} ${C.gray}${buf.join('')}${C.reset} ${C.magenta}</think>${C.reset}`);
 }
 
 // ── Request body transform ────────────────────────────────────────────────────
@@ -820,6 +820,7 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, pow
 
       const toolCalls = json.message?.tool_calls;
       if (toolCalls?.length) {
+        if (thinkingBuf.length) { flushThinkingBuffer(thinkingBuf); thinkingBuf = []; }
         if (contentBuf.length) {
           if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
           console.log(`${C.green}<content>${C.reset} ${contentBuf.join('')}`);

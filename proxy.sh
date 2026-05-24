@@ -1,1 +1,1 @@
-node ./proxy.js --buffer-thinking --dump-messages --message-size 10000 --default-ctx 65535 --thinking --log-mode influxdb --backend llamacpp --power --gpu-idle 11 --power-interval 250 --debug-labels --dump-request
+node ./proxy.js --buffer-thinking --dump-messages --message-size 10000 --default-ctx 65535 --log-mode influxdb --backend llamacpp --power --gpu-idle 11 --power-interval 250 --debug-labels --dump-request
