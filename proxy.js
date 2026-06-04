@@ -726,7 +726,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
         try {
           const json = JSON.parse(dataStr);
           captureMetrics(json);
-          const delta = json.choices?.[0]?.delta ?? {};
+          const delta = json.choices?.[0]?.delta ?? json.choices?.[0]?.message ?? {};
           if (delta.content) contentBuf.push(delta.content);
           const finishReason = json.choices?.[0]?.finish_reason;
           if (finishReason) finalReason = finishReason;
