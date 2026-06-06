@@ -327,6 +327,8 @@ function transformRequestBody(bodyStr) {
     // 1. thinking -> pass enable_thinking via chat_template_kwargs (Qwen3, etc.)
     if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
     p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
+    if (INJECT_THINKING && p.chat_template_kwargs.thinking_budget == null)
+      p.chat_template_kwargs.thinking_budget = THINKING_BUDGET;
     delete p.think; // remove Ollama-style think field if client sent it
 
     // 2. Ollama options block -> top-level OpenAI fields
@@ -727,6 +729,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
           const json = JSON.parse(dataStr);
           captureMetrics(json);
           const delta = json.choices?.[0]?.delta ?? json.choices?.[0]?.message ?? {};
+          if (delta.reasoning_content && !FILTER_THINKING) thinkingBuf.push(delta.reasoning_content);
           if (delta.content) contentBuf.push(delta.content);
           const finishReason = json.choices?.[0]?.finish_reason;
           if (finishReason) finalReason = finishReason;

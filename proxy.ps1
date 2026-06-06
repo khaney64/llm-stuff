@@ -10,4 +10,4 @@ node .\proxy.js `
    --gpu-idle 15 `
    --power-interval 250 `
    --debug-labels `
-   --dump-request
+   --dump-request 
