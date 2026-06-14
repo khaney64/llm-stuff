@@ -275,12 +275,15 @@ function createPowerTracker(provider) {
       takeSample();
       interval = setInterval(takeSample, POWER_INTERVAL);
     },
-    stop() {
-      if (stopped) return;
+    stop(cb) {
+      if (stopped) { if (cb) cb(); return; }
       stopped = true;
       if (interval) { clearInterval(interval); interval = null; }
       stopTime = Date.now();
-      takeSample();
+      provider.sample((watts) => {
+        if (watts !== null) samples.push(watts);
+        if (cb) cb();
+      });
     },
     summary() {
       const durationSec = ((stopTime || Date.now()) - (startTime || Date.now())) / 1000;
@@ -600,10 +603,10 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
     const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
     const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
 
-    if (powerTracker) powerTracker.stop();
-    const power = powerTracker ? powerTracker.summary() : null;
-    logDone({ jobLabel, modelName: finalModelName, requestStart, prompt, gen, doneReason: finalReason,
+    const finishLlama = (power) => logDone({ jobLabel, modelName: finalModelName, requestStart, prompt, gen, doneReason: finalReason,
               durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast, promptTotal });
+    if (powerTracker) powerTracker.stop(() => finishLlama(powerTracker.summary()));
+    else finishLlama(null);
   }
 
   // Accumulate content and flush on natural boundaries
@@ -853,9 +856,9 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, pow
         const doneReason  = json.done_reason ?? 'stop';
         const modelName   = json.model ?? '';
 
-        if (powerTracker) powerTracker.stop();
-        const power = powerTracker ? powerTracker.summary() : null;
-        logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx, power });
+        const finishOllama = (power) => logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx, power });
+        if (powerTracker) powerTracker.stop(() => finishOllama(powerTracker.summary()));
+        else finishOllama(null);
       }
     }
   });
