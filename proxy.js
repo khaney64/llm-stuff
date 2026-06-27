@@ -99,10 +99,10 @@ const BACKEND_ARG     = argVal('--backend'); // 'ollama' | 'llamacpp' | null
 const LOG_MODE = argVal('--log-mode') || (LOG_FILE ? 'file' : 'none');
 
 // InfluxDB config (env vars take precedence over CLI flags)
-const INFLUXDB_URL    = process.env.INFLUXDB_URL    || argVal('--influxdb-url');
-const INFLUXDB_ORG    = process.env.INFLUXDB_ORG    || argVal('--influxdb-org');
-const INFLUXDB_BUCKET = process.env.INFLUXDB_BUCKET || argVal('--influxdb-bucket');
-const INFLUXDB_TOKEN  = (process.env.INFLUXDB_TOKEN  || argVal('--influxdb-token') || '').trim();
+const INFLUXDB_URL    = (process.env.INFLUXDB_URL    || argVal('--influxdb-url')    || '').trim();
+const INFLUXDB_ORG    = (process.env.INFLUXDB_ORG    || argVal('--influxdb-org')    || '').trim();
+const INFLUXDB_BUCKET = (process.env.INFLUXDB_BUCKET || argVal('--influxdb-bucket') || '').trim();
+const INFLUXDB_TOKEN  = (process.env.INFLUXDB_TOKEN  || argVal('--influxdb-token')  || '').trim();
 
 if (LOG_MODE === 'influxdb') {
   const missing = [['url', INFLUXDB_URL], ['org', INFLUXDB_ORG], ['bucket', INFLUXDB_BUCKET], ['token', INFLUXDB_TOKEN]]
