@@ -9,6 +9,8 @@
 //   --message-size N     max chars per message preview (default 300, 0 = no limit)
 //   --default-ctx N      fallback context size for pressure calc (default: none)
 //   --thinking           inject think:true into requests (default: injects think:false)
+//   --thinking-budget N  max thinking tokens for llama.cpp (default: 8192)
+//   --max-tokens-ceiling N hard completion ceiling for llama.cpp (default: 8192)
 //   --log-file [path]    append [done] lines to file (default: ./proxy-done.log)
 //   --usage-probe-file [path] append compact OpenAI usage/timings probe JSONL
 //   --backend ollama|llamacpp   force backend mode (default: auto-detect from port)
@@ -40,6 +42,16 @@ function argVal(flag) {
   return i !== -1 && args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : null;
 }
 
+function positiveIntegerArg(flag, defaultValue) {
+  const raw = argVal(flag);
+  if (raw == null) return defaultValue;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${flag} must be a positive integer`);
+  }
+  return value;
+}
+
 function printHelp() {
   console.log('Usage: node proxy.js [options]');
   console.log('');
@@ -57,6 +69,7 @@ function printHelp() {
   console.log('  --default-ctx N             fallback context size for pressure calc');
   console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
   console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
+  console.log('  --max-tokens-ceiling N      hard max_tokens ceiling for llama.cpp (default: 8192)');
   console.log('  --debug-labels              dump first user message for label tuning');
   console.log('  --log-file [path]           append [done] lines to file');
   console.log('  --usage-probe-file [path]   append compact OpenAI usage/timings probe JSONL');
@@ -87,7 +100,8 @@ const DUMP_REQUEST    = args.includes('--dump-request');
 const MESSAGE_SIZE    = argVal('--message-size') != null ? parseInt(argVal('--message-size'), 10) : 300;
 const DEFAULT_CTX     = argVal('--default-ctx')  != null ? parseInt(argVal('--default-ctx'),  10) : null;
 const INJECT_THINKING = args.includes('--thinking');
-const THINKING_BUDGET = argVal('--thinking-budget') != null ? parseInt(argVal('--thinking-budget'), 10) : 8192;
+const THINKING_BUDGET = positiveIntegerArg('--thinking-budget', 8192);
+const MAX_TOKENS_CEILING = positiveIntegerArg('--max-tokens-ceiling', 8192);
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
 const USAGE_PROBE_FILE = argVal('--usage-probe-file') ?? (args.includes('--usage-probe-file') ? './proxy-usage-probe.jsonl' : null);
@@ -324,45 +338,43 @@ function transformRequestBody(bodyStr) {
 
   } else {
     // llama.cpp / OpenAI-compat mode
-    // 1. thinking -> pass enable_thinking via chat_template_kwargs (Qwen3, etc.)
+    // 1. Thinking mode and llama-server's request-level reasoning budget.
     if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
     p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
-    if (INJECT_THINKING && p.chat_template_kwargs.thinking_budget == null)
-      p.chat_template_kwargs.thinking_budget = THINKING_BUDGET;
+    if (INJECT_THINKING)
+      p.thinking_budget_tokens = clampPositiveInteger(p.thinking_budget_tokens, THINKING_BUDGET);
     delete p.think; // remove Ollama-style think field if client sent it
 
-    // 2. Ollama options block -> top-level OpenAI fields
+    // 2. Ollama options block -> top-level OpenAI fields.
     if (p.options) {
       if (p.options.temperature != null && p.temperature == null)
         p.temperature = p.options.temperature;
-      if (p.options.num_predict != null && p.max_tokens == null)
-        p.max_tokens = p.options.num_predict;
       if (p.options.top_p != null && p.top_p == null)
         p.top_p = p.options.top_p;
       if (p.options.top_k != null && p.top_k == null)
         p.top_k = p.options.top_k;
-      // num_ctx ignored at request level for llama.cpp (set at server launch)
-      delete p.options;
     }
 
-    // 3. Translate max_completion_tokens (newer OpenAI field) -> max_tokens
-    if (p.max_tokens == null && p.max_completion_tokens != null) {
-      p.max_tokens = p.max_completion_tokens;
-      delete p.max_completion_tokens;
-    }
+    // 3. Resolve token aliases in API-native-first precedence, then enforce a hard limit.
+    const requestedMaxTokens = p.max_tokens
+      ?? p.max_completion_tokens
+      ?? p.options?.num_predict
+      ?? p.num_predict;
+    p.max_tokens = clampPositiveInteger(requestedMaxTokens, MAX_TOKENS_CEILING);
 
-    // 4. Ensure max_tokens has a sensible default
-    if (p.max_tokens == null) p.max_tokens = 8192;
-
-    // 5. num_predict at top level (some OpenClaw versions send it top-level)
-    if (p.num_predict != null && p.max_tokens == null) {
-      p.max_tokens = p.num_predict;
-    }
+    // num_ctx is set at llama-server launch, not per request.
+    delete p.max_completion_tokens;
     delete p.num_predict;
     delete p.num_ctx;
+    delete p.options;
   }
 
   return JSON.stringify(p);
+}
+
+function clampPositiveInteger(value, ceiling) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return ceiling;
+  return Math.min(Math.floor(value), ceiling);
 }
 
 // ── [done] line logger (shared between Ollama and llama.cpp paths) ────────────
@@ -1176,9 +1188,13 @@ function startProxy() {
   });
 }
 
-// For llama.cpp, auto-detect n_ctx from /props before starting
-if (IS_LLAMACPP) {
-  fetchServerCtx(() => startProxy());
-} else {
-  startProxy();
+if (require.main === module) {
+  // For llama.cpp, auto-detect n_ctx from /props before starting.
+  if (IS_LLAMACPP) {
+    fetchServerCtx(() => startProxy());
+  } else {
+    startProxy();
+  }
 }
+
+module.exports = { transformRequestBody };

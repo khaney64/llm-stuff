@@ -1,4 +1,5 @@
 proxy-done.log
+sysmetrics/config.yaml
 .grepai/*
 .claude
 influxdb-env*.ps1
