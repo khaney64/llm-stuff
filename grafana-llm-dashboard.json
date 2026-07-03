@@ -57,7 +57,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 1
       },
@@ -116,8 +116,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 3,
+        "x": 3,
         "y": 1
       },
       "id": 2,
@@ -175,8 +175,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 3,
+        "x": 6,
         "y": 1
       },
       "id": 3,
@@ -236,7 +236,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
+        "x": 9,
         "y": 1
       },
       "id": 4,
@@ -268,7 +268,7 @@
           "refId": "A"
         }
       ],
-      "title": "Total Energy Cost",
+      "title": "Total Inference Cost",
       "type": "stat"
     },
     {
@@ -296,7 +296,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 15,
+        "x": 12,
         "y": 1
       },
       "id": 5,
@@ -328,7 +328,67 @@
           "refId": "A"
         }
       ],
-      "title": "Total Energy (Wh)",
+      "title": "Total Inference Energy (Wh)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 6,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
+      "id": 115,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"power\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"device_power\" and r._field == \"aenergy_total\")\n  |> group(columns: [\"id\"])\n  |> difference(nonNegative: true)\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> yield(name: \"sum\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Energy Cost",
       "type": "stat"
     },
     {
@@ -1813,7 +1873,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> sort(columns: [\"_time\"])\n  |> cumulativeSum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))",
           "refId": "A"
         }
       ],
@@ -1919,12 +1979,202 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 69
+      },
+      "id": 116,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"power\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"device_power\" and r._field == \"apower\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Power Draw (Watts)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 6,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 69
+      },
+      "id": 117,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"power\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"device_power\" and r._field == \"aenergy_total\")\n  |> group(columns: [\"id\"])\n  |> difference(nonNegative: true)\n  |> group()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)\n  |> cumulativeSum()\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * ${kWhPrice}}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Cumulative Energy Cost Over Time",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 77
       },
       "id": 104,
       "panels": [],
@@ -2162,7 +2412,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 78
       },
       "id": 40,
       "options": {
@@ -2195,7 +2445,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 88
       },
       "id": 110,
       "panels": [],
@@ -2235,7 +2485,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 81
+        "y": 89
       },
       "id": 111,
       "options": {
@@ -2341,7 +2591,7 @@
         "h": 8,
         "w": 18,
         "x": 6,
-        "y": 81
+        "y": 89
       },
       "id": 112,
       "options": {
@@ -2475,7 +2725,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 89
+        "y": 97
       },
       "id": 113,
       "options": {
@@ -2543,7 +2793,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 89
+        "y": 97
       },
       "id": 114,
       "options": {
