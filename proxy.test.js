@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 process.argv.push('--backend', 'llamacpp', '--thinking');
-const { transformRequestBody } = require('./proxy.js');
+const { transformRequestBody, deriveLlamaTimingMetrics } = require('./proxy.js');
 
 function transform(body) {
   return JSON.parse(transformRequestBody(JSON.stringify(body)));
@@ -49,4 +49,29 @@ test('sets and clamps llama.cpp thinking_budget_tokens', () => {
   assert.equal(transform({ thinking_budget_tokens: -1 }).thinking_budget_tokens, 8192);
   assert.equal(transform({ thinking_budget_tokens: 100000 }).thinking_budget_tokens, 8192);
   assert.equal(transform({ thinking_budget_tokens: 2000 }).thinking_budget_tokens, 2000);
+});
+
+test('preserves generation duration precision for Influx metrics', () => {
+  const metrics = deriveLlamaTimingMetrics({
+    predicted_ms: 1234.567,
+    predicted_per_second: 81.25,
+    prompt_ms: 500,
+    prompt_per_second: 900,
+  }, 100);
+
+  assert.equal(metrics.durationSec, 1.234567);
+  assert.equal(metrics.totalSec, 1.734567);
+  assert.equal(metrics.tokSec, '81.3');
+});
+
+test('omits unreliable generation speed without dropping duration', () => {
+  for (const [generatedTokens, predictedMs] of [[1, 10], [2, 0.5]]) {
+    const metrics = deriveLlamaTimingMetrics({
+      predicted_ms: predictedMs,
+      predicted_per_second: 1000000,
+    }, generatedTokens);
+
+    assert.equal(metrics.tokSec, null);
+    assert.equal(metrics.durationSec, predictedMs / 1000);
+  }
 });
