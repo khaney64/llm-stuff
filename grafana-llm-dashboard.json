@@ -444,7 +444,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> mean()\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\" or r._field == \"duration_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.gen_tokens and exists r.duration_sec and r.gen_tokens >= 2 and r.duration_sec >= 0.001)\n  |> group()\n  |> reduce(identity: {tokens: 0.0, seconds: 0.0}, fn: (r, accumulator) => ({tokens: accumulator.tokens + float(v: r.gen_tokens), seconds: accumulator.seconds + r.duration_sec}))\n  |> map(fn: (r) => ({_value: r.tokens / r.seconds}))\n  |> yield(name: \"weighted_mean\")",
           "refId": "A"
         }
       ],
@@ -1261,7 +1261,7 @@
             "type": "influxdb",
             "uid": "1l1mYxpDz"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"tok_per_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\" or r._field == \"duration_sec\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.gen_tokens and exists r.duration_sec and r.gen_tokens >= 2 and r.duration_sec >= 0.001)\n  |> group()\n  |> window(every: v.windowPeriod)\n  |> reduce(identity: {tokens: 0.0, seconds: 0.0}, fn: (r, accumulator) => ({tokens: accumulator.tokens + float(v: r.gen_tokens), seconds: accumulator.seconds + r.duration_sec}))\n  |> map(fn: (r) => ({_time: r._stop, _value: r.tokens / r.seconds}))\n  |> window(every: inf)\n  |> yield(name: \"weighted_mean\")",
           "refId": "A"
         }
       ],

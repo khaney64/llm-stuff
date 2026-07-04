@@ -377,6 +377,28 @@ function clampPositiveInteger(value, ceiling) {
   return Math.min(Math.floor(value), ceiling);
 }
 
+function deriveLlamaTimingMetrics(timings, generatedTokens) {
+  const t = timings ?? {};
+  const predictedMs = Number(t.predicted_ms);
+  const predictedPerSecond = Number(t.predicted_per_second);
+  const hasDuration = Number.isFinite(predictedMs) && predictedMs > 0;
+  const speedSampleIsReliable = Number.isFinite(generatedTokens) && generatedTokens >= 2
+    && hasDuration && predictedMs >= 1
+    && Number.isFinite(predictedPerSecond) && predictedPerSecond > 0;
+
+  return {
+    promptTokSec: Number.isFinite(Number(t.prompt_per_second)) && Number(t.prompt_per_second) > 0
+      ? Number(t.prompt_per_second).toFixed(1) : null,
+    tokSec: speedSampleIsReliable ? predictedPerSecond.toFixed(1) : null,
+    promptMs: Number.isFinite(Number(t.prompt_ms)) && Number(t.prompt_ms) > 0
+      ? Number(t.prompt_ms).toFixed(0) : null,
+    // Keep measurement precision for Influx; formatting belongs in the log output.
+    durationSec: hasDuration ? predictedMs / 1000 : null,
+    totalSec: Number.isFinite(Number(t.prompt_ms)) && Number(t.prompt_ms) > 0 && hasDuration
+      ? (Number(t.prompt_ms) + predictedMs) / 1000 : null,
+  };
+}
+
 // ── [done] line logger (shared between Ollama and llama.cpp paths) ────────────
 function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast, promptTotal }) {
   const elapsed = ((Date.now() - requestStart) / 1000).toFixed(2);
@@ -406,10 +428,12 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
 
   // Build timing string — richer for llama.cpp (has promptTokSec), compact for ollama
   let timingStr = '';
+  const durationDisplay = durationSec != null ? Number(durationSec).toFixed(2) : null;
+  const totalDisplay = totalMs != null ? Number(totalMs).toFixed(2) : null;
   if (promptTokSec && tokSec) {
-    timingStr = ` pp=${promptTokSec}tok/s(${promptMs}ms) tg=${tokSec}tok/s(${durationSec}s)${totalMs ? ` total=${totalMs}s` : ''}`;
+    timingStr = ` pp=${promptTokSec}tok/s(${promptMs}ms) tg=${tokSec}tok/s(${durationDisplay}s)${totalDisplay ? ` total=${totalDisplay}s` : ''}`;
   } else if (tokSec) {
-    timingStr = ` tok/s=${tokSec}${durationSec ? ` duration=${durationSec}s` : ''}`;
+    timingStr = ` tok/s=${tokSec}${durationDisplay ? ` duration=${durationDisplay}s` : ''}`;
   }
 
   // Build cache string — only for llama.cpp (promptPast comes from timings)
@@ -606,11 +630,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
       ? Math.max(0, u.prompt_tokens - promptPast)
       : t.prompt_n ?? u.prompt_tokens ?? null;
     const gen           = u.completion_tokens ?? t.predicted_n ?? null;
-    const promptTokSec  = t.prompt_per_second   ? t.prompt_per_second.toFixed(1)    : null;
-    const tokSec        = t.predicted_per_second ? t.predicted_per_second.toFixed(1) : null;
-    const promptMs      = t.prompt_ms           ? t.prompt_ms.toFixed(0)             : null;
-    const durationSec   = t.predicted_ms        ? (t.predicted_ms / 1000).toFixed(2) : null;
-    const totalMs       = (t.prompt_ms && t.predicted_ms) ? ((t.prompt_ms + t.predicted_ms) / 1000).toFixed(2) : null;
+    const { promptTokSec, tokSec, promptMs, durationSec, totalSec: totalMs } = deriveLlamaTimingMetrics(t, gen);
 
     if (powerTracker) powerTracker.stop();
     const power = powerTracker ? powerTracker.summary() : null;
@@ -1197,4 +1217,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { transformRequestBody };
+module.exports = { transformRequestBody, deriveLlamaTimingMetrics };
