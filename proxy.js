@@ -403,7 +403,7 @@ function deriveLlamaTimingMetrics(timings, generatedTokens) {
 }
 
 // ── [done] line logger (shared between Ollama and llama.cpp paths) ────────────
-function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast, promptTotal }) {
+function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, maxTokens, power, promptPast, promptTotal }) {
   const elapsed = ((Date.now() - requestStart) / 1000).toFixed(2);
   const session = getSession(jobLabel, requestStart);
   session.lastDoneTime = Date.now();
@@ -516,6 +516,8 @@ function logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, d
     addFloat('total_sec', totalMs ? parseFloat(totalMs) : null);
     addInt('num_ctx', numCtx);
     addFloat('context_pressure_pct', numCtx && effectivePromptTotal ? (effectivePromptTotal / numCtx) * 100 : null);
+    addInt('max_tokens', maxTokens);
+    addFloat('gen_pressure_pct', maxTokens && gen != null ? (gen / maxTokens) * 100 : null);
     addInt('prompt_tokens_past', promptPast);
     addInt('prompt_tokens_total', effectivePromptTotal);
     addFloat('cache_hit_pct', promptPast != null && effectivePromptTotal != null && effectivePromptTotal > 0
@@ -558,7 +560,7 @@ function isChatUrl(url) {
 }
 
 // ── SSE / llama.cpp response handler ─────────────────────────────────────────
-function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude, reqUrl }) {
+function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, maxTokens, powerTracker, requestHadUsageInclude, reqUrl }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -636,7 +638,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
     const { promptTokSec, tokSec, promptMs, durationSec, totalSec: totalMs } = deriveLlamaTimingMetrics(t, gen);
 
     const finishLlama = (power) => logDone({ jobLabel, modelName: finalModelName, requestStart, prompt, gen, doneReason: finalReason,
-              durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, power, promptPast, promptTotal });
+              durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, maxTokens, power, promptPast, promptTotal });
     if (powerTracker) powerTracker.stop(() => finishLlama(powerTracker.summary()));
     else finishLlama(null);
   }
@@ -785,7 +787,7 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, p
 }
 
 // ── NDJSON / Ollama response handler (original logic) ─────────────────────────
-function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, powerTracker, reqUrl }) {
+function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, maxTokens, powerTracker, reqUrl }) {
   let rawBuf      = '';
   let thinkingBuf = [];
   let contentBuf  = [];
@@ -888,7 +890,7 @@ function handleOllamaStream(proxyRes, res, { requestStart, jobLabel, numCtx, pow
         const doneReason  = json.done_reason ?? 'stop';
         const modelName   = json.model ?? '';
 
-        const finishOllama = (power) => logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx, power });
+        const finishOllama = (power) => logDone({ jobLabel, modelName, requestStart, prompt, gen, doneReason, durationSec, tokSec, numCtx, maxTokens, power });
         if (powerTracker) powerTracker.stop(() => finishOllama(powerTracker.summary()));
         else finishOllama(null);
       }
@@ -935,6 +937,7 @@ const proxy = http.createServer((req, res) => {
     }
 
     let numCtx       = DEFAULT_CTX;
+    let maxTokens    = null;
     let jobLabel     = '';
     let requestHadUsageInclude = false;
     const requestStart = Date.now();
@@ -947,6 +950,12 @@ const proxy = http.createServer((req, res) => {
       numCtx = IS_LLAMACPP
         ? (serverCtx || DEFAULT_CTX || 4096)
         : (parsed.options?.num_ctx || DEFAULT_CTX || 4096);
+
+      // maxTokens: the client-requested output-token ceiling, post-transform
+      // (transformRequestBody always fills this in, so it's never left unset).
+      maxTokens = IS_LLAMACPP
+        ? (parsed.max_tokens ?? parsed.max_completion_tokens ?? null)
+        : (parsed.options?.num_predict ?? null);
 
       const summary = {
         model:       parsed.model,
@@ -1077,7 +1086,7 @@ const proxy = http.createServer((req, res) => {
 
       const powerTracker = powerProvider ? createPowerTracker(powerProvider) : null;
       if (powerTracker) powerTracker.start();
-      const ctx = { requestStart, jobLabel, numCtx, powerTracker, requestHadUsageInclude, reqUrl: req.url };
+      const ctx = { requestStart, jobLabel, numCtx, maxTokens, powerTracker, requestHadUsageInclude, reqUrl: req.url };
       if (IS_LLAMACPP) {
         handleLlamaCppStream(proxyRes, res, ctx);
       } else {

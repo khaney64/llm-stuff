@@ -2379,6 +2379,38 @@
               {
                 "id": "displayName",
                 "value": "Reason"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "length": {
+                        "color": "red",
+                        "index": 0,
+                        "text": "length (truncated)"
+                      },
+                      "stop": {
+                        "color": "green",
+                        "index": 1,
+                        "text": "stop"
+                      },
+                      "tool_calls": {
+                        "color": "blue",
+                        "index": 2,
+                        "text": "tool_calls"
+                      }
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -2830,6 +2862,333 @@
       ],
       "title": "Cache Reuse by Job",
       "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 105
+      },
+      "id": 120,
+      "panels": [],
+      "title": "Reliability",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 15
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 106
+      },
+      "id": 121,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group()\n  |> reduce(identity: {total: 0.0, truncated: 0.0}, fn: (r, accumulator) => ({total: accumulator.total + 1.0, truncated: accumulator.truncated + (if r.done_reason == \"length\" then 1.0 else 0.0)}))\n  |> map(fn: (r) => ({_value: if r.total > 0.0 then r.truncated / r.total * 100.0 else 0.0}))\n  |> yield(name: \"pct\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Truncation Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 50,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 106
+      },
+      "id": 122,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.done_reason == \"length\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"model\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: count, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "title": "Truncation Events Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "1l1mYxpDz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "tokens",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.lineInterpolation",
+                "value": "stepAfter"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 8
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "always"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 114
+      },
+      "id": 123,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"host\", \"model\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"max_tokens\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"host\", \"model\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "1l1mYxpDz"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r._field == \"gen_tokens\")\n  |> filter(fn: (r) => r.done_reason == \"length\")\n  |> filter(fn: (r) => r.job_name =~ /^${job_name:regex}$/)\n  |> filter(fn: (r) => r.model =~ /^${model:regex}$/)\n  |> filter(fn: (r) => r.backend =~ /^${backend:regex}$/)\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.build =~ /^${build:regex}$/)\n  |> group(columns: [\"host\", \"model\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "C"
+        }
+      ],
+      "title": "Response Length vs Max Tokens",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -3000,6 +3359,6 @@
   "timezone": "browser",
   "title": "LLM Dashboard",
   "uid": "Fpje3JtDk",
-  "version": 8,
+  "version": 10,
   "weekStart": ""
 }
