@@ -6,6 +6,8 @@ param(
 $ErrorActionPreference = "Stop"
 $taskPath = "\LocalAI\"
 $tasks = @("LlamaProxy", "LlamaSwap")
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $scriptRoot "rotating-log.ps1")
 
 function Start-Stack {
     Start-ScheduledTask -TaskPath $taskPath -TaskName "LlamaProxy"
@@ -16,6 +18,10 @@ function Start-Stack {
 function Stop-Stack {
     Stop-ScheduledTask -TaskPath $taskPath -TaskName "LlamaSwap" -ErrorAction SilentlyContinue
     Stop-ScheduledTask -TaskPath $taskPath -TaskName "LlamaProxy" -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
+    Stop-ManagedPortOwner -Port 8080 -CommandPattern "llama-swap\.exe.*configs\\devbox\.yaml"
+    Stop-ManagedPortOwner -Port 8082 -CommandPattern "llama-server\.exe.*--port 8082"
+    Stop-ManagedPortOwner -Port 8081 -CommandPattern "node\.exe.*proxy\.js.*--proxy-port 8081"
 }
 
 switch ($Action) {

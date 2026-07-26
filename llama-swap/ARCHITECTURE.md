@@ -196,6 +196,35 @@ Invoke-RestMethod http://127.0.0.1:8080/v1/models
 Task Scheduler runs `\LocalAI\LlamaProxy` and `\LocalAI\LlamaSwap` at boot and
 restarts failures.
 
+### Devbox logs
+
+Task Scheduler output is captured in rotating UTF-8 log files:
+
+- `llama-swap\logs\proxy.log`: proxy request transforms, streaming diagnostics,
+  InfluxDB status, and GPU-power messages.
+- `llama-swap\logs\llama-swap.log`: llama-swap routing and the stdout/stderr of
+  its managed llama.cpp child.
+
+```powershell
+# Follow the proxy log
+Get-Content .\llama-swap\logs\proxy.log -Tail 100 -Wait
+
+# Follow llama-swap and llama.cpp
+Get-Content .\llama-swap\logs\llama-swap.log -Tail 100 -Wait
+
+# Inspect current and rotated files
+Get-ChildItem .\llama-swap\logs |
+  Select-Object Name,Length,LastWriteTime
+```
+
+Each active file rotates at 50 MiB. Five archives (`.1` through `.5`) are
+retained, limiting each component to roughly 300 MiB. Rotation occurs inside
+the long-running wrapper and does not depend on a task restart.
+
+The management and startup scripts also clean up only recognized managed
+processes left on ports `8080`, `8081`, or `8082`. They refuse to terminate an
+unexpected port owner.
+
 ### llmserver
 
 ```bash
@@ -240,6 +269,20 @@ journalctl --user \
 Structured request, token, timing, and GPU-power metrics continue to be written
 by proxy.js to the InfluxDB `llm` bucket. The journal is the source for process
 startup, swap decisions, errors, and request-level diagnostic text.
+
+journald rotates automatically according to the host's
+`/etc/systemd/journald.conf` limits and available filesystem space. Inspect the
+current usage and effective retention settings with:
+
+```bash
+journalctl --disk-usage
+systemd-analyze cat-config systemd/journald.conf |
+  grep -E '^(SystemMaxUse|SystemKeepFree|SystemMaxFileSize|MaxRetentionSec)='
+```
+
+At deployment time llmserver had no explicit size/retention overrides, so
+journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
+347.5 MiB in active and archived journals.
 
 ## Rollback
 

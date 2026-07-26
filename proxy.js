@@ -1120,7 +1120,14 @@ const proxy = http.createServer((req, res) => {
       port:     BACKEND_PORT,
       path:     req.url,
       method:   req.method,
-      headers:  { ...req.headers, host: `localhost:${BACKEND_PORT}`, 'content-length': Buffer.byteLength(body) },
+      // Response handlers inspect JSON/SSE text. Force an identity response so
+      // compressed chunks are not misread and written as binary log noise.
+      headers:  {
+        ...req.headers,
+        host: `localhost:${BACKEND_PORT}`,
+        'content-length': Buffer.byteLength(body),
+        'accept-encoding': 'identity',
+      },
     };
 
     const proxyReq = http.request(options, proxyRes => {
