@@ -5,8 +5,8 @@ After=llama-proxy.service network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/kevin/llm-stuff
-ExecStart=/home/kevin/llama-swap/llama-swap --config /home/kevin/llm-stuff/llama-swap/configs/llmserver.yaml --listen 0.0.0.0:8080
+WorkingDirectory=%h/llm-stuff
+ExecStart=%h/llama-swap/llama-swap --config %h/llm-stuff/llama-swap/configs/llmserver.yaml --listen 0.0.0.0:8080
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=90

@@ -8,8 +8,8 @@ It also explains model routing, configuration, operations, and adding models.
 
 ```mermaid
 flowchart LR
-    H[Hermes<br/>clawserv-hermes]
-    O[OpenClaw<br/>clawserv-claw]
+    H[Hermes host]
+    O[OpenClaw host]
 
     subgraph D[devbox - RTX 3090 24 GB]
         DS[llama-swap<br/>0.0.0.0:8080]
@@ -91,7 +91,7 @@ Secrets are intentionally omitted here.
 
 ### Hermes
 
-Source: `/home/hermes/.hermes/config.yaml` on `clawserv-hermes`.
+Source: `$HOME/.hermes/config.yaml` on the Hermes host.
 
 - Default model: `qwen36-35b-a3b`
 - Default provider: `custom:devbox`
@@ -105,10 +105,10 @@ as a unique llmserver peer model and forwards it to llmserver's llama-swap.
 
 ### OpenClaw
 
-Source: `/home/claw/.openclaw/openclaw.json` on `clawserv-claw`.
+Source: `$HOME/.openclaw/openclaw.json` on the OpenClaw host.
 
 - Primary model: `qwen36-35b-a3b`
-- Primary local base URL: `http://192.168.86.60:8080/v1`
+- Primary local base URL: `http://devbox:8080/v1`
 - API mode: `openai-completions`
 - The legacy `llama2` provider retains its name but also points to devbox.
 
@@ -149,7 +149,7 @@ remain the source of truth for its model-specific settings:
 - Devbox `cmd` entries call
   `C:\development\ai\llama.cpp\pre-built\server.ps1` with `-Build`, `-Model`,
   `-Port 8082`, and `-ListenHost 127.0.0.1`.
-- llmserver `cmd` entries call `/home/kevin/llama/server.sh` with `--model`,
+- llmserver `cmd` entries call `$HOME/llama/server.sh` with `--model`,
   `--port 8082`, and `--host 127.0.0.1`.
 
 The selected script expands the model ID into its existing model path, context,
@@ -180,7 +180,7 @@ retain distinct canonical IDs even when llama.cpp uses the same served alias.
 
 ## Adding an llmserver model
 
-1. Add the model to `/home/kevin/llama/server.sh`, including `MODEL_NAMES` and
+1. Add the model to `$HOME/llama/server.sh`, including `MODEL_NAMES` and
    every required `M_*` setting.
 2. Add a matching block under `models` in `configs/llmserver.yaml`.
 3. Add the canonical ID to `peers.llmserver.models` in `configs/devbox.yaml`.
@@ -395,17 +395,17 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | Host/object | Purpose |
 | --- | --- |
 | `C:\development\ai\llama-swap\llama-swap.exe` | Installed pinned Windows llama-swap binary |
-| `/home/kevin/llama-swap/llama-swap` | Installed pinned Linux llama-swap binary |
+| `$HOME/llama-swap/llama-swap` | Installed pinned Linux llama-swap binary |
 | `C:\development\ai\llama.cpp\pre-built\server.ps1` | Existing devbox model catalog; updated for explicit host/port use and absolute model paths |
-| `/home/kevin/llama/server.sh` | Existing llmserver model catalog; updated for explicit host/port use |
-| `/home/kevin/llama/server.sh.pre-llama-swap-20260726` | Pre-change backup of llmserver's launcher |
+| `$HOME/llama/server.sh` | Existing llmserver model catalog; updated for explicit host/port use |
+| `$HOME/llama/server.sh.pre-llama-swap-20260726` | Pre-change backup of llmserver's launcher |
 | `influxdb-env.ps1` on devbox | Uncommitted secret environment loaded by `proxy.ps1` |
-| `/home/kevin/llm-stuff/env.sh` | Uncommitted secret environment loaded by `proxy.sh` |
+| `$HOME/llm-stuff/env.sh` | Uncommitted secret environment loaded by `proxy.sh` |
 | `llama-swap/logs/*.log` on devbox | Generated rotating process logs; not committed |
 | `~/.config/systemd/user/llama-{proxy,swap}.service` | Installed copies of the llmserver user units |
 | `\LocalAI\LlamaProxy` and `\LocalAI\LlamaSwap` | Devbox Task Scheduler objects; boot start and failure restart |
-| `/home/hermes/.hermes/config.yaml` | Hermes provider/model configuration for the devbox front door |
-| `/home/claw/.openclaw/openclaw.json` | OpenClaw provider/model configuration for the devbox front door |
+| `$HOME/.hermes/config.yaml` | Hermes provider/model configuration on the Hermes host |
+| `$HOME/.openclaw/openclaw.json` | OpenClaw provider/model configuration on the OpenClaw host |
 
 The Influx environment files contain secrets and intentionally remain outside
 Git. The generated devbox logs and systemd journal are runtime state, not

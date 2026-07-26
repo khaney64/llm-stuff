@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/kevin/llm-stuff
-ExecStart=/home/kevin/llm-stuff/proxy.sh
+WorkingDirectory=%h/llm-stuff
+ExecStart=%h/llm-stuff/proxy.sh
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=30
