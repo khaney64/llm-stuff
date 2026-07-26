@@ -149,8 +149,10 @@ remain the source of truth for its model-specific settings:
 - Devbox `cmd` entries call
   `C:\development\ai\llama.cpp\pre-built\server.ps1` with `-Build`, `-Model`,
   `-Port 8082`, and `-ListenHost 127.0.0.1`.
-- llmserver `cmd` entries call `$HOME/llama/server.sh` with `--model`,
-  `--port 8082`, and `--host 127.0.0.1`.
+- llmserver `cmd` entries call the repository wrapper
+  `llama-swap/linux/start-model.sh` with `--model`, `--port 8082`, and
+  `--host 127.0.0.1`. The wrapper resolves the host-neutral `$HOME` path and
+  executes `$HOME/llama/server.sh`.
 
 The selected script expands the model ID into its existing model path, context,
 batch, GPU, alias, vision/mmproj, speculative-decoding, and other llama.cpp
@@ -379,6 +381,7 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | `llama-swap/linux/llama-proxy.service` | systemd user unit for llmserver proxy.js |
 | `llama-swap/linux/llama-swap.service` | systemd user unit for llmserver llama-swap and its llama.cpp child |
 | `llama-swap/linux/manage.sh` | Starts, stops, restarts, and reports the llmserver stack |
+| `llama-swap/linux/start-model.sh` | Resolves `$HOME` privately on llmserver and invokes its existing model launcher |
 
 ### Existing repository files modified
 
