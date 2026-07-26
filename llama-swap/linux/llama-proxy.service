@@ -1,0 +1,15 @@
+[Unit]
+Description=Local llama.cpp compatibility and telemetry proxy
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kevin/llm-stuff
+ExecStart=/home/kevin/llm-stuff/proxy.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

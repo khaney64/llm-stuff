@@ -3,8 +3,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.argv.push('--backend', 'llamacpp', '--thinking');
-const { transformRequestBody, deriveLlamaTimingMetrics } = require('./proxy.js');
+process.argv.push(
+  '--backend', 'llamacpp',
+  '--thinking',
+  '--cron-parse-patch',
+  '--proxy-host', '127.0.0.1',
+  '--proxy-port', '8081',
+  '--backend-port', '8082',
+);
+const { transformRequestBody, deriveLlamaTimingMetrics, runtimeConfig } = require('./proxy.js');
 
 function transform(body) {
   return JSON.parse(transformRequestBody(JSON.stringify(body)));
@@ -49,6 +56,49 @@ test('sets and clamps llama.cpp thinking_budget_tokens', () => {
   assert.equal(transform({ thinking_budget_tokens: -1 }).thinking_budget_tokens, 8192);
   assert.equal(transform({ thinking_budget_tokens: 100000 }).thinking_budget_tokens, 8192);
   assert.equal(transform({ thinking_budget_tokens: 2000 }).thinking_budget_tokens, 2000);
+});
+
+test('preserves model identifiers for llama-swap and llama.cpp', () => {
+  assert.equal(transform({ model: 'qwen36-35b-a3b' }).model, 'qwen36-35b-a3b');
+});
+
+test('removes only incompatible OpenClaw cron schema constraints', () => {
+  const result = transform({
+    tools: [{
+      type: 'function',
+      function: {
+        name: 'cron',
+        parameters: {
+          properties: {
+            job: {
+              properties: {
+                declarationKey: { type: 'string', pattern: '\\S' },
+                trigger: {
+                  properties: {
+                    script: { type: 'string', maxLength: 65536 },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }],
+  });
+
+  const job = result.tools[0].function.parameters.properties.job.properties;
+  assert.equal(job.declarationKey.pattern, undefined);
+  assert.equal(job.declarationKey.type, 'string');
+  assert.equal(job.trigger.properties.script.maxLength, undefined);
+  assert.equal(job.trigger.properties.script.type, 'string');
+});
+
+test('parses internal listen and backend ports', () => {
+  assert.deepEqual(runtimeConfig, {
+    proxyHost: '127.0.0.1',
+    proxyPort: 8081,
+    backendPort: 8082,
+  });
 });
 
 test('preserves generation duration precision for Influx metrics', () => {

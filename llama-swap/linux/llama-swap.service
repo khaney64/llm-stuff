@@ -1,0 +1,16 @@
+[Unit]
+Description=llama-swap model router
+Requires=llama-proxy.service
+After=llama-proxy.service network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kevin/llm-stuff
+ExecStart=/home/kevin/llama-swap/llama-swap --config /home/kevin/llm-stuff/llama-swap/configs/llmserver.yaml --listen 0.0.0.0:8080
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=90
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

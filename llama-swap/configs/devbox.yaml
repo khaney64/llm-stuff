@@ -1,0 +1,95 @@
+healthCheckTimeout: 600
+unloadTimeout: 60
+globalTTL: 0
+
+models:
+  qwen36-35b:
+    name: Qwen 3.6 35B A3B
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model qwen36-35b -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen36-35b-a3b
+    aliases:
+      - qwen36-35b-a3b
+
+  qwen36-35b-mtp:
+    name: Qwen 3.6 35B A3B MTP
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model qwen36-35b-mtp -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen36-35b-a3b
+
+  qwen36-27b:
+    name: Qwen 3.6 27B
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model qwen36-27b -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen36-27b
+
+  qwen36-27b-mtp:
+    name: Qwen 3.6 27B MTP
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model qwen36-27b-mtp -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen36-27b
+
+  qwen3-coder:
+    name: Qwen 3 Coder 30B A3B
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model qwen3-coder -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen3-coder
+
+  gemma4-31b:
+    name: Gemma 4 31B
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model gemma4-31b -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: gemma4-31b
+
+  gemma4-26b:
+    name: Gemma 4 26B A4B
+    cmd: >-
+      pwsh.exe -NoProfile -ExecutionPolicy Bypass
+      -File C:\development\ai\llama.cpp\pre-built\server.ps1
+      -Build b10107 -Model gemma4-26b -Port 8082 -ListenHost 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: gemma4-26b-a4b
+    aliases:
+      - gemma4-26b-a4b
+
+peers:
+  llmserver:
+    proxy: http://llmserver.lan:8080
+    models:
+      - qwen35-9b
+      - qwen35-9b-q6
+      - qwen35-9b-q6x
+      - qwen3vl-8b
+      - gemma4-e4b-q4
+      - gemma4-e4b-q8
+      - gemma4-12b
+
+hooks:
+  on_startup:
+    preload:
+      - qwen36-35b

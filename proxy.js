@@ -14,6 +14,7 @@
 //   --log-file [path]    append [done] lines to file (default: ./proxy-done.log)
 //   --usage-probe-file [path] append compact OpenAI usage/timings probe JSONL
 //   --backend ollama|llamacpp   force backend mode (default: auto-detect from port)
+//   --proxy-host HOST     proxy listen host (default: all interfaces)
 //   --power              enable GPU power monitoring and energy cost tracking
 //   --power-provider P   path to power provider module (default: ./power-nvidia-smi.js)
 //   --electric-rate N    electricity rate in $/kWh (default: 0.18947)
@@ -58,6 +59,7 @@ function printHelp() {
   console.log('Options:');
   console.log('  --help, -h                  print this help and exit');
   console.log('  --backend ollama|llamacpp   force backend mode (default: auto from port)');
+  console.log('  --proxy-host HOST           proxy listen host (default: all interfaces)');
   console.log('  --proxy-port N              proxy listen port (default: 11434)');
   console.log('  --backend-port N            backend port (default: 11435)');
   console.log('  --filter-thinking           hide thinking chunks entirely');
@@ -70,6 +72,7 @@ function printHelp() {
   console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
   console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
   console.log('  --max-tokens-ceiling N      hard max_tokens ceiling for llama.cpp (default: 8192)');
+  console.log('  --cron-parse-patch          remove OpenClaw cron pattern rejected by llama.cpp');
   console.log('  --debug-labels              dump first user message for label tuning');
   console.log('  --log-file [path]           append [done] lines to file');
   console.log('  --usage-probe-file [path]   append compact OpenAI usage/timings probe JSONL');
@@ -102,6 +105,7 @@ const DEFAULT_CTX     = argVal('--default-ctx')  != null ? parseInt(argVal('--de
 const INJECT_THINKING = args.includes('--thinking');
 const THINKING_BUDGET = positiveIntegerArg('--thinking-budget', 8192);
 const MAX_TOKENS_CEILING = positiveIntegerArg('--max-tokens-ceiling', 8192);
+const CRON_PARSE_PATCH = args.includes('--cron-parse-patch');
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
 const USAGE_PROBE_FILE = argVal('--usage-probe-file') ?? (args.includes('--usage-probe-file') ? './proxy-usage-probe.jsonl' : null);
@@ -150,6 +154,7 @@ if (POWER_ENABLED) {
 }
 
 // Port overrides
+const PROXY_HOST       = argVal('--proxy-host') || null;
 const PROXY_PORT_ARG   = argVal('--proxy-port')   ? parseInt(argVal('--proxy-port'),   10) : null;
 const BACKEND_PORT_ARG = argVal('--backend-port') ? parseInt(argVal('--backend-port'), 10) : null;
 
@@ -328,6 +333,35 @@ function flushThinkingBuffer(buf) {
 }
 
 // ── Request body transform ────────────────────────────────────────────────────
+let cronParsePatchLogged = false;
+
+function applyCronParsePatch(payload) {
+  if (!CRON_PARSE_PATCH || !Array.isArray(payload.tools)) return 0;
+
+  let patched = 0;
+  for (const tool of payload.tools) {
+    if (tool?.type !== 'function' || tool.function?.name !== 'cron') continue;
+
+    const parameters = tool.function.parameters;
+    const declarationKey = parameters?.properties?.job?.properties?.declarationKey;
+    if (declarationKey?.pattern === '\\S') {
+      delete declarationKey.pattern;
+      patched += 1;
+    }
+
+    const triggerScripts = [
+      parameters?.properties?.job?.properties?.trigger?.properties?.script,
+      parameters?.properties?.patch?.properties?.trigger?.anyOf?.[0]?.properties?.script,
+    ];
+    for (const triggerScript of triggerScripts) {
+      if (triggerScript?.maxLength !== 65536) continue;
+      delete triggerScript.maxLength;
+      patched += 1;
+    }
+  }
+  return patched;
+}
+
 // Translates OpenClaw's Ollama-flavoured fields to what each backend expects.
 function transformRequestBody(bodyStr) {
   let p;
@@ -341,14 +375,23 @@ function transformRequestBody(bodyStr) {
 
   } else {
     // llama.cpp / OpenAI-compat mode
-    // 1. Thinking mode and llama-server's request-level reasoning budget.
+    // 1. OpenClaw 2026.7.1 emits an unanchored cron pattern that llama.cpp rejects.
+    const patchedCronConstraints = applyCronParsePatch(p);
+    if (patchedCronConstraints > 0 && !cronParsePatchLogged) {
+      console.log(
+        `${C.yellow}[cron-parse-patch] removed ${patchedCronConstraints} incompatible cron schema constraints${C.reset}`,
+      );
+      cronParsePatchLogged = true;
+    }
+
+    // 2. Thinking mode and llama-server's request-level reasoning budget.
     if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
     p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
     if (INJECT_THINKING)
       p.thinking_budget_tokens = clampPositiveInteger(p.thinking_budget_tokens, THINKING_BUDGET);
     delete p.think; // remove Ollama-style think field if client sent it
 
-    // 2. Ollama options block -> top-level OpenAI fields.
+    // 3. Ollama options block -> top-level OpenAI fields.
     if (p.options) {
       if (p.options.temperature != null && p.temperature == null)
         p.temperature = p.options.temperature;
@@ -358,7 +401,7 @@ function transformRequestBody(bodyStr) {
         p.top_k = p.options.top_k;
     }
 
-    // 3. Resolve token aliases in API-native-first precedence, then enforce a hard limit.
+    // 4. Resolve token aliases in API-native-first precedence, then enforce a hard limit.
     const requestedMaxTokens = p.max_tokens
       ?? p.max_completion_tokens
       ?? p.options?.num_predict
@@ -1180,10 +1223,10 @@ function fetchServerCtx(cb) {
 }
 
 function startProxy() {
-  proxy.listen(PROXY_PORT, () => {
+  proxy.listen(PROXY_PORT, PROXY_HOST, () => {
     const backendName = IS_LLAMACPP ? 'llama.cpp' : 'Ollama';
     console.log(`\nDebug proxy ${modeLabel()}`);
-    console.log(`Listening on :${PROXY_PORT}  ->  ${backendName} :${BACKEND_PORT}`);
+    console.log(`Listening on ${PROXY_HOST || '*'}:${PROXY_PORT}  ->  ${backendName} localhost:${BACKEND_PORT}`);
     if (serverModel) console.log(`Server model: ${serverModel}`);
     if (serverCtx) console.log(`Server n_ctx: ${serverCtx} (auto-detected from /props)`);
     if (serverSlots) console.log(`Server slots: ${serverSlots}`);
@@ -1202,6 +1245,7 @@ function startProxy() {
     if (DUMP_REQUEST_FILE) console.log(`  Dump request file:  ${path.resolve(DUMP_REQUEST_FILE)}`);
     if (DUMP_TRANSFORMED_FILE) console.log(`  Dump transformed:   ${path.resolve(DUMP_TRANSFORMED_FILE)}`);
     if (USAGE_PROBE_FILE) console.log(`  Usage probe:    ${path.resolve(USAGE_PROBE_FILE)}`);
+    if (CRON_PARSE_PATCH) console.log(`  Cron parse patch: on`);
     if (DEBUG_LABELS) console.log(`  Debug labels:   on`);
     if (LOG_MODE === 'file' && LOG_FILE) console.log(`  Log file:       ${path.resolve(LOG_FILE)}`);
     if (LOG_MODE === 'influxdb') console.log(`  InfluxDB:       ${INFLUXDB_URL} org=${INFLUXDB_ORG} bucket=${INFLUXDB_BUCKET}`);
@@ -1229,4 +1273,12 @@ if (require.main === module) {
   }
 }
 
-module.exports = { transformRequestBody, deriveLlamaTimingMetrics };
+module.exports = {
+  transformRequestBody,
+  deriveLlamaTimingMetrics,
+  runtimeConfig: {
+    proxyHost: PROXY_HOST,
+    proxyPort: PROXY_PORT,
+    backendPort: BACKEND_PORT,
+  },
+};
