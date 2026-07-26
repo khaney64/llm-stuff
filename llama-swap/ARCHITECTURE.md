@@ -66,6 +66,12 @@ The `model` string is llama-swap's routing key. Provider names such as Hermes'
 `custom:devbox` or OpenClaw's `llama2` are client-side namespaces. They select
 an endpoint and catalog entry, but llama-swap routes on the JSON `model` value.
 
+llama-swap does not search the model directories, infer a GGUF filename, or
+construct a new llama.cpp command from an arbitrary request. Every accepted
+request name must resolve to a configured canonical model, alias, selector, or
+advertised peer model. An unknown name is rejected instead of being passed to a
+shell command.
+
 llama-swap resolves the value in this order:
 
 1. A local canonical model ID, which is a key under `models`.
@@ -134,6 +140,24 @@ Important fields:
 
 Devbox preloads `qwen36-35b`. llmserver preloads `qwen3vl-8b`. Requesting
 another model swaps only the GPU host that owns it.
+
+### Where llama.cpp settings come from
+
+llama-swap owns the lifetime of llama.cpp, but the existing server launchers
+remain the source of truth for its model-specific settings:
+
+- Devbox `cmd` entries call
+  `C:\development\ai\llama.cpp\pre-built\server.ps1` with `-Build`, `-Model`,
+  `-Port 8082`, and `-ListenHost 127.0.0.1`.
+- llmserver `cmd` entries call `/home/kevin/llama/server.sh` with `--model`,
+  `--port 8082`, and `--host 127.0.0.1`.
+
+The selected script expands the model ID into its existing model path, context,
+batch, GPU, alias, vision/mmproj, speculative-decoding, and other llama.cpp
+arguments. llama-swap does not duplicate those settings in YAML. Its `cmd`
+only selects the script entry and forces the internal port and loopback bind.
+Changing a script's settings therefore changes the next launch of that model;
+restart the owning llama-swap to apply the change immediately.
 
 No `matrix` is configured because each host currently runs one model at a time.
 A matrix is appropriate only after confirming that multiple selected models fit
@@ -236,6 +260,59 @@ unexpected port owner.
 
 systemd user services restart failures, and user lingering starts them at boot.
 
+### What to restart after a change
+
+Restarts interrupt in-flight inference. Prefer a quiet period.
+
+| Changed item | Devbox action | llmserver action | Reason |
+| --- | --- | --- | --- |
+| `proxy.js`, `proxy.ps1`, `proxy.sh`, or Influx environment | Restart proxy; full-stack restart is safest | Restart `llama-proxy.service` | Reload proxy code, arguments, or environment |
+| `configs/devbox.yaml` | Restart devbox llama-swap | None | llama-swap reads YAML only at process start |
+| `configs/llmserver.yaml` | Restart devbox llama-swap if its peer list changed | Restart `llama-swap.service` | Reload remote definitions and advertised peer catalog |
+| `server.ps1` | Restart devbox llama-swap | None | Replace the current managed llama.cpp child |
+| `server.sh` | None | Restart `llama-swap.service` | Replace the current managed llama.cpp child |
+| Windows task scripts/settings | Re-run `register-tasks.ps1`, then restart stack | None | Refresh Task Scheduler definitions |
+| systemd unit files | None | Reinstall/copy units, run `systemctl --user daemon-reload`, then restart | Refresh installed unit definitions |
+
+Devbox full-stack restart:
+
+```powershell
+cd C:\development\ai\llm-stuff
+pwsh .\llama-swap\windows\manage.ps1 restart
+pwsh .\llama-swap\windows\manage.ps1 status
+```
+
+Devbox component-only restarts:
+
+```powershell
+# proxy.js, proxy.ps1, or Influx environment only
+Stop-ScheduledTask -TaskPath '\LocalAI\' -TaskName LlamaProxy
+Start-ScheduledTask -TaskPath '\LocalAI\' -TaskName LlamaProxy
+
+# devbox.yaml or server.ps1
+Stop-ScheduledTask -TaskPath '\LocalAI\' -TaskName LlamaSwap
+Start-ScheduledTask -TaskPath '\LocalAI\' -TaskName LlamaSwap
+```
+
+llmserver restarts:
+
+```bash
+# Everything
+~/llm-stuff/llama-swap/linux/manage.sh restart
+
+# proxy.js, proxy.sh, or env.sh only
+systemctl --user restart llama-proxy.service
+
+# llmserver.yaml or server.sh
+systemctl --user restart llama-swap.service
+
+systemctl --user is-active llama-proxy.service llama-swap.service
+```
+
+After any restart, check `/health`, `/v1/models`, and the applicable logs.
+Restart devbox llama-swap after changing the devbox peer list; restarting only
+llmserver cannot update devbox's already-loaded peer configuration.
+
 ### llmserver logs
 
 Both services write stdout and stderr to the systemd user journal. llama.cpp is
@@ -283,6 +360,56 @@ systemd-analyze cat-config systemd/journald.conf |
 At deployment time llmserver had no explicit size/retention overrides, so
 journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 347.5 MiB in active and archived journals.
+
+## File and system-object inventory
+
+### Files created in `llm-stuff`
+
+| File | Purpose |
+| --- | --- |
+| `llama-swap/ARCHITECTURE.md` | Architecture, routing, configuration, operations, logs, and recovery runbook |
+| `llama-swap/configs/devbox.yaml` | Devbox models, aliases, llmserver peer catalog, and startup preload |
+| `llama-swap/configs/llmserver.yaml` | llmserver models, launch commands, and vision-model preload |
+| `llama-swap/windows/install.ps1` | Verifies the pinned Windows archive checksum and installs `llama-swap.exe` |
+| `llama-swap/windows/register-tasks.ps1` | Creates the two boot-time `\LocalAI\` scheduled tasks |
+| `llama-swap/windows/start-swap.ps1` | Waits for the proxy, starts devbox llama-swap, and captures its output |
+| `llama-swap/windows/manage.ps1` | Starts, stops, restarts, and reports the devbox stack |
+| `llama-swap/windows/rotating-log.ps1` | Runs native processes with timestamped bounded logs and cleans recognized orphan processes |
+| `llama-swap/linux/install.sh` | Verifies the pinned Linux archive checksum and installs the binary and user units |
+| `llama-swap/linux/llama-proxy.service` | systemd user unit for llmserver proxy.js |
+| `llama-swap/linux/llama-swap.service` | systemd user unit for llmserver llama-swap and its llama.cpp child |
+| `llama-swap/linux/manage.sh` | Starts, stops, restarts, and reports the llmserver stack |
+
+### Existing repository files modified
+
+| File | Change |
+| --- | --- |
+| `proxy.js` | Adds configurable listen/backend ports, preserves model IDs for routing, and keeps inspected responses uncompressed |
+| `proxy.ps1` | Runs the devbox proxy on loopback port 8081, loads Influx variables, and captures rotating logs |
+| `proxy.sh` | Runs the llmserver proxy on loopback port 8081 and loads `env.sh` |
+| `proxy.test.js` | Tests model preservation, compatibility transforms, metrics, and port parsing |
+| `.gitignore` | Excludes generated devbox service logs |
+
+### Host-local files and objects
+
+| Host/object | Purpose |
+| --- | --- |
+| `C:\development\ai\llama-swap\llama-swap.exe` | Installed pinned Windows llama-swap binary |
+| `/home/kevin/llama-swap/llama-swap` | Installed pinned Linux llama-swap binary |
+| `C:\development\ai\llama.cpp\pre-built\server.ps1` | Existing devbox model catalog; updated for explicit host/port use and absolute model paths |
+| `/home/kevin/llama/server.sh` | Existing llmserver model catalog; updated for explicit host/port use |
+| `/home/kevin/llama/server.sh.pre-llama-swap-20260726` | Pre-change backup of llmserver's launcher |
+| `influxdb-env.ps1` on devbox | Uncommitted secret environment loaded by `proxy.ps1` |
+| `/home/kevin/llm-stuff/env.sh` | Uncommitted secret environment loaded by `proxy.sh` |
+| `llama-swap/logs/*.log` on devbox | Generated rotating process logs; not committed |
+| `~/.config/systemd/user/llama-{proxy,swap}.service` | Installed copies of the llmserver user units |
+| `\LocalAI\LlamaProxy` and `\LocalAI\LlamaSwap` | Devbox Task Scheduler objects; boot start and failure restart |
+| `/home/hermes/.hermes/config.yaml` | Hermes provider/model configuration for the devbox front door |
+| `/home/claw/.openclaw/openclaw.json` | OpenClaw provider/model configuration for the devbox front door |
+
+The Influx environment files contain secrets and intentionally remain outside
+Git. The generated devbox logs and systemd journal are runtime state, not
+configuration.
 
 ## Rollback
 
