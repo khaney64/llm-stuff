@@ -141,6 +141,11 @@ Important fields:
 Devbox preloads `qwen36-35b`. llmserver preloads `qwen3vl-8b`. Requesting
 another model swaps only the GPU host that owns it.
 
+These are startup preloads, not default routing fallbacks. A request must name a
+configured model or alias. An omitted or unknown model is not silently sent to
+the preloaded model; llama-swap returns a routing error (HTTP 404 for an unknown
+model in the deployed v243 build).
+
 ### Where llama.cpp settings come from
 
 llama-swap owns the lifetime of llama.cpp, but the existing server launchers
