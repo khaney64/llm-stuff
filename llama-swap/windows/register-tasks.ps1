@@ -29,4 +29,18 @@ Register-ScheduledTask -TaskPath $taskPath -TaskName "LlamaProxy" `
 Register-ScheduledTask -TaskPath $taskPath -TaskName "LlamaSwap" `
     -Action $swapAction -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
+$firewallRuleName = "LocalAI llama-swap TCP 8080"
+if (-not (Get-NetFirewallRule -DisplayName $firewallRuleName -ErrorAction SilentlyContinue)) {
+    New-NetFirewallRule `
+        -DisplayName $firewallRuleName `
+        -Direction Inbound `
+        -Action Allow `
+        -Program "C:\development\ai\llama-swap\llama-swap.exe" `
+        -Protocol TCP `
+        -LocalPort 8080 `
+        -RemoteAddress LocalSubnet `
+        -Profile Any | Out-Null
+}
+
 Write-Host "Registered ${taskPath}LlamaProxy and ${taskPath}LlamaSwap."
+Write-Host "Allowed LAN access to llama-swap on TCP 8080."

@@ -47,6 +47,10 @@ loopback-only implementation details.
 | llmserver | 8081 | proxy.js | loopback |
 | llmserver | 8082 | llama.cpp selected model | loopback |
 
+Devbox Task Scheduler registration also creates a Windows Firewall inbound rule
+for `llama-swap.exe` on TCP 8080. The rule is limited to `LocalSubnet`; ports
+8081 and 8082 remain loopback-only and need no inbound rule.
+
 ## How a harness identifies a model
 
 Hermes and OpenClaw use an OpenAI-compatible provider URL ending in `/v1`.
@@ -378,7 +382,7 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | `llama-swap/configs/devbox.yaml` | Devbox models, aliases, llmserver peer catalog, and startup preload |
 | `llama-swap/configs/llmserver.yaml` | llmserver models, launch commands, and vision-model preload |
 | `llama-swap/windows/install.ps1` | Verifies the pinned Windows archive checksum and installs `llama-swap.exe` |
-| `llama-swap/windows/register-tasks.ps1` | Creates the two boot-time `\LocalAI\` scheduled tasks |
+| `llama-swap/windows/register-tasks.ps1` | Creates the two boot-time `\LocalAI\` tasks and LAN-scoped TCP 8080 firewall rule |
 | `llama-swap/windows/start-swap.ps1` | Waits for the proxy, starts devbox llama-swap, and captures its output |
 | `llama-swap/windows/manage.ps1` | Starts, stops, restarts, and reports the devbox stack |
 | `llama-swap/windows/rotating-log.ps1` | Runs native processes with timestamped bounded logs and cleans recognized orphan processes |
