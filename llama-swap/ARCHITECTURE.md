@@ -203,10 +203,43 @@ restarts failures.
 ~/llm-stuff/llama-swap/linux/manage.sh start
 ~/llm-stuff/llama-swap/linux/manage.sh restart
 ~/llm-stuff/llama-swap/linux/manage.sh stop
-journalctl --user -u llama-proxy -u llama-swap
 ```
 
 systemd user services restart failures, and user lingering starts them at boot.
+
+### llmserver logs
+
+Both services write stdout and stderr to the systemd user journal. llama.cpp is
+started as a child of llama-swap, so its startup, model-loading, and inference
+server output appears under `llama-swap.service`.
+
+```bash
+# Follow the full inference stack
+journalctl --user -u llama-swap.service -u llama-proxy.service -f
+
+# llama-swap routing plus its managed llama.cpp child
+journalctl --user -u llama-swap.service -f
+
+# proxy request transforms, streaming diagnostics, and telemetry messages
+journalctl --user -u llama-proxy.service -f
+
+# Current boot, most recent 100 entries
+journalctl --user -b \
+  -u llama-swap.service -u llama-proxy.service -n 100 --no-pager
+
+# Previous boot
+journalctl --user -b -1 \
+  -u llama-swap.service -u llama-proxy.service --no-pager
+
+# Logs since a specific time
+journalctl --user \
+  -u llama-swap.service -u llama-proxy.service \
+  --since "30 minutes ago" --no-pager
+```
+
+Structured request, token, timing, and GPU-power metrics continue to be written
+by proxy.js to the InfluxDB `llm` bucket. The journal is the source for process
+startup, swap decisions, errors, and request-level diagnostic text.
 
 ## Rollback
 
