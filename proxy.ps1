@@ -20,7 +20,7 @@ $proxyArgs = @(
    "--dump-messages",
    "--message-size", "10000",
    "--default-ctx", "65535",
-   "--thinking",
+   "--model-config", ".\\proxy-models.json",
    "--log-mode", "influxdb",
    "--backend", "llamacpp",
    "--power",

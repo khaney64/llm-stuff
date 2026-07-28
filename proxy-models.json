@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "fallback": {
+    "maxTokensDefault": 8192,
+    "maxTokensCeiling": 16384,
+    "thinkingSupported": false,
+    "thinkingDefault": false,
+    "thinkingBudgetDefault": 0,
+    "thinkingBudgetCeiling": 0
+  },
+  "models": [
+    {
+      "name": "qwen-reasoning",
+      "match": [
+        "qwen36-35b",
+        "qwen36-35b-mtp",
+        "qwen36-35b-a3b",
+        "Qwen3.6-35B-A3B-*",
+        "qwen36-27b",
+        "qwen36-27b-mtp",
+        "qwen36-27b-cap",
+        "Qwen3.6-27B-*",
+        "*ThinkingCap*",
+        "qwen35-9b",
+        "qwen35-9b-q6",
+        "qwen35-9b-q6x",
+        "qwen35-9b-q6-xl",
+        "Qwen3.5-9B-*",
+        "qwen3vl-8b",
+        "*Qwen3-VL-8B*"
+      ],
+      "maxTokensDefault": 16384,
+      "maxTokensCeiling": 32768,
+      "thinkingSupported": true,
+      "thinkingDefault": true,
+      "thinkingBudgetDefault": 4096,
+      "thinkingBudgetCeiling": 8192
+    },
+    {
+      "name": "qwen-coder",
+      "match": [
+        "qwen3-coder",
+        "*Qwen3-Coder-30B-A3B*"
+      ],
+      "maxTokensDefault": 16384,
+      "maxTokensCeiling": 32768,
+      "thinkingSupported": false,
+      "thinkingDefault": false,
+      "thinkingBudgetDefault": 0,
+      "thinkingBudgetCeiling": 0
+    },
+    {
+      "name": "gemma4-31b",
+      "match": [
+        "gemma4-31b",
+        "gemma4-31b-qat",
+        "*Gemma-4-31B*"
+      ],
+      "maxTokensDefault": 8192,
+      "maxTokensCeiling": 16384,
+      "thinkingSupported": false,
+      "thinkingDefault": false,
+      "thinkingBudgetDefault": 0,
+      "thinkingBudgetCeiling": 0
+    },
+    {
+      "name": "gemma",
+      "match": [
+        "gemma4-26b",
+        "gemma4-26b-a4b",
+        "gemma4-26b-qat",
+        "gemma4-e4b-q4",
+        "gemma4-e4b-q8",
+        "gemma4-12b",
+        "*Gemma-4-*"
+      ],
+      "maxTokensDefault": 16384,
+      "maxTokensCeiling": 32768,
+      "thinkingSupported": false,
+      "thinkingDefault": false,
+      "thinkingBudgetDefault": 0,
+      "thinkingBudgetCeiling": 0
+    }
+  ]
+}

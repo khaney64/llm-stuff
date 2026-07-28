@@ -11,6 +11,7 @@
 //   --thinking           inject think:true into requests (default: injects think:false)
 //   --thinking-budget N  max thinking tokens for llama.cpp (default: 8192)
 //   --max-tokens-ceiling N hard completion ceiling for llama.cpp (default: 8192)
+//   --model-config PATH  per-model generation policy JSON
 //   --log-file [path]    append [done] lines to file (default: ./proxy-done.log)
 //   --usage-probe-file [path] append compact OpenAI usage/timings probe JSONL
 //   --backend ollama|llamacpp   force backend mode (default: auto-detect from port)
@@ -53,6 +54,198 @@ function positiveIntegerArg(flag, defaultValue) {
   return value;
 }
 
+const EFFORT_BUDGETS = Object.freeze({
+  minimal: 1024,
+  low: 2048,
+  medium: 4096,
+  high: 8192,
+});
+
+function isPositiveInteger(value) {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
+function normalizePolicy(raw, label) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(`${label} must be an object`);
+  }
+  const policy = {
+    maxTokensDefault: raw.maxTokensDefault,
+    maxTokensCeiling: raw.maxTokensCeiling,
+    thinkingSupported: raw.thinkingSupported === true,
+    thinkingDefault: raw.thinkingDefault === true,
+    thinkingBudgetDefault: raw.thinkingBudgetDefault ?? 0,
+    thinkingBudgetCeiling: raw.thinkingBudgetCeiling ?? 0,
+  };
+  if (!isPositiveInteger(policy.maxTokensDefault) || !isPositiveInteger(policy.maxTokensCeiling)) {
+    throw new Error(`${label} maxTokensDefault and maxTokensCeiling must be positive integers`);
+  }
+  if (policy.maxTokensDefault > policy.maxTokensCeiling) {
+    throw new Error(`${label} maxTokensDefault cannot exceed maxTokensCeiling`);
+  }
+  if (!policy.thinkingSupported) {
+    if (policy.thinkingDefault || policy.thinkingBudgetDefault !== 0 || policy.thinkingBudgetCeiling !== 0) {
+      throw new Error(`${label} unsupported thinking requires false/0 thinking settings`);
+    }
+  } else {
+    if (!isPositiveInteger(policy.thinkingBudgetDefault) || !isPositiveInteger(policy.thinkingBudgetCeiling)) {
+      throw new Error(`${label} thinking budgets must be positive integers`);
+    }
+    if (policy.thinkingBudgetDefault > policy.thinkingBudgetCeiling) {
+      throw new Error(`${label} thinkingBudgetDefault cannot exceed thinkingBudgetCeiling`);
+    }
+  }
+  return policy;
+}
+
+function globToRegex(glob) {
+  const escaped = glob
+    .split('*')
+    .map(part => part.replace(/[.*+?^$\{}()|[\]\\]/g, '\\$&'))
+    .join('.*');
+  return new RegExp(`^${escaped}$`, 'i');
+}
+
+function compileModelPolicyConfig(raw, sourceLabel = 'model config') {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(`${sourceLabel} must contain an object`);
+  }
+  if (raw.version !== 1) throw new Error(`${sourceLabel} version must be 1`);
+  if (!Array.isArray(raw.models)) throw new Error(`${sourceLabel} models must be an array`);
+
+  const seenMatches = new Set();
+  const profiles = raw.models.map((entry, index) => {
+    const label = `${sourceLabel} models[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`${label} must be an object`);
+    }
+    if (typeof entry.name !== 'string' || !entry.name.trim()) {
+      throw new Error(`${label} name must be a non-empty string`);
+    }
+    if (!Array.isArray(entry.match) || entry.match.length === 0) {
+      throw new Error(`${label} match must be a non-empty array`);
+    }
+    const match = entry.match.map((value, matchIndex) => {
+      if (typeof value !== 'string' || !value.trim()) {
+        throw new Error(`${label} match[${matchIndex}] must be a non-empty string`);
+      }
+      const normalized = value.trim().toLowerCase();
+      if (seenMatches.has(normalized)) throw new Error(`${sourceLabel} duplicate matcher: ${value}`);
+      seenMatches.add(normalized);
+      return { value: value.trim(), regex: globToRegex(value.trim()) };
+    });
+    return {
+      name: entry.name.trim(),
+      match,
+      ...normalizePolicy(entry, label),
+    };
+  });
+
+  return {
+    version: 1,
+    source: sourceLabel,
+    fallback: normalizePolicy(raw.fallback, `${sourceLabel} fallback`),
+    profiles,
+  };
+}
+
+function loadModelPolicyConfig(configPath) {
+  const resolved = path.resolve(configPath);
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+  } catch (error) {
+    throw new Error(`Could not load --model-config ${resolved}: ${error.message}`);
+  }
+  const compiled = compileModelPolicyConfig(raw, resolved);
+  compiled.path = resolved;
+  return compiled;
+}
+
+function resolveModelPolicy(requestModel, detectedModel, config) {
+  if (!config) return null;
+  for (const [source, value] of [['request', requestModel], ['detected', detectedModel]]) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const profile = config.profiles.find(candidate =>
+      candidate.match.some(matcher => matcher.regex.test(value.trim())));
+    if (profile) return { profile, name: profile.name, matched: true, source, model: value.trim() };
+  }
+  const model = typeof requestModel === 'string' && requestModel.trim()
+    ? requestModel.trim()
+    : (typeof detectedModel === 'string' && detectedModel.trim() ? detectedModel.trim() : '(missing)');
+  return { profile: config.fallback, name: 'fallback', matched: false, source: 'fallback', model };
+}
+
+function parseThinkingControl(value) {
+  if (typeof value === 'boolean') return { enabled: value, effort: null };
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (['false', 'off', 'none', 'disabled'].includes(normalized)) {
+    return { enabled: false, effort: null };
+  }
+  if (['true', 'on', 'enabled'].includes(normalized)) {
+    return { enabled: true, effort: null };
+  }
+  if (Object.hasOwn(EFFORT_BUDGETS, normalized)) {
+    return { enabled: true, effort: normalized };
+  }
+  return null;
+}
+
+function positiveIntegerOrNull(value) {
+  return isPositiveInteger(value) ? value : null;
+}
+
+const warnedUnknownModels = new Set();
+
+function applyModelGenerationPolicy(payload, config, detectedModel) {
+  const resolved = resolveModelPolicy(payload.model, detectedModel, config);
+  const policy = resolved.profile;
+  if (!resolved.matched && !warnedUnknownModels.has(resolved.model)) {
+    warnedUnknownModels.add(resolved.model);
+    console.warn(`[model-policy] unknown model "${resolved.model}"; using safe fallback`);
+  }
+
+  const requestedMaxTokens = payload.max_tokens
+    ?? payload.max_completion_tokens
+    ?? payload.options?.num_predict
+    ?? payload.num_predict;
+  const validMaxTokens = positiveIntegerOrNull(requestedMaxTokens);
+  payload.max_tokens = Math.min(validMaxTokens ?? policy.maxTokensDefault, policy.maxTokensCeiling);
+
+  const templateControl = parseThinkingControl(payload.chat_template_kwargs?.enable_thinking);
+  const thinkControl = parseThinkingControl(payload.think);
+  const effortControl = parseThinkingControl(payload.reasoning_effort);
+  const control = templateControl ?? thinkControl ?? effortControl;
+  const thinkingEnabled = policy.thinkingSupported
+    ? (control?.enabled ?? policy.thinkingDefault)
+    : false;
+
+  if (!payload.chat_template_kwargs || typeof payload.chat_template_kwargs !== 'object' ||
+      Array.isArray(payload.chat_template_kwargs)) {
+    payload.chat_template_kwargs = {};
+  }
+  payload.chat_template_kwargs.enable_thinking = thinkingEnabled;
+
+  if (thinkingEnabled) {
+    const requestedBudget = positiveIntegerOrNull(payload.thinking_budget_tokens);
+    const effortBudget = effortControl?.effort ? EFFORT_BUDGETS[effortControl.effort] : null;
+    payload.thinking_budget_tokens = Math.min(
+      requestedBudget ?? effortBudget ?? policy.thinkingBudgetDefault,
+      policy.thinkingBudgetCeiling,
+    );
+  } else {
+    delete payload.thinking_budget_tokens;
+  }
+
+  delete payload.max_completion_tokens;
+  delete payload.num_predict;
+  delete payload.num_ctx;
+  delete payload.options;
+  delete payload.think;
+  return resolved;
+}
+
 function printHelp() {
   console.log('Usage: node proxy.js [options]');
   console.log('');
@@ -72,6 +265,7 @@ function printHelp() {
   console.log('  --thinking                  inject think:true (Ollama) / thinking object (llama.cpp)');
   console.log('  --thinking-budget N         thinking budget tokens for llama.cpp (default: 8192)');
   console.log('  --max-tokens-ceiling N      hard max_tokens ceiling for llama.cpp (default: 8192)');
+  console.log('  --model-config PATH         per-model generation policy JSON');
   console.log('  --cron-parse-patch          remove OpenClaw cron pattern rejected by llama.cpp');
   console.log('  --debug-labels              dump first user message for label tuning');
   console.log('  --log-file [path]           append [done] lines to file');
@@ -105,6 +299,8 @@ const DEFAULT_CTX     = argVal('--default-ctx')  != null ? parseInt(argVal('--de
 const INJECT_THINKING = args.includes('--thinking');
 const THINKING_BUDGET = positiveIntegerArg('--thinking-budget', 8192);
 const MAX_TOKENS_CEILING = positiveIntegerArg('--max-tokens-ceiling', 8192);
+const MODEL_CONFIG_PATH = argVal('--model-config');
+const MODEL_POLICY_CONFIG = MODEL_CONFIG_PATH ? loadModelPolicyConfig(MODEL_CONFIG_PATH) : null;
 const CRON_PARSE_PATCH = args.includes('--cron-parse-patch');
 const DEBUG_LABELS    = args.includes('--debug-labels');
 const LOG_FILE        = argVal('--log-file') ?? (args.includes('--log-file') ? './proxy-done.log' : null);
@@ -363,12 +559,12 @@ function applyCronParsePatch(payload) {
 }
 
 // Translates OpenClaw's Ollama-flavoured fields to what each backend expects.
-function transformRequestBody(bodyStr) {
+function transformRequestBody(bodyStr, policyConfig = MODEL_POLICY_CONFIG, detectedModel = serverModel) {
   let p;
   try { p = JSON.parse(bodyStr); } catch { return bodyStr; }
 
   if (IS_OLLAMA) {
-    // Original Ollama behaviour: inject think, ensure num_predict
+    // Preserve legacy Ollama behavior. Model profiles govern the deployed llama.cpp path.
     p.think = INJECT_THINKING;
     if (!p.options) p.options = {};
     if (p.options.num_predict == null) p.options.num_predict = 8192;
@@ -384,14 +580,7 @@ function transformRequestBody(bodyStr) {
       cronParsePatchLogged = true;
     }
 
-    // 2. Thinking mode and llama-server's request-level reasoning budget.
-    if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
-    p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
-    if (INJECT_THINKING)
-      p.thinking_budget_tokens = clampPositiveInteger(p.thinking_budget_tokens, THINKING_BUDGET);
-    delete p.think; // remove Ollama-style think field if client sent it
-
-    // 3. Ollama options block -> top-level OpenAI fields.
+    // 2. Ollama options block -> top-level OpenAI fields.
     if (p.options) {
       if (p.options.temperature != null && p.temperature == null)
         p.temperature = p.options.temperature;
@@ -401,18 +590,27 @@ function transformRequestBody(bodyStr) {
         p.top_k = p.options.top_k;
     }
 
-    // 4. Resolve token aliases in API-native-first precedence, then enforce a hard limit.
-    const requestedMaxTokens = p.max_tokens
-      ?? p.max_completion_tokens
-      ?? p.options?.num_predict
-      ?? p.num_predict;
-    p.max_tokens = clampPositiveInteger(requestedMaxTokens, MAX_TOKENS_CEILING);
+    if (policyConfig) {
+      // 3. Model-aware defaults, caller overrides, and hard ceilings.
+      applyModelGenerationPolicy(p, policyConfig, detectedModel);
+    } else {
+      // Legacy global CLI behavior when no model profile file is configured.
+      if (!p.chat_template_kwargs) p.chat_template_kwargs = {};
+      p.chat_template_kwargs.enable_thinking = INJECT_THINKING;
+      if (INJECT_THINKING)
+        p.thinking_budget_tokens = clampPositiveInteger(p.thinking_budget_tokens, THINKING_BUDGET);
+      delete p.think;
 
-    // num_ctx is set at llama-server launch, not per request.
-    delete p.max_completion_tokens;
-    delete p.num_predict;
-    delete p.num_ctx;
-    delete p.options;
+      const requestedMaxTokens = p.max_tokens
+        ?? p.max_completion_tokens
+        ?? p.options?.num_predict
+        ?? p.num_predict;
+      p.max_tokens = clampPositiveInteger(requestedMaxTokens, MAX_TOKENS_CEILING);
+      delete p.max_completion_tokens;
+      delete p.num_predict;
+      delete p.num_ctx;
+      delete p.options;
+    }
   }
 
   return JSON.stringify(p);
@@ -1019,6 +1217,9 @@ const proxy = http.createServer((req, res) => {
         tools: parsed.tools?.length
           ? `[${parsed.tools.length} tools]`
           : undefined,
+        generation_policy: MODEL_POLICY_CONFIG
+          ? resolveModelPolicy(parsed.model, serverModel, MODEL_POLICY_CONFIG).name
+          : 'legacy-cli',
       };
       console.log(JSON.stringify(summary, null, 2));
       requestHadUsageInclude = parsed.stream_options?.include_usage === true;
@@ -1245,7 +1446,11 @@ function startProxy() {
     console.log(`  Output mode:    ${outputMode}`);
     console.log(`  Message size:   ${MESSAGE_SIZE === 0 ? 'unlimited' : MESSAGE_SIZE}`);
     console.log(`  Log mode:       ${LOG_MODE}`);
-    if (INJECT_THINKING) console.log(`  Thinking:       on (budget: ${THINKING_BUDGET})`);
+    if (MODEL_POLICY_CONFIG) {
+      console.log(`  Model config:   ${MODEL_POLICY_CONFIG.path} (${MODEL_POLICY_CONFIG.profiles.length} profiles)`);
+    } else if (INJECT_THINKING) {
+      console.log(`  Thinking:       on (budget: ${THINKING_BUDGET})`);
+    }
     if (DEFAULT_CTX) console.log(`  Default ctx:    ${DEFAULT_CTX}`);
     if (DUMP_MESSAGES) console.log(`  Dump messages:  on`);
     if (DUMP_REQUEST) console.log(`  Dump request:   on`);
@@ -1282,6 +1487,9 @@ if (require.main === module) {
 
 module.exports = {
   transformRequestBody,
+  compileModelPolicyConfig,
+  resolveModelPolicy,
+  applyModelGenerationPolicy,
   deriveLlamaTimingMetrics,
   runtimeConfig: {
     proxyHost: PROXY_HOST,

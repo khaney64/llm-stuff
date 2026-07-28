@@ -24,5 +24,5 @@ exec node ./proxy.js \
     --power-interval 250 \
     --debug-labels \
     --dump-request \
-    --thinking \
+    --model-config ./proxy-models.json \
     --cron-parse-patch

@@ -11,11 +11,106 @@ process.argv.push(
   '--proxy-port', '8081',
   '--backend-port', '8082',
 );
-const { transformRequestBody, deriveLlamaTimingMetrics, runtimeConfig } = require('./proxy.js');
+const {
+  transformRequestBody,
+  deriveLlamaTimingMetrics,
+  runtimeConfig,
+  compileModelPolicyConfig,
+  resolveModelPolicy,
+} = require('./proxy.js');
+
+const modelPolicyConfig = compileModelPolicyConfig(require('./proxy-models.json'), 'test config');
 
 function transform(body) {
   return JSON.parse(transformRequestBody(JSON.stringify(body)));
 }
+
+function transformWithPolicy(body, detectedModel = null) {
+  return JSON.parse(transformRequestBody(JSON.stringify(body), modelPolicyConfig, detectedModel));
+}
+
+test('resolves request model, detected model, glob, and safe fallback policies', () => {
+  assert.equal(resolveModelPolicy('qwen36-35b', null, modelPolicyConfig).name, 'qwen-reasoning');
+  assert.equal(resolveModelPolicy('Qwen3.6-35B-A3B-Q4_K_M.gguf', null, modelPolicyConfig).name, 'qwen-reasoning');
+  assert.equal(resolveModelPolicy('qwen3-coder', null, modelPolicyConfig).name, 'qwen-coder');
+  assert.equal(resolveModelPolicy('unknown-model', null, modelPolicyConfig).name, 'fallback');
+
+  const detected = transformWithPolicy({ messages: [] }, 'gemma4-31b');
+  assert.equal(detected.max_tokens, 8192);
+  assert.equal(detected.chat_template_kwargs.enable_thinking, false);
+});
+
+test('model policy applies defaults, aliases, and ceilings', () => {
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b' }).max_tokens, 16384);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', max_tokens: 100000 }).max_tokens, 32768);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', max_completion_tokens: 24000 }).max_tokens, 24000);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', options: { num_predict: 12000 } }).max_tokens, 12000);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', max_tokens: 'invalid' }).max_tokens, 16384);
+});
+
+test('reasoning policy honors caller thinking controls and budgets', () => {
+  const defaults = transformWithPolicy({ model: 'qwen36-35b' });
+  assert.equal(defaults.chat_template_kwargs.enable_thinking, true);
+  assert.equal(defaults.thinking_budget_tokens, 4096);
+
+  const disabled = transformWithPolicy({
+    model: 'qwen36-35b',
+    chat_template_kwargs: { enable_thinking: false, thinking_budget_tokens: 7000 },
+  });
+  assert.equal(disabled.chat_template_kwargs.enable_thinking, false);
+  assert.equal('thinking_budget_tokens' in disabled, false);
+
+  const clamped = transformWithPolicy({
+    model: 'qwen36-35b',
+    chat_template_kwargs: { enable_thinking: true },
+    thinking_budget_tokens: 100000,
+  });
+  assert.equal(clamped.thinking_budget_tokens, 8192);
+
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', reasoning_effort: 'minimal' })
+    .thinking_budget_tokens, 1024);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', reasoning_effort: 'low' })
+    .thinking_budget_tokens, 2048);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', reasoning_effort: 'medium' })
+    .thinking_budget_tokens, 4096);
+  assert.equal(transformWithPolicy({ model: 'qwen36-35b', reasoning_effort: 'high' })
+    .thinking_budget_tokens, 8192);
+});
+
+test('thinking precedence and unsupported-model safety are deterministic', () => {
+  const explicit = transformWithPolicy({
+    model: 'qwen36-35b',
+    think: false,
+    reasoning_effort: 'high',
+    chat_template_kwargs: { enable_thinking: true },
+  });
+  assert.equal(explicit.chat_template_kwargs.enable_thinking, true);
+  assert.equal(explicit.thinking_budget_tokens, 8192);
+
+  const unsupported = transformWithPolicy({
+    model: 'qwen3-coder',
+    think: true,
+    thinking_budget_tokens: 8192,
+  });
+  assert.equal(unsupported.chat_template_kwargs.enable_thinking, false);
+  assert.equal('thinking_budget_tokens' in unsupported, false);
+
+  const fallback = transformWithPolicy({ model: 'unlisted-model', max_tokens: 50000 });
+  assert.equal(fallback.max_tokens, 16384);
+  assert.equal(fallback.chat_template_kwargs.enable_thinking, false);
+});
+
+test('rejects malformed model policy configuration', () => {
+  assert.throws(() => compileModelPolicyConfig({ version: 2, fallback: {}, profiles: [] }));
+  assert.throws(() => compileModelPolicyConfig({
+    version: 1,
+    fallback: {
+      max_tokens: { default: 20, ceiling: 10 },
+      thinking: { supported: false, default_enabled: false, default_budget: 0, ceiling: 0 },
+    },
+    profiles: [],
+  }));
+});
 
 test('defaults and clamps max_tokens', () => {
   for (const [value, expected] of [

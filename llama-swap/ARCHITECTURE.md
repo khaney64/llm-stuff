@@ -208,13 +208,43 @@ retain distinct canonical IDs even when llama.cpp uses the same served alias.
 4. The owning llama-swap keeps an already-running match or replaces its current
    managed llama.cpp process.
 5. The initial request waits for `/health` during a cold start.
-6. proxy.js transforms Ollama-style fields, applies thinking and OpenClaw cron
-   compatibility, records usage/timing/power data, and streams the response.
+6. proxy.js transforms Ollama-style fields, applies the selected model's
+   generation policy and OpenClaw cron compatibility, records
+   usage/timing/power data, and streams the response.
 7. llama.cpp performs inference and returns the OpenAI-compatible response.
 
 An unknown model returns a model-routing error rather than choosing an
 arbitrary fallback. A peer outage affects that peer's models but not local
 devbox models.
+
+### Per-model generation policy
+
+`proxy.js` loads `proxy-models.json` through `--model-config`. The request
+`model` is matched first; the model detected from llama.cpp `/props` is used
+when the caller omits it. Exact IDs, aliases, canonical names, and GGUF glob
+patterns can share a profile.
+
+Callers such as Open WebUI, Hermes, and OpenClaw may request output length and
+thinking controls. The proxy preserves caller choice within the selected
+model's safety ceilings:
+
+| Setting | Accepted request fields, highest precedence first |
+| --- | --- |
+| Output tokens | `max_tokens`, `max_completion_tokens`, `options.num_predict`, `num_predict`, profile default |
+| Thinking on/off | `chat_template_kwargs.enable_thinking`, `think`, `reasoning_effort`, profile default |
+| Thinking budget | `thinking_budget_tokens`, `reasoning_effort` mapping, profile default |
+
+The effort-to-budget mapping is `minimal=1024`, `low=2048`, `medium=4096`,
+and `high=8192`. Unsupported models always receive
+`chat_template_kwargs.enable_thinking=false`. Unknown models use the safe
+fallback: thinking off, 8192 output-token default, and 16384 output-token
+ceiling. This replaces the old global `--thinking` switch, which could apply
+the wrong behavior after llama-swap changed models.
+
+Current reasoning profiles default to 16384 output tokens with a 32768
+ceiling, plus a 4096-token thinking budget with an 8192 ceiling. Non-reasoning
+coder and Gemma profiles keep thinking disabled and use their configured
+output defaults and ceilings.
 
 ## Operations
 
@@ -237,20 +267,50 @@ Task Scheduler output is captured in rotating UTF-8 log files:
 
 - `llama-swap\logs\proxy.log`: proxy request transforms, streaming diagnostics,
   InfluxDB status, and GPU-power messages.
-- `llama-swap\logs\llama-swap.log`: llama-swap routing and the stdout/stderr of
-  its managed llama.cpp child.
+- `llama-swap\logs\llama-swap.log`: output that llama-swap writes to stdout.
+
+Both deployed YAML files currently omit `logToStdout`, whose default is
+`proxy`. Consequently, `llama-swap.log` contains routing and request logs but
+not the managed llama.cpp process's stdout/stderr.
+
+llama-swap retains the upstream output in its in-memory log monitor. View it
+without changing the configuration:
+
+- Devbox UI: `http://devbox:8080/ui/`
+- All devbox llama.cpp output: `http://devbox:8080/logs/stream/upstream`
+- One devbox model: `http://devbox:8080/logs/stream/<model-id>`
+- llmserver UI and streams: use the same paths on
+  `http://llmserver.lan:8080`
+
+To also copy llama.cpp output to the service stdout, add this top-level setting
+to the owning host's YAML:
+
+```yaml
+logToStdout: both
+```
+
+Set it in `configs/devbox.yaml` for the Windows host or
+`configs/llmserver.yaml` for the Linux host, then restart that host's
+llama-swap service. `logLevel: debug` increases llama-swap diagnostics but does
+not enable upstream-process output.
 
 ```powershell
 # Follow the proxy log
 Get-Content .\llama-swap\logs\proxy.log -Tail 100 -Wait
 
-# Follow llama-swap and llama.cpp
+# Follow llama-swap; includes llama.cpp after setting logToStdout: both
 Get-Content .\llama-swap\logs\llama-swap.log -Tail 100 -Wait
 
 # Inspect current and rotated files
 Get-ChildItem .\llama-swap\logs |
   Select-Object Name,Length,LastWriteTime
+
+# Apply a devbox YAML change
+.\llama-swap\windows\manage.ps1 restart
 ```
+
+On llmserver, `journalctl --user -u llama-swap.service -f` follows service
+stdout and includes llama.cpp after setting `logToStdout: both`.
 
 Each active file rotates at 50 MiB. Five archives (`.1` through `.5`) are
 retained, limiting each component to roughly 300 MiB. Rotation occurs inside
@@ -378,6 +438,7 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 
 | File | Purpose |
 | --- | --- |
+| `proxy-models.json` | Per-model output-token and thinking defaults, caller override rules, and hard ceilings |
 | `llama-swap/ARCHITECTURE.md` | Architecture, routing, configuration, operations, logs, and recovery runbook |
 | `llama-swap/configs/devbox.yaml` | Devbox models, aliases, llmserver peer catalog, and startup preload |
 | `llama-swap/configs/llmserver.yaml` | llmserver models, launch commands, and vision-model preload |
@@ -396,10 +457,10 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 
 | File | Change |
 | --- | --- |
-| `proxy.js` | Adds configurable listen/backend ports, preserves model IDs for routing, and keeps inspected responses uncompressed |
-| `proxy.ps1` | Runs the devbox proxy on loopback port 8081, loads Influx variables, and captures rotating logs |
-| `proxy.sh` | Runs the llmserver proxy on loopback port 8081 and loads `env.sh` |
-| `proxy.test.js` | Tests model preservation, compatibility transforms, metrics, and port parsing |
+| `proxy.js` | Adds configurable ports and per-model generation policy, preserves model IDs for routing, and keeps inspected responses uncompressed |
+| `proxy.ps1` | Runs the devbox proxy with `proxy-models.json`, loads Influx variables, and captures rotating logs |
+| `proxy.sh` | Runs the llmserver proxy with `proxy-models.json` and loads `env.sh` |
+| `proxy.test.js` | Tests policy matching, caller overrides, safety ceilings, model preservation, compatibility transforms, metrics, and port parsing |
 | `.gitignore` | Excludes generated devbox service logs |
 
 ### Host-local files and objects
