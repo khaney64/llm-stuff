@@ -83,6 +83,32 @@
       "thinkingDefault": false,
       "thinkingBudgetDefault": 0,
       "thinkingBudgetCeiling": 0
+    },
+    {
+      "name": "qwen25-coder-small",
+      "match": [
+        "qwen25-coder-1.5b",
+        "*Qwen2.5-Coder-1.5B*"
+      ],
+      "maxTokensDefault": 2048,
+      "maxTokensCeiling": 4096,
+      "thinkingSupported": false,
+      "thinkingDefault": false,
+      "thinkingBudgetDefault": 0,
+      "thinkingBudgetCeiling": 0
+    },
+    {
+      "name": "nomic-embed",
+      "match": [
+        "nomic-embed",
+        "*nomic-embed-text*"
+      ],
+      "maxTokensDefault": 512,
+      "maxTokensCeiling": 1024,
+      "thinkingSupported": false,
+      "thinkingDefault": false,
+      "thinkingBudgetDefault": 0,
+      "thinkingBudgetCeiling": 0
     }
   ]
 }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS counterpart to llama-swap/linux/llama-swap.service.
+
+  __HOME__ is substituted by llama-swap/macos/install.sh.
+
+  launchd cannot express "After=llama-proxy", so start-swap.sh waits for the
+  proxy's port before exec'ing llama-swap.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.khaney.llama-swap</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/llm-stuff/llama-swap/macos/start-swap.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__HOME__/llm-stuff</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <!-- llama-swap must be allowed to stop its llama.cpp child cleanly;
+         matches TimeoutStopSec=90 on the systemd unit. -->
+    <key>ExitTimeOut</key>
+    <integer>90</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/llama-swap.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/llama-swap.log</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>

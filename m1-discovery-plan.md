@@ -1,5 +1,12 @@
 # M1 Mac Mini (8GB) — Discovery & Pipeline Validation Plan
 
+> **Status (2026-08-29): sections 1, 2, 3, 5 and 6 are done and verified on the
+> hardware.** llama.cpp is built with Metal, both models serve behind
+> llama-swap, proxy.js logs to InfluxDB with `macmon` power, and both tiers run
+> as launchd agents. The runbook is `macos-setup.md`. Section 4 (MLX) is the
+> one remaining item — it was not part of this pass. Per-item results are
+> recorded in the checklist below.
+
 ## Purpose
 
 This M1 Mini (8GB) is **not** a performance testbed — its numbers are meaningless
@@ -74,56 +81,70 @@ orchestration) — the captured sample showed `gpu_power: 0.0016W` at idle vs
 undercount real energy cost and make the Mac look artificially cheaper per
 request in the `$` cost column than it actually is.
 
-**Decision needed:** report `gpu_power` alone (apples-to-apples vs nvidia-smi's
-GPU-only number) or `sys_power` / `cpu_power + gpu_power + ane_power` (honest
-total energy cost). Leaning toward the latter for cost-tracking accuracy —
-confirm before wiring into InfluxDB permanently.
+**Decided: `gpu_power` alone**, matching what `nvidia-smi` reports on the other
+nodes so the `$`-per-request column stays comparable across hosts. Whole-system
+power is captured separately, outside this pipeline.
+
+The concern about undercounting is real but smaller than the idle sample
+suggested: measured under Metal inference, GPU power goes from **0.002W idle to
+2.5W average / 8.9W peak**, so the GPU signal is not noise. Because idle is
+effectively zero, `--gpu-idle 0` is correct on this host — there is no baseline
+to subtract, unlike the 11W (llmserver) and 15W (devbox) the discrete cards
+draw at rest.
+
+`power-macos.js` takes the field from `MACMON_POWER_FIELD`, so switching to
+`sys` or `cpu+gpu+ane` later is an environment variable, not a code change.
 
 ## Checklist
 
 ### 1. Power provider module
-- [ ] Read `~/llm-stuff/power-nvidia-smi.js` first to confirm the exact
+- [x] Read `~/llm-stuff/power-nvidia-smi.js` first to confirm the exact
       `sample(callback)` contract, then write `~/llm-stuff/power-macos.js`
       alongside it, shelling out to `macmon pipe -s 1` and parsing JSON
-- [ ] Decide and implement the power-field question above
-- [ ] Test `node ~/llm-stuff/proxy.js --power --power-provider ./power-macos.js ...`
+- [x] Decide and implement the power-field question above — **done**, `gpu_power`, overridable via `MACMON_POWER_FIELD`
+- [x] Test `node ~/llm-stuff/proxy.js --power --power-provider ./power-macos.js ...`
       end to end, confirm wattage appears in console `[done]` lines
-- [ ] Confirm InfluxDB write includes the macOS power fields alongside
+- [x] Confirm InfluxDB write includes the macOS power fields alongside
       existing `gpu_avg_watts` / `gpu_peak_watts` / `gpu_energy_wh` tags,
       tagged with `host: os.hostname()` so it's distinguishable from the
       Linux/Windows nodes in Grafana/InfluxDB queries
 
 ### 2. llama.cpp Metal build
-- [ ] Build `~/llama/llama.cpp` with `-DGGML_METAL=ON -DGGML_ACCELERATE=ON`
-- [ ] Confirm `llama-server` starts and loads
+- [x] Build `~/llama/llama.cpp` with `-DGGML_METAL=ON -DGGML_ACCELERATE=ON` — **b10686**, also `-DGGML_METAL_EMBED_LIBRARY=ON` so the shaders don't have to be found relative to cwd under launchd
+- [x] Confirm `llama-server` starts and loads
       `~/llama/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` without
       wired-limit errors
-- [ ] `curl -s http://localhost:8080/props | jq` — confirm response shape
+- [x] `curl -s http://localhost:8080/props | jq` — confirm response shape
       matches what proxy.js's auto-detection expects (`serverCtx`,
-      `serverBuildInfo`, `serverModel`) — **not yet verified, do this next**
-- [ ] `curl -s http://localhost:8080/slots | jq` — same check
-- [ ] Run a chat completion through `proxy.js` pointed at this server, confirm
-      `[done]` line logs prompt/gen tok/s correctly
-- [ ] Repeat the `/props`/`/slots` check with
+      `serverBuildInfo`, `serverModel`) — **verified**: `n_ctx` 8192,
+      `build_info` `b10686-3173a5647`, `total_slots` 1. Note
+      `default_generation_settings.model` is `null`, so the model name comes
+      from the `model_path` fallback in `fetchServerCtx()` — that fallback
+      chain is load-bearing on this build, not decorative.
+- [x] `curl -s http://localhost:8080/slots | jq` — same check; returns an
+      array, as `fetchServerSlots()` expects
+- [x] Run a chat completion through `proxy.js` pointed at this server, confirm
+      `[done]` line logs prompt/gen tok/s correctly — pp 137-182 tok/s, tg ~50 tok/s
+- [x] Repeat the `/props`/`/slots` check with
       `~/llama/models/nomic-embed-text-v1.5.f16.gguf` served via
       `llama-server --embedding`, confirm `/v1/embeddings` responds
 
 ### 3. Model swapping (llama-swap)
-- [ ] Check what's already in `~/llm-stuff/llama-swap/` before writing a new
-      config — may already have a partial setup from earlier exploration
-- [ ] Check whether `~/llm-stuff/proxy-models.json` needs entries added for
-      `qwen2.5-coder-1.5b-instruct-q4_k_m` and `nomic-embed-text-v1.5.f16`
-- [ ] Configure llama-swap with both models (see draft config from prior
+- [x] Check what's already in `~/llm-stuff/llama-swap/` before writing a new
+      config — may already have a partial setup from earlier exploration — had linux/ and windows/ only; added `macos/` and `configs/mac-m1.yaml`
+- [x] Check whether `~/llm-stuff/proxy-models.json` needs entries added for
+      `qwen2.5-coder-1.5b-instruct-q4_k_m` and `nomic-embed-text-v1.5.f16` — **yes**, added `qwen25-coder-small` and `nomic-embed` profiles
+- [x] Configure llama-swap with both models (see draft config from prior
       discussion — one llama-server entry per model, or Ollama for the
-      embed model if testing the mixed-backend scenario deliberately)
-- [ ] Trigger swaps by alternating requests, watch `vm_stat`/`memory_pressure`
+      embed model if testing the mixed-backend scenario deliberately) — both via llama.cpp; no Ollama needed
+- [x] Trigger swaps by alternating requests, watch `vm_stat`/`memory_pressure`
       before/after each swap to confirm memory is actually freed on unload,
-      not just marked idle
-- [ ] Confirm embedding requests and chat requests interleaving correctly
+      not just marked idle — **memory is genuinely freed**: wired 2.77GB → 1.98GB, system free 33% → 46% on unload
+- [x] Confirm embedding requests and chat requests interleaving correctly
       triggers a swap each time, rather than llama-swap losing track of which
-      backend is "current" when the two models use different serving stacks
+      backend is "current" when the two models use different serving stacks — 4 alternating swaps, all correct, ~1.5s each
 
-### 4. MLX serving path
+### 4. MLX serving path — NOT STARTED (only remaining item)
 - [ ] Install `mlx-lm`, run `mlx_lm.server` with an MLX-quantized version of
       the same small test model
 - [ ] Compare its OpenAI-compatible streaming response shape against
@@ -135,18 +156,25 @@ confirm before wiring into InfluxDB permanently.
       M5 Ultra arrives, not after
 
 ### 5. proxy.js port/host sanity
-- [ ] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
+- [x] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
       cleanly on macOS — check for any Linux-specific assumptions before
-      trusting it as-is
-- [ ] Confirm proxy.js binds correctly on macOS (no Gatekeeper/firewall
-      prompt blocking `0.0.0.0` listen)
-- [ ] Confirm backend auto-detection from port (8080 → llama.cpp,
+      trusting it as-is — **needed changes**; now host-profile aware
+- [x] Confirm proxy.js binds correctly on macOS (no Gatekeeper/firewall
+      prompt blocking `0.0.0.0` listen) — proxy.js binds 127.0.0.1:8081 and
+      llama-swap binds `0.0.0.0:8080`, both with no prompt, and 8080 answers on
+      the LAN IP (192.168.86.34). The host was renamed to `mac-m1`
+      (`scutil --set HostName`) so it tags cleanly in InfluxDB. Note the
+      application firewall is currently
+      **disabled** on this host, so this did not exercise the prompt path — if
+      it is ever enabled, macOS will ask to allow incoming connections for the
+      `llama-swap` binary on first bind.
+- [x] Confirm backend auto-detection from port (8080 → llama.cpp,
       11434 → ollama) behaves the same as on Linux/Windows
 
 ### 6. Write up findings
-- [ ] Once the above checks pass, write `~/llm-stuff/macos-setup.md` following
+- [x] Once the above checks pass, write `~/llm-stuff/macos-setup.md` following
       the same structure as the existing `ubuntu-setup.md`, so the M5 Ultra
-      setup has a per-platform reference doc matching the others
+      setup has a per-platform reference doc matching the others — **written**
 
 ### 7. System monitoring commands (reference)
 ```bash

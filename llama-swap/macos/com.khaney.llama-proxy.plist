@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS counterpart to llama-swap/linux/llama-proxy.service.
+
+  __HOME__ is substituted by llama-swap/macos/install.sh; launchd does not
+  expand ~ or environment variables inside these keys.
+
+  InfluxDB credentials are NOT set here. proxy.sh sources influxdb-env.sh
+  itself, which keeps the secret in one gitignored file instead of copying it
+  into a plist that lives in ~/Library/LaunchAgents.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.khaney.llama-proxy</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/llm-stuff/proxy.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__HOME__/llm-stuff</string>
+
+    <!-- launchd gives jobs a bare PATH; node and macmon both live under
+         Homebrew, and power-macos.js resolves `macmon` by bare name. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Mirrors systemd Restart=on-failure / RestartSec=5. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/proxy.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/proxy.log</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>

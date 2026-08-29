@@ -1,0 +1,37 @@
+# llama-swap config for mac-m1 (Apple M1 Mac mini, 8GB unified memory).
+#
+# Same shape as llmserver.yaml/devbox.yaml: llama-swap owns the llama.cpp
+# process lifetime, proxies through proxy.js on 127.0.0.1:8081 for telemetry,
+# and takes every model-specific llama.cpp setting from the host launcher
+# (llama-swap/macos/server.sh) rather than duplicating it here.
+#
+# This box is a pipeline-validation node, not a capacity node — 8GB of unified
+# memory holds one small model at a time. Both models below are deliberately
+# tiny; the point is to exercise chat, embeddings, and swapping between the
+# two, not to serve real work.
+healthCheckTimeout: 600
+unloadTimeout: 60
+globalTTL: 0
+
+models:
+  qwen25-coder-1.5b:
+    name: Qwen2.5 Coder 1.5B Instruct Q4_K_M
+    cmd: ./llama-swap/macos/server.sh --model qwen25-coder-1.5b --port 8082 --host 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen25-coder-1.5b
+
+  nomic-embed:
+    name: Nomic Embed Text v1.5 F16
+    cmd: ./llama-swap/macos/server.sh --model nomic-embed --port 8082 --host 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: nomic-embed
+    aliases:
+      - nomic-embed-text
+      - nomic-embed-text-v1.5
+
+hooks:
+  on_startup:
+    preload:
+      - qwen25-coder-1.5b

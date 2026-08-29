@@ -27,13 +27,27 @@ flowchart LR
         RS --> RP --> RL --> RG
     end
 
+    subgraph M[mac-m1 - Apple M1 8 GB unified]
+        MS[llama-swap<br/>0.0.0.0:8080]
+        MP[proxy.js<br/>127.0.0.1:8081]
+        ML[llama.cpp Metal<br/>127.0.0.1:8082]
+        MG[Small GGUF and embedding models]
+        MS --> MP --> ML --> MG
+    end
+
     I[(InfluxDB)]
     H -->|OpenAI API| DS
     O -->|OpenAI API| DS
     DS -->|peer model| RS
     DP -->|usage, timing, power| I
     RP -->|usage, timing, power| I
+    MP -->|usage, timing, power| I
 ```
+
+`mac-m1` is a pipeline-validation node, not a capacity node: it proves the
+macOS path (Metal build, `macmon` power, launchd services) ahead of the M5
+Ultra. It is not registered as a devbox peer, so nothing routes to it
+automatically.
 
 The agent-facing endpoint remains port `8080`. Ports `8081` and `8082` are
 loopback-only implementation details.
@@ -46,6 +60,9 @@ loopback-only implementation details.
 | llmserver | 8080 | peer llama-swap | LAN |
 | llmserver | 8081 | proxy.js | loopback |
 | llmserver | 8082 | llama.cpp selected model | loopback |
+| mac-m1 | 8080 | llama-swap front door | LAN |
+| mac-m1 | 8081 | proxy.js | loopback |
+| mac-m1 | 8082 | llama.cpp selected model | loopback |
 
 Devbox Task Scheduler registration also creates a Windows Firewall inbound rule
 for `llama-swap.exe` on TCP 8080. The rule is limited to `LocalSubnet`; ports
@@ -125,6 +142,7 @@ The active files are:
 
 - `llama-swap/configs/devbox.yaml`
 - `llama-swap/configs/llmserver.yaml`
+- `llama-swap/configs/mac-m1.yaml`
 
 Important fields:
 
@@ -162,6 +180,11 @@ remain the source of truth for its model-specific settings:
   `llama-swap/linux/start-model.sh` with `--model`, `--port 8082`, and
   `--host 127.0.0.1`. The wrapper resolves the host-neutral `$HOME` path and
   executes `$HOME/llama/server.sh`.
+- mac-m1 `cmd` entries call `llama-swap/macos/server.sh` directly with the same
+  `--model`/`--port`/`--host` arguments. That catalog is committed rather than
+  host-local: it holds no secrets, and the M5 Ultra should start from a
+  known-good file instead of a blank one. It needs no `start-model.sh`
+  indirection because it resolves `$HOME` itself.
 
 The selected script expands the model ID into its existing model path, context,
 batch, GPU, alias, vision/mmproj, speculative-decoding, and other llama.cpp
@@ -199,6 +222,20 @@ retain distinct canonical IDs even when llama.cpp uses the same served alias.
 5. Restart llmserver's llama-swap, then restart devbox's llama-swap.
 6. Test `llmserver/<model-id>` first. Test the unqualified ID after confirming
    no local or second peer model has the same ID.
+
+## Adding a mac-m1 model
+
+1. Add the model and its llama.cpp settings to `llama-swap/macos/server.sh`
+   (`MODEL_NAMES` plus a `case` branch setting `M_FILE`, `M_ALIAS`, `M_ARGS`).
+2. Add a matching block under `models` in `configs/mac-m1.yaml`.
+3. Set `useModelName` to the `-a` alias used by `server.sh`.
+4. Restart mac-m1's llama-swap:
+   `./llama-swap/macos/manage.sh restart-swap`.
+5. Confirm the ID appears in `/v1/models`, then send a small completion.
+
+Check the memory budget first — this host has 8GB of unified memory and no
+peer to fall back to. `./llama-swap/macos/server.sh --model ID --dry-run`
+prints the exact llama.cpp command without starting it.
 
 ## Request and swap lifecycle
 
@@ -331,19 +368,56 @@ unexpected port owner.
 
 systemd user services restart failures, and user lingering starts them at boot.
 
+### mac-m1
+
+```bash
+~/llm-stuff/llama-swap/macos/manage.sh status
+~/llm-stuff/llama-swap/macos/manage.sh start
+~/llm-stuff/llama-swap/macos/manage.sh restart
+~/llm-stuff/llama-swap/macos/manage.sh restart-proxy
+~/llm-stuff/llama-swap/macos/manage.sh restart-swap
+~/llm-stuff/llama-swap/macos/manage.sh stop
+~/llm-stuff/llama-swap/macos/manage.sh logs
+```
+
+launchd user agents restart failures (`KeepAlive` with `SuccessfulExit=false`,
+`ThrottleInterval=5`). launchd has no equivalent of systemd's `After=`, so
+`macos/start-swap.sh` waits for proxy.js on 8081 before exec'ing llama-swap —
+the same job `windows/start-swap.ps1` does. LaunchAgents run only inside a user
+session, so start-at-boot needs automatic login enabled; that is the macOS
+analogue of `loginctl enable-linger`. Full runbook: `macos-setup.md`.
+
+### mac-m1 logs
+
+Both agents write to `llama-swap/logs/` (same layout as devbox), via the
+plists' `StandardOutPath`/`StandardErrorPath`:
+
+```bash
+tail -F ~/llm-stuff/llama-swap/logs/proxy.log
+tail -F ~/llm-stuff/llama-swap/logs/llama-swap.log
+```
+
+launchd does not rotate these. Unlike devbox, where `rotating-log.ps1` bounds
+them, and llmserver, where journald does, mac-m1's logs are currently unbounded
+— add a `/etc/newsyslog.d/` entry if the host runs long enough to matter.
+
 ### What to restart after a change
 
 Restarts interrupt in-flight inference. Prefer a quiet period.
 
-| Changed item | Devbox action | llmserver action | Reason |
-| --- | --- | --- | --- |
-| `proxy.js`, `proxy.ps1`, `proxy.sh`, or Influx environment | Restart proxy; full-stack restart is safest | Restart `llama-proxy.service` | Reload proxy code, arguments, or environment |
-| `configs/devbox.yaml` | Restart devbox llama-swap | None | llama-swap reads YAML only at process start |
-| `configs/llmserver.yaml` | Restart devbox llama-swap if its peer list changed | Restart `llama-swap.service` | Reload remote definitions and advertised peer catalog |
-| `server.ps1` | Restart devbox llama-swap | None | Replace the current managed llama.cpp child |
-| `server.sh` | None | Restart `llama-swap.service` | Replace the current managed llama.cpp child |
-| Windows task scripts/settings | Re-run `register-tasks.ps1`, then restart stack | None | Refresh Task Scheduler definitions |
-| systemd unit files | None | Reinstall/copy units, run `systemctl --user daemon-reload`, then restart | Refresh installed unit definitions |
+| Changed item | Devbox action | llmserver action | mac-m1 action | Reason |
+| --- | --- | --- | --- | --- |
+| `proxy.js`, `proxy.ps1`, `proxy.sh`, `proxy-models.json`, or Influx environment | Restart proxy; full-stack restart is safest | Restart `llama-proxy.service` | `manage.sh restart-proxy` | Reload proxy code, arguments, or environment |
+| `power-macos.js` | None | None | `manage.sh restart-proxy` | Provider module is required once at proxy start |
+| `configs/devbox.yaml` | Restart devbox llama-swap | None | None | llama-swap reads YAML only at process start |
+| `configs/llmserver.yaml` | Restart devbox llama-swap if its peer list changed | Restart `llama-swap.service` | None | Reload remote definitions and advertised peer catalog |
+| `configs/mac-m1.yaml` | None | None | `manage.sh restart-swap` | llama-swap reads YAML only at process start |
+| `server.ps1` | Restart devbox llama-swap | None | None | Replace the current managed llama.cpp child |
+| `server.sh` (llmserver, host-local) | None | Restart `llama-swap.service` | None | Replace the current managed llama.cpp child |
+| `llama-swap/macos/server.sh` | None | None | `manage.sh restart-swap` | Replace the current managed llama.cpp child |
+| Windows task scripts/settings | Re-run `register-tasks.ps1`, then restart stack | None | None | Refresh Task Scheduler definitions |
+| systemd unit files | None | Reinstall/copy units, run `systemctl --user daemon-reload`, then restart | None | Refresh installed unit definitions |
+| launchd plists | None | None | Re-run `macos/install.sh`, then `manage.sh restart` | Reinstall into `~/Library/LaunchAgents` with `__HOME__` resolved |
 
 Devbox full-stack restart:
 
@@ -378,6 +452,21 @@ systemctl --user restart llama-proxy.service
 systemctl --user restart llama-swap.service
 
 systemctl --user is-active llama-proxy.service llama-swap.service
+```
+
+mac-m1 restarts:
+
+```bash
+# Everything
+~/llm-stuff/llama-swap/macos/manage.sh restart
+
+# proxy.js, proxy.sh, proxy-models.json, power-macos.js, or influxdb-env.sh
+~/llm-stuff/llama-swap/macos/manage.sh restart-proxy
+
+# mac-m1.yaml or macos/server.sh
+~/llm-stuff/llama-swap/macos/manage.sh restart-swap
+
+~/llm-stuff/llama-swap/macos/manage.sh status
 ```
 
 After any restart, check `/health`, `/v1/models`, and the applicable logs.
@@ -452,6 +541,15 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | `llama-swap/linux/llama-swap.service` | systemd user unit for llmserver llama-swap and its llama.cpp child |
 | `llama-swap/linux/manage.sh` | Starts, stops, restarts, and reports the llmserver stack |
 | `llama-swap/linux/start-model.sh` | Resolves `$HOME` privately on llmserver and invokes its existing model launcher |
+| `llama-swap/configs/mac-m1.yaml` | mac-m1 models, launch commands, and startup preload |
+| `llama-swap/macos/install.sh` | Verifies the pinned darwin/arm64 archive checksum, clears Gatekeeper quarantine, and installs the binary and launchd agents |
+| `llama-swap/macos/com.khaney.llama-proxy.plist` | launchd user agent for mac-m1 proxy.js (`__HOME__` substituted at install) |
+| `llama-swap/macos/com.khaney.llama-swap.plist` | launchd user agent for mac-m1 llama-swap and its llama.cpp child |
+| `llama-swap/macos/manage.sh` | Starts, stops, restarts, and reports the mac-m1 stack |
+| `llama-swap/macos/start-swap.sh` | Waits for proxy.js on 8081, then starts llama-swap (launchd has no `After=`) |
+| `llama-swap/macos/server.sh` | mac-m1 model catalog and llama.cpp launcher; committed rather than host-local |
+| `power-macos.js` | Apple Silicon power provider; streams `macmon pipe` NDJSON and reports GPU watts |
+| `macos-setup.md` | Apple Silicon deployment runbook (Metal build, launchd, macmon, InfluxDB env) |
 
 ### Existing repository files modified
 
@@ -459,7 +557,7 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | --- | --- |
 | `proxy.js` | Adds configurable ports and per-model generation policy, preserves model IDs for routing, and keeps inspected responses uncompressed |
 | `proxy.ps1` | Runs the devbox proxy with `proxy-models.json`, loads Influx variables, and captures rotating logs |
-| `proxy.sh` | Runs the llmserver proxy with `proxy-models.json` and loads `env.sh` |
+| `proxy.sh` | Shared Linux/macOS launcher: selects a host profile (power provider, `--gpu-idle`, `--default-ctx`), loads `env.sh`/`influxdb-env.sh`, and strips CRLF from the `INFLUXDB_*` values |
 | `proxy.test.js` | Tests policy matching, caller overrides, safety ceilings, model preservation, compatibility transforms, metrics, and port parsing |
 | `.gitignore` | Excludes generated devbox service logs |
 
@@ -476,6 +574,10 @@ journald's filesystem-based defaults apply. `journalctl --disk-usage` reported
 | `$HOME/llm-stuff/env.sh` | Uncommitted secret environment loaded by `proxy.sh` |
 | `llama-swap/logs/*.log` on devbox | Generated rotating process logs; not committed |
 | `~/.config/systemd/user/llama-{proxy,swap}.service` | Installed copies of the llmserver user units |
+| `$HOME/llama-swap/llama-swap` on mac-m1 | Installed pinned darwin/arm64 llama-swap binary |
+| `$HOME/llama/llama.cpp/build/bin/` on mac-m1 | Metal/Accelerate llama.cpp build (b10686) |
+| `~/Library/LaunchAgents/com.khaney.llama-{proxy,swap}.plist` | Installed copies of the mac-m1 launchd agents |
+| `$HOME/llm-stuff/influxdb-env.sh` on mac-m1 | Uncommitted secret environment loaded by `proxy.sh`; must use LF line endings |
 | `\LocalAI\LlamaProxy` and `\LocalAI\LlamaSwap` | Devbox Task Scheduler objects; boot start and failure restart |
 | `$HOME/.hermes/config.yaml` | Hermes provider/model configuration on the Hermes host |
 | `$HOME/.openclaw/openclaw.json` | OpenClaw provider/model configuration on the OpenClaw host |
