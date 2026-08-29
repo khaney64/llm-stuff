@@ -1347,6 +1347,13 @@ const proxy = http.createServer((req, res) => {
 
     proxyReq.on('error', e => {
       console.error(`${C.red}Proxy error: ${e.message}${C.reset}`);
+      // A streaming upstream can reset after its response headers have already
+      // been forwarded.  Writing a second set of headers throws
+      // ERR_HTTP_HEADERS_SENT and terminates the proxy process.
+      if (res.headersSent) {
+        res.destroy(e);
+        return;
+      }
       res.writeHead(502);
       res.end('Proxy error: ' + e.message);
     });

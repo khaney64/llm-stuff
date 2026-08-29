@@ -80,7 +80,7 @@ function Stop-ManagedPortOwner {
             throw "Port $Port is owned by unexpected process $($process.ProcessId): $($process.CommandLine)"
         }
 
-        & taskkill.exe /PID $process.ProcessId /T /F | Out-Null
+        & "$env:SystemRoot\System32\taskkill.exe" /PID $process.ProcessId /T /F | Out-Null
         $deadline = [DateTime]::UtcNow.AddSeconds(15)
         do {
             $remaining = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
