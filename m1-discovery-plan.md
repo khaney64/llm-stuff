@@ -16,6 +16,35 @@ Existing stack this needs to integrate with:
   OpenAI-compatible endpoint
 - InfluxDB as the shared metrics backend across all inference nodes
 
+## Environment / access
+
+- Reachable via SSH alias `mac-m1` (e.g. `ssh mac-m1 "ls ~/llama"`)
+- `~/llama/llama.cpp` — git clone of the llama.cpp repo (build target for
+  the Metal build below)
+- `~/llama/models/` — contains the two test models already downloaded:
+  - `nomic-embed-text-v1.5.f16.gguf`
+  - `qwen2.5-coder-1.5b-instruct-q4_k_m.gguf`
+- `~/llm-stuff` — git clone of github.com/khaney64/llm-stuff, same repo
+  that runs on the Ubuntu/Windows boxes. Notable existing files to reuse
+  rather than duplicate:
+  - `proxy.js`, `proxy.sh` — proxy.sh is presumably the Linux/macOS launcher
+    (vs. `proxy.ps1` for Windows) — check whether it needs any macOS-specific
+    path handling before assuming it works as-is
+  - `power-nvidia-smi.js` — existing power provider to use as the template/
+    contract reference when writing `power-macos.js` (see below)
+  - `llama-swap/` — existing subfolder; check what's already configured here
+    before writing a new llama-swap config from scratch
+  - `proxy-models.json` — likely the existing per-model generation policy
+    file (`--model-config`); check whether the two test models need entries
+    added here
+  - `influxdb-client.js` — shared InfluxDB writer, should work unmodified
+  - `ubuntu-setup.md` — precedent for a per-platform setup doc; a
+    `macos-setup.md` following the same structure would be a reasonable
+    place to capture what this checklist discovers
+  - `kv-cache-tracking.md`, `model-test-report-2026-04-11.md`,
+    `proxy-token-usage-incident-2026-05-02.md` — worth a quick skim for
+    prior art before re-deriving anything already documented
+
 ## Already confirmed (as of this session)
 
 - `iogpu.wired_limit_mb` on this machine is `0` (system default policy,
@@ -53,29 +82,48 @@ confirm before wiring into InfluxDB permanently.
 ## Checklist
 
 ### 1. Power provider module
-- [ ] Write `power-macos.js` implementing the same `sample(callback)` contract
-      as `power-nvidia-smi.js`, shelling out to `macmon pipe -s 1` and parsing
-      JSON
+- [ ] Read `~/llm-stuff/power-nvidia-smi.js` first to confirm the exact
+      `sample(callback)` contract, then write `~/llm-stuff/power-macos.js`
+      alongside it, shelling out to `macmon pipe -s 1` and parsing JSON
 - [ ] Decide and implement the power-field question above
-- [ ] Test `node proxy.js --power --power-provider ./power-macos.js ...` end
-      to end, confirm wattage appears in console `[done]` lines
+- [ ] Test `node ~/llm-stuff/proxy.js --power --power-provider ./power-macos.js ...`
+      end to end, confirm wattage appears in console `[done]` lines
 - [ ] Confirm InfluxDB write includes the macOS power fields alongside
       existing `gpu_avg_watts` / `gpu_peak_watts` / `gpu_energy_wh` tags,
       tagged with `host: os.hostname()` so it's distinguishable from the
       Linux/Windows nodes in Grafana/InfluxDB queries
 
 ### 2. llama.cpp Metal build
-- [ ] Clone/build llama.cpp with `-DGGML_METAL=ON -DGGML_ACCELERATE=ON`
-- [ ] Confirm `llama-server` starts and loads a small GGUF model (e.g.
-      Qwen2.5-Coder-1.5B Q4) without wired-limit errors
+- [ ] Build `~/llama/llama.cpp` with `-DGGML_METAL=ON -DGGML_ACCELERATE=ON`
+- [ ] Confirm `llama-server` starts and loads
+      `~/llama/models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` without
+      wired-limit errors
 - [ ] `curl -s http://localhost:8080/props | jq` — confirm response shape
       matches what proxy.js's auto-detection expects (`serverCtx`,
       `serverBuildInfo`, `serverModel`) — **not yet verified, do this next**
 - [ ] `curl -s http://localhost:8080/slots | jq` — same check
 - [ ] Run a chat completion through `proxy.js` pointed at this server, confirm
       `[done]` line logs prompt/gen tok/s correctly
+- [ ] Repeat the `/props`/`/slots` check with
+      `~/llama/models/nomic-embed-text-v1.5.f16.gguf` served via
+      `llama-server --embedding`, confirm `/v1/embeddings` responds
 
-### 3. MLX serving path
+### 3. Model swapping (llama-swap)
+- [ ] Check what's already in `~/llm-stuff/llama-swap/` before writing a new
+      config — may already have a partial setup from earlier exploration
+- [ ] Check whether `~/llm-stuff/proxy-models.json` needs entries added for
+      `qwen2.5-coder-1.5b-instruct-q4_k_m` and `nomic-embed-text-v1.5.f16`
+- [ ] Configure llama-swap with both models (see draft config from prior
+      discussion — one llama-server entry per model, or Ollama for the
+      embed model if testing the mixed-backend scenario deliberately)
+- [ ] Trigger swaps by alternating requests, watch `vm_stat`/`memory_pressure`
+      before/after each swap to confirm memory is actually freed on unload,
+      not just marked idle
+- [ ] Confirm embedding requests and chat requests interleaving correctly
+      triggers a swap each time, rather than llama-swap losing track of which
+      backend is "current" when the two models use different serving stacks
+
+### 4. MLX serving path
 - [ ] Install `mlx-lm`, run `mlx_lm.server` with an MLX-quantized version of
       the same small test model
 - [ ] Compare its OpenAI-compatible streaming response shape against
@@ -86,13 +134,21 @@ confirm before wiring into InfluxDB permanently.
 - [ ] Note any field gaps found — these will need proxy.js changes before the
       M5 Ultra arrives, not after
 
-### 4. proxy.js port/host sanity
+### 5. proxy.js port/host sanity
+- [ ] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
+      cleanly on macOS — check for any Linux-specific assumptions before
+      trusting it as-is
 - [ ] Confirm proxy.js binds correctly on macOS (no Gatekeeper/firewall
       prompt blocking `0.0.0.0` listen)
 - [ ] Confirm backend auto-detection from port (8080 → llama.cpp,
       11434 → ollama) behaves the same as on Linux/Windows
 
-### 5. System monitoring commands (reference)
+### 6. Write up findings
+- [ ] Once the above checks pass, write `~/llm-stuff/macos-setup.md` following
+      the same structure as the existing `ubuntu-setup.md`, so the M5 Ultra
+      setup has a per-platform reference doc matching the others
+
+### 7. System monitoring commands (reference)
 ```bash
 # Current wired limit (0 = system default ~75%)
 sysctl iogpu.wired_limit_mb
@@ -111,7 +167,7 @@ macmon                 # live TUI
 macmon pipe -s 1        # one JSON sample, for scripting
 ```
 
-### 6. Not in scope for this machine
+### 8. Not in scope for this machine
 - Model quality/benchmark comparisons (8GB can't run anything representative
   of what the M5 Ultra will host)
 - Absolute tok/s numbers — not predictive of M5 Ultra performance
