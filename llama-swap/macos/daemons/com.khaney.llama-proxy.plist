@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchDaemon variant of ../com.khaney.llama-proxy.plist.
+
+  Agents live in the Aqua session, so they need someone logged in at the
+  desktop. Daemons run in the system domain and start at boot with no login,
+  which is what a headless inference box wants. The open question this variant
+  exists to answer is whether Metal still works from a pre-login daemon
+  context — see macos-headless-trial.md.
+
+  __HOME__ and __USER__ are substituted by install-daemons.sh; launchd does not
+  expand ~ or environment variables inside these keys.
+
+  InfluxDB credentials are NOT set here. proxy.sh sources influxdb-env.sh
+  itself, which keeps the secret in one gitignored file.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.khaney.llama-proxy</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/llm-stuff/proxy.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__HOME__/llm-stuff</string>
+
+    <!-- System-domain jobs run as root by default. Run as the owning user so
+         the Homebrew prefix, ~/llm-stuff, and the log files all behave exactly
+         as they do under the agent. -->
+    <key>UserName</key>
+    <string>__USER__</string>
+    <key>GroupName</key>
+    <string>staff</string>
+
+    <!-- launchd gives jobs a bare PATH; node and macmon both live under
+         Homebrew, and power-macos.js resolves `macmon` by bare name. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Mirrors systemd Restart=on-failure / RestartSec=5. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/proxy.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/proxy.log</string>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>

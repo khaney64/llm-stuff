@@ -285,9 +285,20 @@ Both agents use `KeepAlive { SuccessfulExit = false }` and
 
 LaunchAgents run inside a user session, so a headless Mac needs **automatic
 login** enabled (System Settings → Users & Groups → Automatic login). This is
-the macOS analogue of `loginctl enable-linger` on llmserver. Converting the
-agents to system-wide LaunchDaemons would remove that requirement but runs
-them as root outside a GUI session; not needed here.
+the macOS analogue of `loginctl enable-linger` on llmserver.
+
+Converting the agents to system-wide LaunchDaemons removes that requirement —
+they start at boot with no login at all, and a `UserName` key keeps them
+running as this account rather than as root. The open question is whether Metal
+still works from a pre-login daemon context; if it does not, `llama-server`
+falls back to CPU and the box is useless for inference. `macos-headless-trial.md`
+has the plists, the installer, and a before/after procedure to settle it. That
+matters for the M5 Ultra, which should run headless.
+
+Note that automatic login and FileVault are mutually exclusive, and daemons do
+not resolve that: FileVault requires a **pre-boot unlock**, not a desktop
+login, so a FileVault box still needs a human at the console after an
+unexpected reboot either way.
 
 ### Startup ordering
 
