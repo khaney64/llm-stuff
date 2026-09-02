@@ -11,17 +11,39 @@ DOMAIN="gui/$(id -u)"
 PROXY="com.khaney.llama-proxy"
 SWAP="com.khaney.llama-swap"
 
-# `bootstrap` fails if the job is already loaded, and `bootout` fails if it is
-# not; both are the desired end state, so tolerate those specific no-ops.
+is_loaded() { launchctl print "$DOMAIN/$1" >/dev/null 2>&1; }
+
+# `bootout` returns before launchd has finished tearing the job down. Bootstrapping
+# into that window fails ("Operation in progress") and so does kickstart, because
+# the job is neither fully loaded nor fully gone — which silently leaves the
+# service stopped. Wait for it to actually disappear.
+boot_out() {
+    local label="$1"
+    launchctl bootout "$DOMAIN/$label" 2>/dev/null || true
+    for _ in $(seq 1 100); do
+        is_loaded "$label" || return 0
+        sleep 0.1
+    done
+    echo "manage.sh: $label still loaded 10s after bootout" >&2
+    return 1
+}
+
+# `bootstrap` fails if the job is already loaded; kickstart is the right verb then.
 boot_in() {
     local label="$1"
     local plist="$AGENT_DIR/$label.plist"
     [[ -f "$plist" ]] || { echo "manage.sh: $plist missing — run install.sh" >&2; exit 1; }
-    launchctl bootstrap "$DOMAIN" "$plist" 2>/dev/null || launchctl kickstart -k "$DOMAIN/$label"
-}
-
-boot_out() {
-    launchctl bootout "$DOMAIN/$1" 2>/dev/null || true
+    if is_loaded "$label"; then
+        launchctl kickstart -k "$DOMAIN/$label"
+        return
+    fi
+    for _ in $(seq 1 30); do
+        launchctl bootstrap "$DOMAIN" "$plist" 2>/dev/null && return 0
+        is_loaded "$label" && return 0
+        sleep 0.5
+    done
+    echo "manage.sh: failed to bootstrap $label" >&2
+    return 1
 }
 
 case "${1:-status}" in
@@ -39,6 +61,11 @@ case "${1:-status}" in
         boot_out "$PROXY"
         boot_in "$PROXY"
         boot_in "$SWAP"
+        # Both agents must actually be loaded afterwards; a silent half-start is
+        # the failure mode this command exists to avoid.
+        for label in "$PROXY" "$SWAP"; do
+            is_loaded "$label" || { echo "manage.sh: $label did not come back up" >&2; exit 1; }
+        done
         ;;
     restart-proxy)
         # proxy.js, proxy.sh, proxy-models.json, or influxdb-env.sh changed.

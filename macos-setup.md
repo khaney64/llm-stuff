@@ -408,3 +408,9 @@ gpu=7.9Wpeak=7.9W (2samples)
   Linux/Windows builds serve their UI there and return 200). The preload
   itself succeeds: after startup `/running` reports the model `ready` and
   `llama-server` is up with no request having been sent.
+- **One agent silently stays down after `restart`** — this was a bug in
+  `manage.sh`, fixed: `launchctl bootout` returns before launchd has finished
+  tearing the job down, and bootstrapping into that window fails without a
+  useful error. `boot_out` now waits for the job to actually disappear and
+  `restart` verifies both agents came back, exiting nonzero if not. If you see
+  it again, `manage.sh status` distinguishes "not loaded" from a crash loop.
