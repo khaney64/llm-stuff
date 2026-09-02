@@ -102,6 +102,5 @@ exec node ./proxy.js \
     --gpu-idle "$GPU_IDLE" \
     --power-interval 250 \
     --debug-labels \
-    --dump-request \
     --model-config ./proxy-models.json \
     --cron-parse-patch

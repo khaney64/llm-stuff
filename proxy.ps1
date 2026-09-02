@@ -27,7 +27,6 @@ $proxyArgs = @(
    "--gpu-idle", "15",
    "--power-interval", "250",
    "--debug-labels",
-   "--dump-request",
    "--cron-parse-patch"
 )
 $exitCode = Invoke-RotatingNativeCommand `
