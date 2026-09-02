@@ -414,3 +414,11 @@ gpu=7.9Wpeak=7.9W (2samples)
   useful error. `boot_out` now waits for the job to actually disappear and
   `restart` verifies both agents came back, exiting nonzero if not. If you see
   it again, `manage.sh status` distinguishes "not loaded" from a crash loop.
+- **`Bootstrap failed: 125: Domain does not support specified action`, or
+  `status` reports both agents "not loaded" over SSH** — nobody is logged in at
+  the desktop. `gui/<uid>` is the Aqua session domain and does not exist while
+  the Mac sits at the login window, so every `bootstrap` fails and the stack
+  stays down. Confirm with `stat -f '%Su' /dev/console` — `root` means the
+  login window, your username means a session is live. Log in at the console or
+  via Screen Sharing, or enable automatic login (see **Start at boot**).
+  `manage.sh` now detects this and says so rather than retrying into a wall.
