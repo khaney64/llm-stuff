@@ -65,7 +65,7 @@ case "$profile" in
         # the discrete-GPU boxes, which idle at 11-15W.
         POWER_PROVIDER="./power-macos.js"
         GPU_IDLE=0
-        DEFAULT_CTX=8192
+        DEFAULT_CTX=32768
         ;;
     *)
         case "$(uname -s)" in
@@ -73,7 +73,7 @@ case "$profile" in
                 echo "proxy.sh: unknown profile '$profile'; using macOS defaults" >&2
                 POWER_PROVIDER="./power-macos.js"
                 GPU_IDLE=0
-                DEFAULT_CTX=8192
+                DEFAULT_CTX=32768
                 ;;
             *)
                 echo "proxy.sh: unknown profile '$profile'; using NVIDIA/Linux defaults" >&2

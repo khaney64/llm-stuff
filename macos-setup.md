@@ -107,6 +107,58 @@ Two Apple Silicon specifics are baked into the entries:
 - Embedding models are non-causal, so llama.cpp requires the physical batch to
   cover the whole context: `-ub` must equal `-c`. `nomic-embed` uses
   `--pooling mean`, which is what nomic-embed-text-v1.5 was trained with.
+- mmap is left **on**. `--no-mmap` is deprecated in current builds, and
+  file-backed weights are evictable rather than swappable — the better failure
+  mode on a machine this size.
+
+### Context sizing
+
+The KV cache is the variable cost, and on this model it is cheap — Qwen2.5 uses
+GQA with only 2 KV heads:
+
+```
+2 (K+V) x 28 layers x 2 kv_heads x 128 head_dim x 2 bytes (f16) = 28 KB/token
+```
+
+So the model's full native 32768 context costs ~940MB of KV on top of 1.1GB of
+weights. Measured on this 8GB M1, loading at each size and driving a
+14,146-token prompt:
+
+| `-c` | RSS | system free | pp tok/s | tg tok/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 8192 | 1.38GB | 55% | — prompt rejected, too small | |
+| 16384 | 1.63GB | 52% | 272 | 30 |
+| 32768 | 2.04GB | 46% | 281 | 30 |
+
+**32768 is both affordable and the ceiling.** Affordable because the jump from
+16K costs ~400MB and caused no swapping; the ceiling because
+`qwen2.context_length` in the GGUF is 32768 and going past it needs YaRN rope
+scaling, which is not worth it on a 1.5B.
+
+What *does* degrade is throughput as the prompt gets deeper — measured at a
+fixed `-c 32768` so allocation is constant:
+
+| prompt depth | pp tok/s | tg tok/s |
+| ---: | ---: | ---: |
+| 14,146 | 242 | 26 |
+| 18,846 | 149 | 22 |
+| 23,546 | 86 | 11 |
+
+This is not a misconfiguration and not swap — those runs grew swap by 0MB.
+Attention is quadratic in prompt length, and every generated token must read
+the whole KV cache, so at 23.5K tokens that is ~675MB read per token against
+the M1's ~68GB/s of memory bandwidth. It is bandwidth-bound, and it is exactly
+the kind of number that says nothing about the M5 Ultra.
+
+Practical read: 32K is the right setting, and prompts up to ~15K feel fine.
+Beyond ~20K it stays correct but gets slow.
+
+`--cache-reuse 256` matters a lot here — a repeated long prompt hit 100% prefix
+cache reuse and returned in 1.0s instead of ~60s.
+
+KV quantization (`--cache-type-k q8_0 --cache-type-v q8_0`) halves cache memory
+but measured *worse*: generation dropped from 35 to 18 tok/s for ~350MB saved.
+Not worth it while f16 fits.
 
 ### Memory ceiling
 
@@ -176,7 +228,7 @@ under Homebrew. `power-macos.js` resolves `macmon` by bare name.
 | --- | --- | ---: | ---: |
 | `llmserver`, `llm-ubuntu` | `power-nvidia-smi.js` | 11 | 65535 |
 | `devbox` | `power-nvidia-smi.js` | 15 | 65535 |
-| `mac-m1` | `power-macos.js` | 0 | 8192 |
+| `mac-m1` | `power-macos.js` | 0 | 32768 |
 
 The `uname` fallback means a newly imaged Mac serves correctly before anyone
 adds its hostname to the case block.
@@ -298,15 +350,15 @@ source ./influxdb-env.sh && node explore-influxdb.js | grep -A2 'host'
 A healthy `[done]` line carries context pressure, cache hit rate, and GPU power:
 
 ```
-[done] session=chat qwen25-coder-1.5b reason=length prompt=45 (0.5% of 8192 ctx) OK
-gen=300 pp=137.4tok/s tg=49.7tok/s cache=0reused+45computed(0.0%)
-gpu=7.6Wpeak=8.8W 0.0133Wh $0.000003 (27samples)
+[done] session=chat qwen25-coder-1.5b reason=stop prompt=1 (43.2% of 32768 ctx) OK
+gen=38 pp=26.9tok/s tg=36.8tok/s cache=14145reused+1computed(100.0%)
+gpu=7.9Wpeak=7.9W (2samples)
 ```
 
 ### Confirmed on this host
 
 - `/props` supplies everything `proxy.js` auto-detects:
-  `default_generation_settings.n_ctx` (8192), `build_info` (`b10686-3173a5647`
+  `default_generation_settings.n_ctx` (32768), `build_info` (`b10686-3173a5647`
   → `b10686`), `total_slots` (1). `default_generation_settings.model` is
   `null`, so the model name comes from the `model_path` fallback in
   `fetchServerCtx()` — the fallback chain is load-bearing here, not decorative.
@@ -350,3 +402,9 @@ gpu=7.6Wpeak=8.8W 0.0133Wh $0.000003 (27samples)
   re-run `install.sh`.
 - **Swaps stopped working after editing YAML** — llama-swap reads its config
   only at start: `./llama-swap/macos/manage.sh restart-swap`.
+- **`[ERROR] failed to preload model <id>: status 415` in llama-swap.log** —
+  benign on this host. llama-swap verifies a preload with `GET /`, which
+  llama.cpp answers with 415 because this build has no bundled web UI (the
+  Linux/Windows builds serve their UI there and return 200). The preload
+  itself succeeds: after startup `/running` reports the model `ready` and
+  `llama-server` is up with no request having been sent.

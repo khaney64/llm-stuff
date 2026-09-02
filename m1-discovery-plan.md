@@ -116,7 +116,7 @@ draw at rest.
       wired-limit errors
 - [x] `curl -s http://localhost:8080/props | jq` — confirm response shape
       matches what proxy.js's auto-detection expects (`serverCtx`,
-      `serverBuildInfo`, `serverModel`) — **verified**: `n_ctx` 8192,
+      `serverBuildInfo`, `serverModel`) — **verified**: `n_ctx` 32768,
       `build_info` `b10686-3173a5647`, `total_slots` 1. Note
       `default_generation_settings.model` is `null`, so the model name comes
       from the `model_path` fallback in `fetchServerCtx()` — that fallback

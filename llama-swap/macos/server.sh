@@ -61,9 +61,16 @@ case "$model" in
     qwen25-coder-1.5b)
         M_FILE="qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
         M_ALIAS="qwen25-coder-1.5b"
-        # 8192 ctx ~= 230MB of KV on this model; with the 1.1GB of weights and
-        # compute buffers that lands near 1.6GB, inside this box's headroom.
-        M_ARGS="-c 8192 -b 2048 -ub 512 -ngl 999 --flash-attn on --jinja --cache-reuse 256 --parallel 1 --no-mmap"
+        # 32768 is the model's native context (qwen2.5 context_length in the
+        # GGUF); going past it would need YaRN, which is not worth it on a 1.5B.
+        # GQA with 2 KV heads makes the cache cheap — 28KB/token, so the full
+        # 32K costs ~940MB. Measured at 32K: 2.04GB RSS, no swap growth, 46%
+        # system-free. 8192 was too small to hold a mid-size source file.
+        #
+        # mmap is left on (the old --no-mmap is deprecated, and file-backed
+        # weights are evictable rather than swappable, which is the better
+        # failure mode on 8GB).
+        M_ARGS="-c 32768 -b 2048 -ub 512 -ngl 999 --flash-attn on --jinja --cache-reuse 256 --parallel 1"
         ;;
     nomic-embed)
         M_FILE="nomic-embed-text-v1.5.f16.gguf"
@@ -71,7 +78,7 @@ case "$model" in
         # Non-causal embedding model: llama.cpp requires the physical batch to
         # cover the whole context, so -ub must equal -c. Mean pooling is what
         # nomic-embed-text-v1.5 was trained with.
-        M_ARGS="--embedding --pooling mean -c 2048 -b 2048 -ub 2048 -ngl 999 --parallel 1 --no-mmap"
+        M_ARGS="--embedding --pooling mean -c 2048 -b 2048 -ub 2048 -ngl 999 --parallel 1"
         ;;
     *)
         echo "server.sh: unknown model '$model' (known: $MODEL_NAMES)" >&2
