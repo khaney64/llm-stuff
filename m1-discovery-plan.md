@@ -188,11 +188,57 @@ draw at rest.
       timestamp, which is not currently captured. Doing it that way is
       backend-agnostic and would work for llama.cpp and Ollama too, rather
       than special-casing MLX.
-- [ ] Live run: serve the MLX model through llama-swap, capture a real
-      streaming response, and confirm the table above against actual JSON
-- [ ] Throughput comparison against llama.cpp on the same weights — only
-      meaningful once the wall-clock fallback exists, since MLX currently
-      reports no speed at all
+- [x] Live run confirms the table exactly. Final chunk from `mlx_lm.server`:
+
+      ```json
+      {"model": "qwen25-coder-1.5b-mlx", "choices": [],
+       "usage": {"prompt_tokens": 51, "completion_tokens": 200, "total_tokens": 251,
+                 "prompt_tokens_details": {"cached_tokens": 0}}}
+      ```
+
+      `usage` complete, `cached_tokens` present, **no `timings` key at all**.
+      Prompt caching works and reports (`cache=25reused` on repeat requests),
+      so cache-hit tracking survives unchanged.
+- [x] Wall-clock fallback verified end to end — the `[done]` line carries real
+      `pp`/`tg` for MLX where it would otherwise have been blank.
+- [x] **Integration gotcha, cost an hour: mlx-lm resolves the *request's*
+      model field, not just its `--model`.** `ModelProvider._model_map` holds
+      one entry (`"default_model"` → the CLI argument); anything else falls
+      through to a Hugging Face lookup, so llama-swap forwarding its own model
+      id made mlx-lm try to download a repo named `qwen25-coder-1.5b-mlx` and
+      404 — with the correct model already loaded. Fixed by serving from
+      `$MODEL_DIR` with a bare relative name so request, load key and response
+      all match. This also keeps the InfluxDB `model` tag readable: mlx-lm
+      echoes the request's model string back, and proxy.js tags from the
+      response, so the alternatives (`"default_model"` or an absolute path)
+      would both have polluted the tag the whole comparison is keyed on.
+- [x] Throughput comparison, same weights, same box, warm:
+
+      | | tg tok/s | gpu avg / peak | total | pp tok/s |
+      | --- | ---: | ---: | ---: | ---: |
+      | llama.cpp | **52.9** | 7.7W / 8.7W | 3.84s | 431 |
+      | MLX | 50.1 | **4.4W / 5.3W** | 4.20s | 146 |
+
+      **llama.cpp is ~5% faster on generation; MLX draws ~43% less GPU power.**
+      Per token that is 0.146 W·s for llama.cpp against 0.088 for MLX — MLX is
+      roughly 40% more energy-efficient here despite being slower. MLX is not
+      the automatic speed win it is often assumed to be, at least not at this
+      size on this hardware.
+
+- [ ] **Do not compare the `pp` column across backends.** llama.cpp's figure
+      is its own prefill-only `prompt_per_second`; MLX's comes from the
+      wall-clock fallback, which measures `prompt_tokens` over time-to-first-
+      token and so also carries tokenization, template application and the
+      first token's own generation. 431 vs 146 is a measurement artifact, not a
+      3x prefill gap. `tg` *is* comparable — both cover the generation window,
+      with the fallback biased high by roughly one token in `gen` (~0.5% at
+      200 tokens). Worth making the docs or the log output say this before
+      someone reads the pp numbers as a benchmark.
+- [ ] Re-measure on the M5. Per this document's own framing this 8GB M1 is a
+      pipeline-validation node and its performance numbers are meaningless in
+      absolute terms; only the *shape* of the result (MLX slower but cooler)
+      should carry forward, and even that needs confirming at 96GB with a model
+      worth serving.
 
 ### 5. proxy.js port/host sanity
 - [x] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
