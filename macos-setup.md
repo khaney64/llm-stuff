@@ -335,18 +335,48 @@ fell below 2. Do not benchmark a Mac in the first ~20 minutes after a boot.
 So the M5 Ultra can run headless: daemons, no automatic login, no desktop
 session left exposed.
 
-**FileVault is on throughout, and did not have to be traded away.** The trial
-box rebooted and came back unattended with `fdesetup status` reporting
-FileVault On and the Data volume unlocked. On Apple Silicon the SSD is
-hardware-encrypted by the Secure Enclave regardless; FileVault adds
-password-gated key derivation on top.
+### FileVault gates every reboot
 
-One thing that is **not** yet established: that was a clean
-`sudo shutdown -r now`. `fdesetup authrestart` exists because a reboot does not
-normally carry the unlock forward, so a hard power cut may behave differently —
-and if the Data volume stays locked, `pmset autorestart 1` just delivers a Mac
-sitting at an unlock screen. `macos-power-loss-trial.md` settles it, cheapest
-test first.
+**With FileVault on, no reboot is unattended.** `/System/Volumes/Data` — which
+holds `~/llm-stuff`, the models and the daemons — comes up locked, so nothing
+starts until a human supplies a password. This is separate from, and earlier
+than, any desktop login.
+
+macOS offers that unlock **over SSH**, which is what you will hit:
+
+```
+$ ssh mac-m1
+This system is locked. To unlock it, use a local
+account name and password. Once successfully
+unlocked, you will be able to connect normally.
+(khaney@...) Password:
+System successfully unlocked.
+You may now use SSH to authenticate normally.
+```
+
+The connection closes; reconnect and the machine is normal. Expect the first
+attempt after a reboot to time out entirely — the unlock service takes a little
+while to answer.
+
+So the real trade is:
+
+| | Unattended after a reboot or power cut | Encrypted at rest |
+| --- | :---: | :---: |
+| FileVault **on** (current) | no — a password over SSH | yes |
+| FileVault **off** | yes | hardware-only: the SSD is still encrypted by the Secure Enclave, but the key is released without a password, so anyone who can boot the machine reads it |
+
+Remote unlock makes FileVault far more tolerable than it sounds — recovery
+needs a password, not physical access — but it is not unattended, and
+`pmset autorestart 1` only gets the box powered on, not serving.
+
+For a **planned** reboot, skip the unlock by authenticating in advance:
+
+```bash
+sudo fdesetup authrestart      # unlocks for exactly one subsequent boot
+```
+
+`fdesetup supportsauthrestart` reports `true` on this hardware. It does not
+help with power loss, which by definition gives no chance to run it.
 
 Note that automatic login and FileVault are mutually exclusive, and daemons do
 not resolve that: FileVault requires a **pre-boot unlock**, not a desktop

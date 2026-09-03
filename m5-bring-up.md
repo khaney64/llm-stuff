@@ -5,8 +5,9 @@ used to answer as much as possible in advance; this collects what it settled,
 what it could not, and the order to do things in. Detail lives in the documents
 linked from each section — this exists so none of it has to be rediscovered.
 
-The M5 is a 96GB Ultra intended to do most real coding inference, **headless**,
-coming back on its own after a reboot.
+The M5 is a 96GB Ultra intended to do most real coding inference, **headless**.
+How far "comes back on its own" can go depends on one decision — see FileVault
+below; with it on, a reboot needs a password over SSH before anything starts.
 
 ## Settled — carry these over, do not re-litigate
 
@@ -14,21 +15,22 @@ coming back on its own after a reboot.
 | --- | --- |
 | **LaunchDaemons, not LaunchAgents + auto-login.** Starts at boot with nobody logged in, and leaves no desktop session exposed. | `macos-headless-trial.md` — verified on mac-m1 with `/dev/console` owned by `root` and `0 users` |
 | **Metal works from a pre-login daemon.** This was the open risk; it is not real. | tg 53.1 vs 53.7 tok/s logged-in, GPU watts in the same band — a CPU fallback would have collapsed them |
-| **FileVault stays on.** It never had to be traded for unattended restart. | `fdesetup status` On throughout the trial; Data volume unlocked with no human |
+| **FileVault is a real trade, not a free win.** With it on, *no* reboot is unattended — the Data volume comes up locked and the daemons live on it. macOS unlocks it over SSH, so recovery needs a password but not physical access. | observed directly: `This system is locked... System successfully unlocked.` See `macos-setup.md` → *FileVault gates every reboot* |
 | **llama.cpp, not MLX.** | `m1-discovery-plan.md` §4 — see *The MLX question* below |
 | **Log rotation must copy-and-truncate, never rename.** | `llama-swap/macos/rotate-logs.sh` — launchd holds fd 1/2 open, so `newsyslog` would silently write into the archive |
 | **`manage.sh` auto-detects its launchd domain** from `/Library/LaunchDaemons`, and system-domain mutations need `sudo`. | verified: `bootout system/...` as a normal user gives `1: Operation not permitted` |
 
 ## Not settled — must be redone on the M5
 
-- **Power-loss recovery.** The trial proved a clean `shutdown -r now` comes back
-  unattended with FileVault on. It did **not** prove an unexpected power cut
-  does — `fdesetup authrestart` exists precisely because a reboot does not
-  normally carry the FileVault unlock forward. If the Data volume stays locked,
-  `pmset autorestart 1` just delivers a Mac at an unlock screen.
-  `macos-power-loss-trial.md` has the procedure, cheapest test first. **Run it
-  on the M5 before the box holds anything you care about** — an unclean cut is
-  not something to do to a working machine.
+- **Decide FileVault before anything else — it is the one real trade.**
+  With it on, every reboot needs a password over SSH before the stack starts;
+  `pmset autorestart 1` gets the machine powered on and no further. With it off
+  the box recovers unattended, but the volume key is released without a
+  password, so anyone who can boot the machine reads the disk. There is no
+  third option: `fdesetup authrestart` covers planned reboots only.
+  For a box doing coding inference on your own network, either is defensible —
+  decide it deliberately. `macos-power-loss-trial.md` is only worth running if
+  you choose FileVault **off** and want to confirm unattended recovery.
 - **Metal-from-daemon on a newer macOS.** Verified once, on one OS version.
   Re-run the headless trial after bring-up and after major OS updates; it is a
   20-minute job now that the plists and procedure exist.
@@ -48,8 +50,10 @@ coming back on its own after a reboot.
 3. Build llama.cpp with Metal; populate `~/llama/models`; write `mac-m5.yaml`
    and the matching `server.sh` model block.
 4. `sudo llama-swap/macos/daemons/install-daemons.sh`, then reboot **without
-   logging in** and confirm the stack comes up — that is the headless trial,
-   and doing it before the box matters is free.
+   logging in at the desktop** and confirm the stack comes up — that is the
+   headless trial, and doing it before the box matters is free. With FileVault
+   on you will have to unlock over SSH first; that is expected and does not
+   invalidate the test, which is about the *desktop* session, not the volume.
 5. `sudo pmset -a sleep 0` and `autorestart 1`. Check `pmset -g cap` first:
    `disablesleep` is not supported on all hardware, and was not on the M1.
 6. Optional: the narrow sudoers rule so `restart-proxy`/`restart-swap` skip the
@@ -98,3 +102,7 @@ and long contexts stress backends very differently.
 - **Do not benchmark a Mac in the first ~20 minutes after a boot.** Spotlight
   reindexing cost 6.5% of throughput and looked like a real regression until
   the box went idle.
+- **After a reboot with FileVault on, the first `ssh` times out**, and the
+  second answers with `This system is locked`. That is the unlock service, not
+  a network fault — give a password, let the connection close, then reconnect
+  normally.
