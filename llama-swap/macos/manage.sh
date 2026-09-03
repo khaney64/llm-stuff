@@ -4,6 +4,17 @@
 
 set -euo pipefail
 
+# This script drives launchd and uses BSD stat/launchctl syntax throughout. Run
+# on Linux the failure is a confusing cascade rather than a clear error: GNU
+# `stat -f` means filesystem status, so the domain hint dumps tmpfs details
+# instead of a console owner.
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "manage.sh: this is the macOS script. Use the one for this host:" >&2
+    echo "  Linux    llama-swap/linux/manage.sh" >&2
+    echo "  Windows  llama-swap/windows/manage.ps1" >&2
+    exit 2
+fi
+
 REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 AGENT_DIR="$HOME/Library/LaunchAgents"
 DAEMON_DIR="/Library/LaunchDaemons"

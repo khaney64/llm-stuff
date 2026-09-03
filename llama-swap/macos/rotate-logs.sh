@@ -18,6 +18,11 @@
 
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "rotate-logs.sh: macOS only. Uses BSD stat and launchd log paths." >&2
+    exit 2
+fi
+
 # Overridable so the script can be exercised from a scratch copy without being
 # dropped into the checkout first.
 REPO_DIR="${REPO_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)}"

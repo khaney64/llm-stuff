@@ -11,6 +11,11 @@
 
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "start-swap.sh: macOS only. Linux/Windows use their own launchers." >&2
+    exit 2
+fi
+
 REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_DIR"
 

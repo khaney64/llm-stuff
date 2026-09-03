@@ -22,6 +22,11 @@
 
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "server.sh: macOS only. Linux/Windows use their own launchers." >&2
+    exit 2
+fi
+
 LLAMA_HOME="${LLAMA_HOME:-$HOME/llama}"
 LLAMA_BIN="${LLAMA_BIN:-$LLAMA_HOME/llama.cpp/build/bin/llama-server}"
 MODEL_DIR="${MODEL_DIR:-$LLAMA_HOME/models}"

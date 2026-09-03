@@ -17,11 +17,16 @@
 #     reachable from `mlx_lm.fuse --export-gguf`); there is no load path. Models
 #     are safetensors + config.json + tokenizer, so each one is a separate
 #     download from the llama.cpp GGUF of the same weights.
-#   - MODEL ids below are Hugging Face repo ids. mlx-lm resolves and caches them
-#     under ~/.cache/huggingface; a local directory path works too.
+#   - Models are served from $MODEL_DIR by a bare relative name that must equal
+#     the llama-swap model id — see the note above the case block for why.
 #   - Written for the stock bash 3.2 (no associative arrays), like server.sh.
 
 set -euo pipefail
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "server-mlx.sh: macOS only. Linux/Windows use their own launchers." >&2
+    exit 2
+fi
 
 MLX_HOME="${MLX_HOME:-$HOME/mlx}"
 MLX_PY="${MLX_PY:-$MLX_HOME/venv/bin/python}"
