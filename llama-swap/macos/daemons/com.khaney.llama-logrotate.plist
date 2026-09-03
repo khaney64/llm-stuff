@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Bounds the stack's launchd StandardOutPath logs. See ../rotate-logs.sh for why
+  newsyslog cannot do this (it renames; launchd holds the fds open).
+
+  A daemon rather than an agent for the same reason as the stack itself: it has
+  to run with nobody logged in. Periodic, not long-lived, so no KeepAlive.
+
+  __HOME__ and __USER__ are substituted by install-daemons.sh.
+
+  MAX_BYTES/KEEP are set here rather than in the script so a host can size them
+  to its disk. These values suit mac-m1, which is a 245GB box that has run low
+  on free space: 25MB x (3 + 1) x 2 logs is ~200MB worst case. A machine with
+  room should raise both.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.khaney.llama-logrotate</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/llm-stuff/llama-swap/macos/rotate-logs.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__HOME__/llm-stuff</string>
+
+    <key>UserName</key>
+    <string>__USER__</string>
+    <key>GroupName</key>
+    <string>staff</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MAX_BYTES</key>
+        <string>26214400</string>
+        <key>KEEP</key>
+        <string>3</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <!-- One line per actual rotation, so this stays tiny. -->
+    <key>StandardOutPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/rotate.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/llm-stuff/llama-swap/logs/rotate.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

@@ -397,9 +397,14 @@ tail -F ~/llm-stuff/llama-swap/logs/proxy.log
 tail -F ~/llm-stuff/llama-swap/logs/llama-swap.log
 ```
 
-launchd does not rotate these. Unlike devbox, where `rotating-log.ps1` bounds
-them, and llmserver, where journald does, mac-m1's logs are currently unbounded
-— add a `/etc/newsyslog.d/` entry if the host runs long enough to matter.
+launchd does not rotate these; `llama-swap/macos/rotate-logs.sh` does, on a
+5-minute `StartInterval` daemon. So all three hosts are bounded now —
+`rotating-log.ps1` on devbox, journald on llmserver, this on mac-m1.
+
+It copies and truncates in place rather than renaming. `newsyslog` renames, and
+launchd holds fd 1 and 2 open on these files for the life of each daemon, so a
+rename leaves both processes writing into the archive while the new file stays
+empty — silently. See `macos-setup.md` → Logs.
 
 ### What to restart after a change
 

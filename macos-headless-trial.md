@@ -243,9 +243,10 @@ Follow-ups before that becomes the real setup:
   which domain the stack is installed in.
 - `sudo pmset -a sleep 0 disablesleep 1` and `sudo pmset -a autorestart 1` so
   the box neither sleeps nor stays dark after a power failure.
-- Log rotation. macOS writes plain files via `StandardOutPath` and launchd does
-  not rotate them (`macos-setup.md` → Logs). Add a `/etc/newsyslog.d/` entry
-  before a box that runs continuously.
+- ~~Log rotation~~ — done. `com.khaney.llama-logrotate` runs
+  `llama-swap/macos/rotate-logs.sh` every 5 minutes; `install-daemons.sh`
+  installs it alongside the other two. Not `newsyslog`, which cannot work here
+  (`macos-setup.md` → Logs).
 - Re-tune context and the model set: `mac-m1.yaml` is built for 8GB and says so.
   96GB changes every sizing decision in it.
 

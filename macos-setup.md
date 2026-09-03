@@ -358,10 +358,26 @@ tail -F llama-swap/logs/proxy.log
 tail -F llama-swap/logs/llama-swap.log
 ```
 
-launchd does not rotate these. Unlike the Windows host, where
-`rotating-log.ps1` bounds them, and llmserver, where journald handles it, size
-is currently unbounded — add a `/etc/newsyslog.d/` entry if this box ever runs
-long enough to matter.
+launchd does not rotate these. `llama-swap/macos/rotate-logs.sh` does, driven
+by the `com.khaney.llama-logrotate` daemon every 5 minutes — the macOS
+counterpart to `rotating-log.ps1` on devbox and journald on llmserver.
+
+**Do not reach for `newsyslog`.** It rotates by renaming, and launchd holds
+fd 1 and 2 open on these files for the life of each daemon, so after a rename
+both processes keep writing into the renamed archive while the new file stays
+empty. That failure is silent, which makes it worse than no rotation.
+`rotate-logs.sh` copies then truncates in place instead: the inode survives, so
+the open fds stay valid, and launchd opens `StandardOutPath` with `O_APPEND` so
+writes resume at offset 0 rather than leaving a null hole. Verified on mac-m1 —
+truncate to 0, drive two requests, file comes back at 153 bytes with no NULs.
+
+`MAX_BYTES` and `KEEP` come from the plist's `EnvironmentVariables`, defaulting
+to 25MB × 3 here. Worst case is `(KEEP + 1) × MAX_BYTES` per file, ~200MB
+across both. That is deliberately smaller than devbox's 50MB × 5: mac-m1's data
+volume runs around 96% full with under 9GB free. A roomier host should raise
+both.
+
+Rotations are logged one line each to `llama-swap/logs/rotate.log`.
 
 llama.cpp's own stdout stays in llama-swap's in-memory log monitor
 (`logToStdout` defaults to `proxy`):

@@ -14,7 +14,7 @@ set -euo pipefail
 
 DAEMON_DIR="/Library/LaunchDaemons"
 SRC_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-LABELS=(com.khaney.llama-proxy com.khaney.llama-swap)
+LABELS=(com.khaney.llama-proxy com.khaney.llama-swap com.khaney.llama-logrotate)
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
     echo "install-daemons.sh: Apple Silicon macOS only." >&2
