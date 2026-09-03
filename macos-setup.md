@@ -277,9 +277,36 @@ Other overrides: `MACMON_INTERVAL_MS` (default 250), `MACMON_STALE_MS`
 ./llama-swap/macos/manage.sh logs
 ```
 
-Both agents use `KeepAlive { SuccessfulExit = false }` and
+Both jobs use `KeepAlive { SuccessfulExit = false }` and
 `ThrottleInterval = 5`, mirroring systemd's `Restart=on-failure` /
 `RestartSec=5`.
+
+### Which launchd domain manage.sh drives
+
+The stack installs two ways and they live in different domains, so `manage.sh`
+picks one by looking for `/Library/LaunchDaemons/com.khaney.llama-proxy.plist`:
+
+| Installed via | Domain | Needs a login | Mutating commands need |
+| --- | --- | --- | --- |
+| `daemons/install-daemons.sh` | `system` | no | **`sudo`** |
+| `macos/install.sh` | `gui/<uid>` | yes | nothing |
+
+`manage.sh status` prints which mode it resolved — with two possible installs,
+"not loaded" is ambiguous unless you know where it looked. `LLAMA_DOMAIN=gui`
+or `LLAMA_DOMAIN=system` forces the choice.
+
+**mac-m1 runs the daemons**, so `start`/`stop`/`restart`/`restart-proxy`/
+`restart-swap` there prompt for a sudo password: mutating the system domain as
+a normal user fails with `Boot-out failed: 1: Operation not permitted`. Reads
+(`status`, `logs`) stay unprivileged.
+
+Do not have both installed and enabled at once — they would race for ports
+8080/8081/8082. Switching to daemons means disabling the agents:
+
+```bash
+launchctl disable "gui/$(id -u)/com.khaney.llama-proxy"
+launchctl disable "gui/$(id -u)/com.khaney.llama-swap"
+```
 
 ### Start at boot
 
