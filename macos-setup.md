@@ -335,6 +335,19 @@ fell below 2. Do not benchmark a Mac in the first ~20 minutes after a boot.
 So the M5 Ultra can run headless: daemons, no automatic login, no desktop
 session left exposed.
 
+**FileVault is on throughout, and did not have to be traded away.** The trial
+box rebooted and came back unattended with `fdesetup status` reporting
+FileVault On and the Data volume unlocked. On Apple Silicon the SSD is
+hardware-encrypted by the Secure Enclave regardless; FileVault adds
+password-gated key derivation on top.
+
+One thing that is **not** yet established: that was a clean
+`sudo shutdown -r now`. `fdesetup authrestart` exists because a reboot does not
+normally carry the unlock forward, so a hard power cut may behave differently —
+and if the Data volume stays locked, `pmset autorestart 1` just delivers a Mac
+sitting at an unlock screen. `macos-power-loss-trial.md` settles it, cheapest
+test first.
+
 Note that automatic login and FileVault are mutually exclusive, and daemons do
 not resolve that: FileVault requires a **pre-boot unlock**, not a desktop
 login, so a FileVault box still needs a human at the console after an
