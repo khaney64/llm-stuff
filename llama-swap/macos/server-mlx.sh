@@ -60,8 +60,20 @@ if [[ ! -x "$MLX_PY" ]]; then
 fi
 
 # ── Per-model settings ───────────────────────────────────────────────────────
-# M_REPO  Hugging Face repo id (or local path) of the MLX-format weights
+# M_NAME  directory under $MODEL_DIR holding the MLX weights. It doubles as the
+#         name passed to --model, and must equal the llama-swap model id.
 # M_ARGS  everything else
+#
+# Why the names have to match: mlx-lm resolves the *request's* model field, not
+# just the one it was started with. ModelProvider._model_map holds exactly one
+# entry ("default_model" -> the --model argument), so any other name falls
+# through to a Hugging Face lookup — llama-swap sending `qwen25-coder-1.5b-mlx`
+# made it try to download a repo by that name and 404. Serving from $MODEL_DIR
+# with a bare relative name makes the request, the load key and the response
+# agree, so nothing reloads and nothing is fetched. mlx-lm also echoes the
+# request's model string straight back, and proxy.js takes the InfluxDB `model`
+# tag from that, so this is what keeps the tag readable instead of a filesystem
+# path or "default_model".
 case "$model" in
     qwen25-coder-1.5b-mlx)
         # 4-bit MLX build of the same weights server.sh serves as
@@ -69,15 +81,8 @@ case "$model" in
         #
         # Unlike a GGUF this is a directory, not a file: config.json, the
         # tokenizer set, and model.safetensors must all be present or mlx-lm
-        # cannot load it. A local copy under $MODEL_DIR wins; otherwise fall
-        # back to the Hugging Face repo id, which mlx-lm downloads on first
-        # use (~840MB) into ~/.cache/huggingface.
-        M_LOCAL="$MODEL_DIR/Qwen2.5-Coder-1.5B-Instruct-4bit"
-        if [[ -f "$M_LOCAL/config.json" ]]; then
-            M_REPO="$M_LOCAL"
-        else
-            M_REPO="mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit"
-        fi
+        # cannot load it.
+        M_NAME="qwen25-coder-1.5b-mlx"
         # Prompt cache is what makes MLX's cached-token reporting comparable to
         # llama.cpp's --cache-reuse; without it there is nothing to report.
         M_ARGS="--prompt-cache-size 32768"
@@ -87,12 +92,22 @@ case "$model" in
         exit 2 ;;
 esac
 
-cmd="$MLX_PY -m mlx_lm server --model $M_REPO --host $host --port $port $M_ARGS"
+if [[ ! -f "$MODEL_DIR/$M_NAME/config.json" ]]; then
+    echo "server-mlx.sh: no MLX model at $MODEL_DIR/$M_NAME" >&2
+    echo "  It must be a directory (config.json + tokenizer + model.safetensors)," >&2
+    echo "  named for the llama-swap model id. A symlink to the upstream name is fine:" >&2
+    echo "    ln -s Qwen2.5-Coder-1.5B-Instruct-4bit $MODEL_DIR/$M_NAME" >&2
+    exit 1
+fi
+
+# Relative name resolved from $MODEL_DIR, so --model stays a bare id.
+cd "$MODEL_DIR"
+cmd="$MLX_PY -m mlx_lm server --model $M_NAME --host $host --port $port $M_ARGS"
 
 if [[ "$dry_run" -eq 1 ]]; then
-    echo "$cmd"
+    echo "(cwd $MODEL_DIR) $cmd"
     exit 0
 fi
 
-echo "server-mlx.sh: starting $model ($M_REPO) on $host:$port" >&2
+echo "server-mlx.sh: starting $model from $MODEL_DIR/$M_NAME on $host:$port" >&2
 exec $cmd
