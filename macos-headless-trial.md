@@ -1,5 +1,34 @@
 # Headless LaunchDaemon trial (mac-m1)
 
+## Result: PASS (2026-09-02)
+
+**Metal works from a pre-login LaunchDaemon.** Ran on mac-m1; the M5 Ultra can
+be headless with no automatic login.
+
+Test validity — nobody was logged in: `/dev/console` owned by `root`, `who`
+empty, `0 users`. Both daemons came up in the `system` domain as `khaney`
+(pids 564 / 563), llama-swap preloaded the model, all three ports listened,
+`/health` OK. The agents stayed unloaded, as intended.
+
+| Metric | Baseline (logged in, agents) | Daemon, pre-login | Δ |
+| --- | ---: | ---: | ---: |
+| KV cache | `0reused+61computed` | `0reused+61computed` | identical |
+| **tg tok/s** | 53.7 | **50.2** | −6.5% |
+| **gpu avg / peak** | 7.7W / 8.6W | **7.2W / 8.3W** | −0.5W |
+| pp tok/s | 486.3 | 502.0 | +3.2% |
+
+GPU power stayed in the same band instead of collapsing toward the ~0.002W
+idle floor, which is the signal that matters.
+
+**Caveat on the −6.5%:** it reproduced across three further runs (tg 50.2 /
+50.6 / 50.5) so it is not single-run noise, but every daemon measurement was
+taken within minutes of boot while Spotlight was reindexing — load average
+climbing 8.3 → 12.6, with three `mdworker_shared` processes at 71/59/58% CPU
+and `system_profiler` at 49%. That is enough contention to explain 6%.
+**Re-measure on an idle box before recording a daemon penalty as real.**
+
+Remaining follow-ups are in **If it works** below.
+
 ## The question
 
 **Does Metal GPU acceleration still work when `llama-server` is started by a

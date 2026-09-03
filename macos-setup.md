@@ -289,11 +289,22 @@ the macOS analogue of `loginctl enable-linger` on llmserver.
 
 Converting the agents to system-wide LaunchDaemons removes that requirement —
 they start at boot with no login at all, and a `UserName` key keeps them
-running as this account rather than as root. The open question is whether Metal
-still works from a pre-login daemon context; if it does not, `llama-server`
-falls back to CPU and the box is useless for inference. `macos-headless-trial.md`
-has the plists, the installer, and a before/after procedure to settle it. That
-matters for the M5 Ultra, which should run headless.
+running as this account rather than as root.
+
+**Metal works from a pre-login daemon — verified on mac-m1, 2026-09-02.** After
+a reboot to the login window (`/dev/console` owned by `root`, `who` empty, 0
+users), both daemons came up in the `system` domain as `khaney`, llama-swap
+preloaded the model, and all three ports listened. An identical cold request
+(`cache=0reused+61computed`) gave **tg 50.2 tok/s at 7.2W avg / 8.3W peak**
+against a logged-in baseline of **53.7 tok/s at 7.7W / 8.6W**. A CPU fallback
+would have collapsed GPU power toward the ~0.002W idle floor; it did not. The
+~6% throughput gap was measured while Spotlight was reindexing after the boot
+(load average 12, `mdworker_shared` at 200%+ CPU), so it is contention rather
+than a daemon penalty — worth re-measuring on an idle box before treating it as
+real. `macos-headless-trial.md` has the plists, installer, and full procedure.
+
+So the M5 Ultra can run headless: daemons, no automatic login, no desktop
+session left exposed.
 
 Note that automatic login and FileVault are mutually exclusive, and daemons do
 not resolve that: FileVault requires a **pre-boot unlock**, not a desktop
