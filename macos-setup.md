@@ -574,6 +574,15 @@ gpu=7.9Wpeak=7.9W (2samples)
   useful error. `boot_out` now waits for the job to actually disappear and
   `restart` verifies both agents came back, exiting nonzero if not. If you see
   it again, `manage.sh status` distinguishes "not loaded" from a crash loop.
+- **Everything is down after a reboot: `/health` times out, the llama-swap
+  dashboard shows disconnected, SSH asks for a password it never asked for
+  before** — the machine is powered on but FileVault-locked, and nothing on
+  `/System/Volumes/Data` has started. This is expected, not a fault. SSH in,
+  supply the password at the `This system is locked` prompt, let the connection
+  close, then reconnect; the stack comes up on its own. Confirmed on
+  2026-09-03: port 22 answering while port 8080 was dead, all healthy
+  immediately after the unlock. See **FileVault gates every reboot** above,
+  including how to do this from away from home.
 - **`Bootstrap failed: 125: Domain does not support specified action`, or
   `status` reports both agents "not loaded" over SSH** — nobody is logged in at
   the desktop. `gui/<uid>` is the Aqua session domain and does not exist while
