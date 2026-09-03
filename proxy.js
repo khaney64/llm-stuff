@@ -621,7 +621,40 @@ function clampPositiveInteger(value, ceiling) {
   return Math.min(Math.floor(value), ceiling);
 }
 
-function deriveLlamaTimingMetrics(timings, generatedTokens) {
+// Backends that report no timings at all (MLX's mlx_lm.server emits usage but
+// no `timings` object) would otherwise log null throughput. `fallback` carries
+// the timestamps the proxy takes itself so speed can still be derived.
+//
+// This is deliberately all-or-nothing: it engages only when the backend
+// supplied no usable timing field whatsoever. llama.cpp and Ollama always send
+// timings, so their numbers stay backend-reported and their deliberate nulls
+// — an unreliable one-token sample, say — are preserved rather than papered
+// over with a wall-clock guess.
+function deriveWallClockTimings(fallback, generatedTokens) {
+  const { requestStart, firstTokenAt, lastTokenAt, promptTokens } = fallback ?? {};
+  if (!Number.isFinite(requestStart)) return null;
+
+  const end = Number.isFinite(lastTokenAt) ? lastTokenAt : null;
+  const promptMs = Number.isFinite(firstTokenAt) ? firstTokenAt - requestStart : null;
+  const genMs = Number.isFinite(firstTokenAt) && end !== null ? end - firstTokenAt : null;
+
+  const genIsReliable = Number.isFinite(generatedTokens) && generatedTokens >= 2
+    && genMs !== null && genMs >= 1;
+  const promptIsReliable = Number.isFinite(promptTokens) && promptTokens >= 1
+    && promptMs !== null && promptMs >= 1;
+
+  return {
+    promptTokSec: promptIsReliable ? (promptTokens / (promptMs / 1000)).toFixed(1) : null,
+    tokSec: genIsReliable ? (generatedTokens / (genMs / 1000)).toFixed(1) : null,
+    promptMs: promptMs !== null && promptMs > 0 ? promptMs.toFixed(0) : null,
+    durationSec: genMs !== null && genMs > 0 ? genMs / 1000 : null,
+    // Wall-clock total spans the whole request, so unlike llama.cpp's
+    // prompt_ms + predicted_ms it also carries queueing and transport.
+    totalSec: end !== null ? (end - requestStart) / 1000 : null,
+  };
+}
+
+function deriveLlamaTimingMetrics(timings, generatedTokens, fallback) {
   const t = timings ?? {};
   const predictedMs = Number(t.predicted_ms);
   const predictedPerSecond = Number(t.predicted_per_second);
@@ -629,6 +662,13 @@ function deriveLlamaTimingMetrics(timings, generatedTokens) {
   const speedSampleIsReliable = Number.isFinite(generatedTokens) && generatedTokens >= 2
     && hasDuration && predictedMs >= 1
     && Number.isFinite(predictedPerSecond) && predictedPerSecond > 0;
+
+  const backendReportedTiming = [t.prompt_ms, t.prompt_per_second, t.predicted_ms, t.predicted_per_second]
+    .some(v => Number.isFinite(Number(v)) && Number(v) > 0);
+  if (!backendReportedTiming) {
+    const wallClock = deriveWallClockTimings(fallback, generatedTokens);
+    if (wallClock) return wallClock;
+  }
 
   return {
     promptTokSec: Number.isFinite(Number(t.prompt_per_second)) && Number(t.prompt_per_second) > 0
@@ -810,6 +850,9 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, m
   let responseFinished = false;
   let doneSeen = false;
   let finalReason = 'stop';
+  // Only consulted when the backend reports no timings of its own (MLX).
+  let firstTokenAt = null;
+  let lastTokenAt  = null;
   let finalModelName = '';
   let finalTimings = null;
   let finalUsage = null;
@@ -876,7 +919,8 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, m
       ? Math.max(0, u.prompt_tokens - promptPast)
       : t.prompt_n ?? u.prompt_tokens ?? null;
     const gen           = u.completion_tokens ?? t.predicted_n ?? null;
-    const { promptTokSec, tokSec, promptMs, durationSec, totalSec: totalMs } = deriveLlamaTimingMetrics(t, gen);
+    const { promptTokSec, tokSec, promptMs, durationSec, totalSec: totalMs } = deriveLlamaTimingMetrics(
+      t, gen, { requestStart, firstTokenAt, lastTokenAt, promptTokens: prompt });
 
     const finishLlama = (power) => logDone({ jobLabel, modelName: finalModelName, requestStart, prompt, gen, doneReason: finalReason,
               durationSec, tokSec, promptTokSec, promptMs, totalMs, numCtx, maxTokens, power, promptPast, promptTotal });
@@ -944,6 +988,13 @@ function handleLlamaCppStream(proxyRes, res, { requestStart, jobLabel, numCtx, m
       // llama.cpp puts thinking tokens in delta.reasoning_content (some builds)
       // or inside <think>...</think> in content itself — handle both
       const thinkToken = delta.reasoning_content ?? '';
+
+      // Thinking counts: it is generated output, and excluding it would inflate
+      // the derived rate for reasoning models.
+      if (contentToken || thinkToken) {
+        lastTokenAt = Date.now();
+        if (firstTokenAt === null) firstTokenAt = lastTokenAt;
+      }
 
       if (thinkToken) {
         if (!FILTER_THINKING) {

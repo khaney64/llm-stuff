@@ -220,3 +220,74 @@ test('omits unreliable generation speed without dropping duration', () => {
     assert.equal(metrics.durationSec, predictedMs / 1000);
   }
 });
+
+// The wall-clock fallback exists for MLX, which reports usage but no timings.
+// These first two tests are the guarantee that it cannot touch llama.cpp.
+test('backend timings always win over the wall-clock fallback', () => {
+  const wildlyDifferentWallClock = {
+    requestStart: 0, firstTokenAt: 10_000, lastTokenAt: 20_000, promptTokens: 500,
+  };
+  const metrics = deriveLlamaTimingMetrics({
+    predicted_ms: 1234.567,
+    predicted_per_second: 81.25,
+    prompt_ms: 500,
+    prompt_per_second: 900,
+  }, 100, wildlyDifferentWallClock);
+
+  assert.equal(metrics.tokSec, '81.3');
+  assert.equal(metrics.promptTokSec, '900.0');
+  assert.equal(metrics.durationSec, 1.234567);
+  assert.equal(metrics.totalSec, 1.734567);
+});
+
+test('a deliberate null from an unreliable llama.cpp sample is not backfilled', () => {
+  const metrics = deriveLlamaTimingMetrics(
+    { predicted_ms: 10, predicted_per_second: 1000000 },
+    1,
+    { requestStart: 0, firstTokenAt: 100, lastTokenAt: 1100, promptTokens: 50 },
+  );
+
+  // One token is not a usable speed sample; the fallback must not invent one.
+  assert.equal(metrics.tokSec, null);
+  assert.equal(metrics.durationSec, 0.01);
+});
+
+test('derives speed from wall clock when the backend reports no timings', () => {
+  const metrics = deriveLlamaTimingMetrics(undefined, 200, {
+    requestStart: 1_000,
+    firstTokenAt: 1_500,   // 500ms prompt window
+    lastTokenAt:  5_500,   // 4000ms generation window
+    promptTokens: 250,
+  });
+
+  assert.equal(metrics.tokSec, '50.0');        // 200 tokens / 4.0s
+  assert.equal(metrics.promptTokSec, '500.0'); // 250 tokens / 0.5s
+  assert.equal(metrics.promptMs, '500');
+  assert.equal(metrics.durationSec, 4);
+  assert.equal(metrics.totalSec, 4.5);         // whole request, not prompt+gen
+});
+
+test('wall-clock fallback applies the same reliability gates', () => {
+  const oneToken = deriveLlamaTimingMetrics({}, 1, {
+    requestStart: 0, firstTokenAt: 100, lastTokenAt: 1100, promptTokens: 50,
+  });
+  assert.equal(oneToken.tokSec, null);
+
+  const noTokensArrived = deriveLlamaTimingMetrics({}, 200, {
+    requestStart: 0, firstTokenAt: null, lastTokenAt: null, promptTokens: 50,
+  });
+  assert.equal(noTokensArrived.tokSec, null);
+  assert.equal(noTokensArrived.promptTokSec, null);
+
+  const cachedPromptCostsNoTime = deriveLlamaTimingMetrics({}, 200, {
+    requestStart: 0, firstTokenAt: 0, lastTokenAt: 4000, promptTokens: 0,
+  });
+  assert.equal(cachedPromptCostsNoTime.promptTokSec, null);
+  assert.equal(cachedPromptCostsNoTime.tokSec, '50.0');
+});
+
+test('missing wall-clock data degrades to nulls rather than throwing', () => {
+  assert.deepEqual(deriveLlamaTimingMetrics({}, 200), {
+    promptTokSec: null, tokSec: null, promptMs: null, durationSec: null, totalSec: null,
+  });
+});
