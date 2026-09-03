@@ -25,6 +25,7 @@ set -euo pipefail
 
 MLX_HOME="${MLX_HOME:-$HOME/mlx}"
 MLX_PY="${MLX_PY:-$MLX_HOME/venv/bin/python}"
+MODEL_DIR="${MODEL_DIR:-$MLX_HOME/models}"
 
 MODEL_NAMES="qwen25-coder-1.5b-mlx"
 
@@ -65,7 +66,18 @@ case "$model" in
     qwen25-coder-1.5b-mlx)
         # 4-bit MLX build of the same weights server.sh serves as
         # qwen2.5-coder-1.5b-instruct-q4_k_m.gguf, so the two are comparable.
-        M_REPO="mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit"
+        #
+        # Unlike a GGUF this is a directory, not a file: config.json, the
+        # tokenizer set, and model.safetensors must all be present or mlx-lm
+        # cannot load it. A local copy under $MODEL_DIR wins; otherwise fall
+        # back to the Hugging Face repo id, which mlx-lm downloads on first
+        # use (~840MB) into ~/.cache/huggingface.
+        M_LOCAL="$MODEL_DIR/Qwen2.5-Coder-1.5B-Instruct-4bit"
+        if [[ -f "$M_LOCAL/config.json" ]]; then
+            M_REPO="$M_LOCAL"
+        else
+            M_REPO="mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit"
+        fi
         # Prompt cache is what makes MLX's cached-token reporting comparable to
         # llama.cpp's --cache-reuse; without it there is nothing to report.
         M_ARGS="--prompt-cache-size 32768"
