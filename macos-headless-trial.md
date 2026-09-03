@@ -10,22 +10,26 @@ empty, `0 users`. Both daemons came up in the `system` domain as `khaney`
 (pids 564 / 563), llama-swap preloaded the model, all three ports listened,
 `/health` OK. The agents stayed unloaded, as intended.
 
-| Metric | Baseline (logged in, agents) | Daemon, pre-login | Δ |
+| Metric | Baseline (logged in, agents) | Daemon, pre-login, box idle | Δ |
 | --- | ---: | ---: | ---: |
-| KV cache | `0reused+61computed` | `0reused+61computed` | identical |
-| **tg tok/s** | 53.7 | **50.2** | −6.5% |
-| **gpu avg / peak** | 7.7W / 8.6W | **7.2W / 8.3W** | −0.5W |
-| pp tok/s | 486.3 | 502.0 | +3.2% |
+| **tg tok/s** | 53.7 | **53.1** (53.3 / 52.8 / 53.2) | −1.1% |
+| **gpu avg / peak** | 7.7W / 8.6W | **7.4W / 8.6W** | −0.3W |
 
-GPU power stayed in the same band instead of collapsing toward the ~0.002W
-idle floor, which is the signal that matters.
+**There is no daemon penalty.** GPU power stayed in the same band rather than
+collapsing toward the ~0.002W idle floor, and throughput matches the logged-in
+baseline to within run-to-run noise.
 
-**Caveat on the −6.5%:** it reproduced across three further runs (tg 50.2 /
-50.6 / 50.5) so it is not single-run noise, but every daemon measurement was
-taken within minutes of boot while Spotlight was reindexing — load average
-climbing 8.3 → 12.6, with three `mdworker_shared` processes at 71/59/58% CPU
-and `system_profiler` at 49%. That is enough contention to explain 6%.
-**Re-measure on an idle box before recording a daemon penalty as real.**
+The first daemon measurements looked 6.5% slower (tg 50.2 / 50.6 / 50.5) and
+reproduced, so they were not single-run noise — but they were all taken minutes
+after boot while Spotlight reindexed: load average climbing 8.3 → 12.6, three
+`mdworker_shared` at 71/59/58% CPU, `system_profiler` at 49%. Re-measured once
+load fell below 2.0 (~20 minutes later, still pre-login, `console=root`,
+`0 users`), the gap disappeared. **Never benchmark a Mac in the first ~20
+minutes after a boot.**
+
+That re-run also re-confirms which metrics to trust: across the three idle
+runs `pp` swung 188 → 387 → 387 tok/s purely on prefix-cache hits, while `tg`
+held at 52.8–53.3 throughout.
 
 Remaining follow-ups are in **If it works** below.
 
