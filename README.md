@@ -2,6 +2,32 @@
 
 Tooling for working with local LLM instances (Ollama, llama.cpp).
 
+## Hosts
+
+Three machines run the same stack — client → `llama-swap` (:8080) → `proxy.js`
+(:8081) → backend (:8082) — but supervise and log it differently, which is the
+first thing to know when something looks wrong.
+
+| Host | Supervisor | Logs | Manage with |
+| --- | --- | --- | --- |
+| `devbox` (Windows) | Task Scheduler + `rotating-log.ps1` | files in `llama-swap/logs/` | `llama-swap/windows/manage.ps1` |
+| `llmserver` (Linux) | systemd user units | journald — **no log files** | `llama-swap/linux/manage.sh` |
+| `mac-m1` (macOS) | launchd **daemons** (no login needed) | files, rotated by `macos/rotate-logs.sh` | `llama-swap/macos/manage.sh` |
+
+## Documentation
+
+| Document | What it covers |
+| --- | --- |
+| `macos-setup.md` | Apple Silicon runbook — install, operations, logs, start-at-boot, troubleshooting |
+| `m5-bring-up.md` | **Start here for the M5 Ultra.** What is settled, what must be redone, and the order |
+| `m1-discovery-plan.md` | The M1 validation pass, including the MLX evaluation and its outcome |
+| `macos-headless-trial.md` | Whether Metal works from a pre-login LaunchDaemon (it does) |
+| `macos-power-loss-trial.md` | Whether the box recovers from a power cut with FileVault on — written, not yet run |
+| `ubuntu-setup.md` | Linux host setup |
+| `llama-swap/ARCHITECTURE.md` | How the three tiers fit together across all hosts |
+| `kv-cache-tracking.md` | KV cache metrics and what they mean |
+| `upgrade-research-grafana-influxdb.md` | Grafana/InfluxDB upgrade notes |
+
 ## Debug Proxy (`proxy.js`)
 
 A zero-dependency Node.js HTTP proxy that sits between your client and an LLM backend, logging request/response details with colored terminal output. Supports both Ollama and llama.cpp backends.

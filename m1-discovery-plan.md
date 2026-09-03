@@ -234,11 +234,17 @@ draw at rest.
       with the fallback biased high by roughly one token in `gen` (~0.5% at
       200 tokens). Worth making the docs or the log output say this before
       someone reads the pp numbers as a benchmark.
-- [ ] Re-measure on the M5. Per this document's own framing this 8GB M1 is a
-      pipeline-validation node and its performance numbers are meaningless in
-      absolute terms; only the *shape* of the result (MLX slower but cooler)
-      should carry forward, and even that needs confirming at 96GB with a model
-      worth serving.
+- [x] **Decision (2026-09-03): stay on llama.cpp, including on the M5.** MLX
+      showed no speed benefit, and llama.cpp has the better model support and
+      the better timing data — it reports `timings` natively, so its metrics do
+      not depend on the wall-clock fallback and its `pp` figure stays a real
+      prefill measurement. The MLX path is kept working rather than removed, so
+      revisiting is cheap if the answer changes at Ultra scale.
+- [ ] Re-measure on the M5 **only if revisiting MLX**. Per this document's own
+      framing this 8GB M1 is a pipeline-validation node and its performance
+      numbers are meaningless in absolute terms; only the *shape* of the result
+      (MLX slower but cooler) should carry forward, and even that needs
+      confirming at 96GB with a model worth serving.
 
 ### 5. proxy.js port/host sanity
 - [x] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
