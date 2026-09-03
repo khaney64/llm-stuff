@@ -66,29 +66,46 @@ curl -s http://127.0.0.1:8080/v1/chat/completions \
 grep -a '\[done\]' llama-swap/logs/proxy.log | tail -1
 ```
 
-Also record that llama.cpp actually initialised Metal. Its stdout goes to
-llama-swap's in-memory log monitor, not to a file:
+### Where the Metal evidence is, and is not
 
-```bash
-curl -s --max-time 5 http://127.0.0.1:8080/logs/stream/upstream \
-  | grep -iE 'metal|offloaded|backend' | head -20
+Do not try to grep llama.cpp's backend init out of the logs. On build
+`b10686`, `http://127.0.0.1:8080/logs/stream/upstream` replays llama-swap's
+buffer from process start — including `load_model`, `n_ctx_slot`, and the
+per-request `print_timing` lines — but contains **no** `ggml_metal_init`,
+`offloaded ... layers to GPU`, or any `metal`/`gpu`/`backend` string at all
+(verified: 0 matches across the whole buffer). `llama-server`'s `/props`
+carries `build_info`, `n_ctx` and `total_slots`, but no device or backend
+field either.
+
+So the verdict rests on two signals the proxy already records in every
+`[done]` line, which is a better test anyway — it measures the GPU actually
+doing work rather than a string claiming it will:
+
+- **`tg` tok/s** — generation throughput.
+- **`gpu=` watts** — Apple GPU power sampled by `macmon` during the request.
+  Idle on this M1 is ~0.002W, so a CPU fallback collapses this by orders of
+  magnitude.
+
+### Baseline, measured 2026-09-02 (logged in via VNC, LaunchAgents, Metal)
+
+```
+[done] session=chat qwen25-coder-1.5b reason=length prompt=27 (0.2% of 32768 ctx) OK
+gen=200 pp=99.8tok/s(271ms) tg=53.9tok/s(3.69s) total=3.96s
+cache=34reused+27computed(55.7%) elapsed=3.99s
+gpu=7.4W peak=8.6W 0.0082Wh $0.000002 (17samples)
 ```
 
-Write down, from a **cold model load** (restart llama-swap first if it is
-already warm, so the load lines appear):
+| Metric | Baseline | Notes |
+| --- | ---: | --- |
+| tg tok/s | **53.9** | primary discriminator |
+| gpu watts (avg / peak) | **7.4W / 8.6W** | primary discriminator |
+| pp tok/s | 99.8 | *not* reliable here — a 27-token prompt is dominated by fixed overhead |
+| console owner | `khaney` | a session was live, as intended for a baseline |
 
-| Metric | Baseline (logged in) |
-| --- | --- |
-| `ggml_metal_init: found device` present | |
-| layers offloaded to GPU | |
-| pp tok/s | |
-| tg tok/s | |
-| gpu watts during generation | |
-
-Reference points already measured on this box at `-c 32768` (`macos-setup.md`
-→ Context sizing): ~281 pp tok/s and ~30 tg tok/s on a 14K-token prompt. A
-CPU-only fallback is not a few percent slower — it is dramatically slower, and
-GPU watts collapse toward idle. That is the signal.
+Keep the prompt short and the comparison on `tg` and watts. If you want a
+meaningful `pp` number too, use a multi-thousand-token prompt in both runs —
+the 14K-token measurements in `macos-setup.md` → Context sizing (~281 pp
+tok/s, ~30 tg tok/s) are the reference for that shape.
 
 ## Step 1 — install the daemons and stand the agents down
 
@@ -147,22 +164,20 @@ curl -s http://127.0.0.1:8080/v1/chat/completions \
   > /dev/null
 
 grep -a '\[done\]' llama-swap/logs/proxy.log | tail -1
-curl -s --max-time 5 http://127.0.0.1:8080/logs/stream/upstream \
-  | grep -iE 'metal|offloaded|backend' | head -20
 ```
 
 ### Reading the result
 
 | Signal | Metal working | Metal not working |
 | --- | --- | --- |
-| `ggml_metal_init: found device` | present | absent, or an init error |
-| layers offloaded | all (`-ngl 999`) | 0 / CPU fallback |
-| tg tok/s | within ~10% of baseline | far below baseline |
-| gpu watts in `[done]` | same order as baseline | at or near idle |
+| tg tok/s | ~50+, within ~10% of the 53.9 baseline | far below — a CPU fallback is not a few percent slower |
+| gpu watts in `[done]` | same order as 7.4W avg / 8.6W peak | collapsed toward the ~0.002W idle floor |
 
-Judge on the log lines **and** the numbers together. GPU watts alone can
-mislead — `power-macos.js` reports Apple GPU power only, which is already small
-on this M1 (~2.5W under load).
+Both signals should agree. If they disagree — say, throughput holds but watts
+read zero — suspect `macmon` rather than Metal: `power-macos.js` shells out to
+it, and a daemon context is exactly where a tool that expects a user session
+might misbehave. Check by running `macmon pipe -s 1` directly over SSH while a
+request is in flight.
 
 ## If it works
 
