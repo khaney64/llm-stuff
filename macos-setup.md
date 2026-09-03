@@ -392,6 +392,42 @@ sudo fdesetup authrestart      # unlocks for exactly one subsequent boot
 `fdesetup supportsauthrestart` reports `true` on this hardware. It does not
 help with power loss, which by definition gives no chance to run it.
 
+### Unlocking from away from home
+
+Since the unlock is just SSH, it can be done remotely — but **not** by putting
+Tailscale on the Mac. `tailscaled` installs a LaunchDaemon under
+`/Library/LaunchDaemons`, which is on the locked volume, so it cannot start
+until after the unlock it was supposed to enable. The relay has to be a
+different machine.
+
+`llmserver` already fills that role: Linux, no full-disk encryption (so it
+boots unattended), `tailscaled` enabled at boot, and advertising the LAN as a
+subnet route that Tailscale reports as approved and serving:
+
+```
+PrimaryRoutes: ['192.168.86.0/24']
+```
+
+So from any Tailscale device, `ssh 192.168.86.34` reaches the Mac's unlock
+service directly. Verify with `tailscale status --json` on the router that
+`PrimaryRoutes` is populated — merely *advertising* a route is not enough, it
+has to be approved in the admin console.
+
+**This makes llmserver a single point of failure for remote recovery.** After a
+whole-house power cut it must come back before the Mac can be reached at all. A
+second subnet router on another always-on host removes that dependency.
+
+### Confirming the gate
+
+Observed directly on 2026-09-03 while mac-m1 sat locked after a reboot:
+
+| | |
+| --- | --- |
+| port 22 | answering — the unlock service |
+| port 8080 | dead — no daemons |
+
+That is the cheap way to tell "locked" from "broken" without touching the box.
+
 Note that automatic login and FileVault are mutually exclusive, and daemons do
 not resolve that: FileVault requires a **pre-boot unlock**, not a desktop
 login, so a FileVault box still needs a human at the console after an

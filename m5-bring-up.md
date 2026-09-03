@@ -31,6 +31,13 @@ below; with it on, a reboot needs a password over SSH before anything starts.
   For a box doing coding inference on your own network, either is defensible —
   decide it deliberately. `macos-power-loss-trial.md` is only worth running if
   you choose FileVault **off** and want to confirm unattended recovery.
+
+  If you keep FileVault, sort out **remote** unlock before relying on the box:
+  the unlock is plain SSH, but Tailscale *on the Mac* cannot help (its
+  LaunchDaemon is on the locked volume too), so it needs a subnet router on
+  another always-on host. `llmserver` already does this and its route shows as
+  approved. That makes it a single point of failure for remote recovery — see
+  `macos-setup.md` → *Unlocking from away from home*.
 - **Metal-from-daemon on a newer macOS.** Verified once, on one OS version.
   Re-run the headless trial after bring-up and after major OS updates; it is a
   20-minute job now that the plists and procedure exist.
