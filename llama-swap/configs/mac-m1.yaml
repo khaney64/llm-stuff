@@ -21,6 +21,17 @@ models:
     checkEndpoint: /health
     useModelName: qwen25-coder-1.5b
 
+  # Same weights as qwen25-coder-1.5b, served by MLX instead of llama.cpp, so
+  # the two backends can be compared by model id in a single request rather
+  # than by editing this file back and forth. MLX cannot read GGUF, so this is
+  # a separate ~880MB download. See m1-discovery-plan.md section 4.
+  qwen25-coder-1.5b-mlx:
+    name: Qwen2.5 Coder 1.5B Instruct 4bit (MLX)
+    cmd: ./llama-swap/macos/server-mlx.sh --model qwen25-coder-1.5b-mlx --port 8082 --host 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen25-coder-1.5b-mlx
+
   nomic-embed:
     name: Nomic Embed Text v1.5 F16
     cmd: ./llama-swap/macos/server.sh --model nomic-embed --port 8082 --host 127.0.0.1

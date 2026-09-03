@@ -144,16 +144,55 @@ draw at rest.
       triggers a swap each time, rather than llama-swap losing track of which
       backend is "current" when the two models use different serving stacks — 4 alternating swaps, all correct, ~1.5s each
 
-### 4. MLX serving path — NOT STARTED (only remaining item)
-- [ ] Install `mlx-lm`, run `mlx_lm.server` with an MLX-quantized version of
-      the same small test model
-- [ ] Compare its OpenAI-compatible streaming response shape against
-      llama.cpp's — specifically whether `timings.prompt_per_second`,
-      `timings.cache_n`, and `usage.prompt_tokens_details.cached_tokens` are
-      present (proxy.js's `deriveLlamaTimingMetrics` and cache-hit logging
-      depend on these; MLX may not populate all of them)
-- [ ] Note any field gaps found — these will need proxy.js changes before the
-      M5 Ultra arrives, not after
+### 4. MLX serving path — IN PROGRESS (2026-09-03)
+- [x] Install `mlx-lm` — `mlx-lm 0.31.3` / `mlx 0.32.2` in a venv at
+      `~/mlx/venv` on Homebrew Python 3.14.2 (arm64). All wheels available; the
+      install is 432MB. Metal confirmed live: `mx.default_device()` is
+      `Device(gpu, 0)` and `mx.metal.is_available()` is `True`.
+- [x] **MLX cannot read GGUF.** `mlx_lm/gguf.py` is export-only —
+      `convert_to_gguf`, reachable solely from `mlx_lm.fuse --export-gguf`.
+      There is no load path. Models are safetensors + `config.json` +
+      tokenizer, so every model is a second download alongside its GGUF twin.
+      `mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit` (~880MB) is the
+      counterpart to `qwen2.5-coder-1.5b-instruct-q4_k_m.gguf`.
+- [x] `llama-swap` compatibility: `mlx_lm server` serves `/health` and
+      `/v1/models`, so `checkEndpoint: /health` works unchanged. Added
+      `llama-swap/macos/server-mlx.sh` and a `qwen25-coder-1.5b-mlx` entry in
+      `mac-m1.yaml`, both on port 8082, so the two backends are selectable by
+      model id in a single request instead of by editing config.
+- [x] Response-shape comparison **(from source; needs confirming against a live
+      response)**:
+
+  | proxy.js needs | llama.cpp | MLX | Impact |
+  | --- | :---: | :---: | --- |
+  | `usage.prompt_tokens` | yes | **yes** | prompt count survives |
+  | `usage.completion_tokens` | yes | **yes** | gen count survives |
+  | `usage.prompt_tokens_details.cached_tokens` | yes | **yes** | cache-hit % survives |
+  | `timings.prompt_ms` | yes | **no** | — |
+  | `timings.prompt_per_second` | yes | **no** | pp tok/s → null |
+  | `timings.predicted_ms` | yes | **no** | duration → null |
+  | `timings.predicted_per_second` | yes | **no** | tg tok/s → null |
+
+- [ ] **Required proxy.js change, and it is not cosmetic.** MLX emits no
+      `timings` object at all, and `deriveLlamaTimingMetrics` reads *only* from
+      it, so on MLX all five of `promptTokSec`, `tokSec`, `promptMs`,
+      `durationSec` and `totalSec` come back `null`. The `[done]` line loses
+      its throughput numbers and the InfluxDB timing fields go empty — on the
+      machine doing the real work. Token counts and cache-hit tracking are
+      unaffected.
+
+      The fix is a wall-clock fallback: the proxy already records
+      `requestStart` and computes `elapsed`, so `tg` can be derived from
+      `completion_tokens` over the generation window and `pp` from
+      `prompt_tokens` over time-to-first-token. That needs a first-token
+      timestamp, which is not currently captured. Doing it that way is
+      backend-agnostic and would work for llama.cpp and Ollama too, rather
+      than special-casing MLX.
+- [ ] Live run: serve the MLX model through llama-swap, capture a real
+      streaming response, and confirm the table above against actual JSON
+- [ ] Throughput comparison against llama.cpp on the same weights — only
+      meaningful once the wall-clock fallback exists, since MLX currently
+      reports no speed at all
 
 ### 5. proxy.js port/host sanity
 - [x] Confirm `~/llm-stuff/proxy.sh` (vs. `proxy.ps1` on Windows) launches
