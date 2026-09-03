@@ -337,10 +337,24 @@ session left exposed.
 
 ### FileVault gates every reboot
 
-**With FileVault on, no reboot is unattended.** `/System/Volumes/Data` — which
-holds `~/llm-stuff`, the models and the daemons — comes up locked, so nothing
-starts until a human supplies a password. This is separate from, and earlier
-than, any desktop login.
+**With FileVault on, no reboot is unattended.** Nothing starts until a human
+supplies a password. This is separate from, and earlier than, any desktop
+login.
+
+The reason is worth knowing, because it rules out working around it: *every*
+part of the stack sits on the FileVault-protected `/System/Volumes/Data`,
+including the job definitions themselves.
+
+```
+/Library/LaunchDaemons/com.khaney.llama-proxy.plist  -> /System/Volumes/Data
+/Users/khaney/llm-stuff/proxy.sh                     -> /System/Volumes/Data
+/Users/khaney/llama/models                           -> /System/Volumes/Data
+/opt/homebrew/bin/node                               -> /System/Volumes/Data
+```
+
+launchd cannot read a plist on a locked volume, so the daemons do not merely
+fail to find their programs — they do not exist to launchd until the unlock.
+`pmset autorestart 1` therefore delivers a powered-on Mac and nothing else.
 
 macOS offers that unlock **over SSH**, which is what you will hit:
 
