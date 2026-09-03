@@ -86,26 +86,45 @@ doing work rather than a string claiming it will:
   Idle on this M1 is ~0.002W, so a CPU fallback collapses this by orders of
   magnitude.
 
+### Take the baseline cold
+
+After the reboot in Step 2, `llama-server` is a fresh process with an empty KV
+cache. Match that here or the comparison is not like-for-like:
+
+```bash
+llama-swap/macos/manage.sh restart-swap     # fresh llama.cpp child, empty KV
+until [ "$(curl -s --max-time 3 http://127.0.0.1:8080/health)" = OK ]; do sleep 1; done
+```
+
+Confirm the `[done]` line reports `cache=0reused` before trusting it.
+
 ### Baseline, measured 2026-09-02 (logged in via VNC, LaunchAgents, Metal)
 
 ```
-[done] session=chat qwen25-coder-1.5b reason=length prompt=27 (0.2% of 32768 ctx) OK
-gen=200 pp=99.8tok/s(271ms) tg=53.9tok/s(3.69s) total=3.96s
-cache=34reused+27computed(55.7%) elapsed=3.99s
-gpu=7.4W peak=8.6W 0.0082Wh $0.000002 (17samples)
+[done] session=chat qwen25-coder-1.5b reason=length prompt=61 (0.2% of 32768 ctx) OK
+gen=200 pp=486.3tok/s(125ms) tg=53.7tok/s(3.70s) total=3.83s
+cache=0reused+61computed(0.0%) elapsed=3.85s
+gpu=7.7W peak=8.6W 0.0081Wh $0.000002 (17samples)
 ```
 
-| Metric | Baseline | Notes |
-| --- | ---: | --- |
-| tg tok/s | **53.9** | primary discriminator |
-| gpu watts (avg / peak) | **7.4W / 8.6W** | primary discriminator |
-| pp tok/s | 99.8 | *not* reliable here — a 27-token prompt is dominated by fixed overhead |
-| console owner | `khaney` | a session was live, as intended for a baseline |
+| Metric | **Cold** (use this) | Warm, for contrast |
+| --- | ---: | ---: |
+| KV cache | `0reused+61computed` | `34reused+27computed` |
+| tg tok/s | **53.7** | 53.9 |
+| gpu watts avg / peak | **7.7W / 8.6W** | 7.4W / 8.6W |
+| pp tok/s | 486.3 | 99.8 |
 
-Keep the prompt short and the comparison on `tg` and watts. If you want a
-meaningful `pp` number too, use a multi-thousand-token prompt in both runs —
-the 14K-token measurements in `macos-setup.md` → Context sizing (~281 pp
-tok/s, ~30 tg tok/s) are the reference for that shape.
+Both runs are on this box minutes apart, and the contrast is the reason the
+verdict rests on `tg` and watts:
+
+- `tg` moved 0.4% and watts moved 0.3W between cache states — they measure the
+  GPU doing work and are indifferent to what is cached.
+- `pp` moved **5x** in the *opposite* direction to intuition. The warm run
+  looked slower because only 27 tokens were charged against a fixed ~271ms of
+  overhead. Do not compare `pp` across runs unless the prompt is large enough
+  to dominate that overhead — the 14K-token figures in `macos-setup.md` →
+  Context sizing (~281 pp tok/s, ~30 tg tok/s) are the reference for that
+  shape.
 
 ## Step 1 — install the daemons and stand the agents down
 
