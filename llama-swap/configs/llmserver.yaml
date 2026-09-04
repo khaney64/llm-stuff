@@ -54,6 +54,16 @@ models:
     checkEndpoint: /health
     useModelName: gemma4-12b
 
+  nomic-embed:
+    name: Nomic Embed Text v1.5 F16
+    cmd: ./llama-swap/linux/start-model.sh --model nomic-embed --port 8082 --host 127.0.0.1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: nomic-embed
+    aliases:
+      - nomic-embed-text
+      - nomic-embed-text-v1.5
+
 hooks:
   on_startup:
     preload:

@@ -44,10 +44,12 @@ flowchart LR
     MP -->|usage, timing, power| I
 ```
 
-`mac-m1` is a pipeline-validation node, not a capacity node: it proves the
-macOS path (Metal build, `macmon` power, launchd services) ahead of the M5
-Ultra. It is not registered as a devbox peer, so nothing routes to it
-automatically.
+`mac-m1` proves the macOS path (Metal build, `macmon` power, launchd services)
+ahead of the M5 Ultra. It is not registered as a devbox peer, so no chat traffic
+routes to it automatically, but it now serves real work: it is the embedding host
+for grepai. On devbox the 35b/27b models occupy most of the VRAM, so Ollama
+loads `nomic-embed-text` into system memory and embeds on CPU; the otherwise
+idle M1 embeds on Metal instead and takes that load off devbox.
 
 The agent-facing endpoint remains port `8080`. Ports `8081` and `8082` are
 loopback-only implementation details.
@@ -193,8 +195,14 @@ only selects the script entry and forces the internal port and loopback bind.
 Changing a script's settings therefore changes the next launch of that model;
 restart the owning llama-swap to apply the change immediately.
 
-No `matrix` is configured because each host currently runs one model at a time.
-A matrix is appropriate only after confirming that multiple selected models fit
+No `matrix` is configured on any host. mac-m1 is the only host that keeps more
+than one model resident, and it does so with a `groups` block rather than a
+matrix: `embed` (`persistent: true`, `swap: false`) pins `nomic-embed` so grepai
+never pays a reload, and `coder` (`swap: true`) lets the llama.cpp and MLX
+builds of the same weights displace each other. Neither group is `exclusive`, so
+they coexist. Both fit easily — coder is ~1.04GB of weights plus ~0.9GB of KV at
+32768 ctx, nomic is ~0.26GB, against 8GB of unified memory. A matrix is
+appropriate only after confirming that multiple selected models fit
 concurrently in a host's VRAM. Selectors, profiles, filters, and custom macros
 are also deferred until a concrete routing need exists.
 
