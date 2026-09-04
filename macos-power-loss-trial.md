@@ -1,5 +1,30 @@
 # Power-loss recovery trial (mac-m1)
 
+## Largely answered without running it (2026-09-03)
+
+A routine reboot showed what this trial was designed to find out, so the risky
+part is probably unnecessary. With FileVault on, `/System/Volumes/Data` comes
+up **locked** after any reboot, and the daemons live on it, so nothing starts
+until a human supplies a password — over SSH, via macOS's remote unlock:
+
+```
+This system is locked. To unlock it, use a local
+account name and password.
+```
+
+That is **state B** in the table below — powered on, volume locked, waiting for
+a human — and it will be the power-cut outcome too, since a power cut gives
+macOS strictly less opportunity to carry an unlock forward than a clean restart
+does. `sudo fdesetup authrestart` covers planned reboots only.
+
+**So: with FileVault on, power-loss recovery is not unattended.** The remaining
+question is only whether `pmset autorestart 1` powers the machine back on at
+all — worth confirming eventually, but it changes nothing about needing a human.
+
+Run the full procedure below only if you turn FileVault **off** and want to
+verify that the box then recovers unattended. Keep the rest of this document
+for that case, and for the M5.
+
 ## The question
 
 **After an unexpected power cut, does the Mac come back to a serving stack with

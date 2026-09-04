@@ -5,7 +5,16 @@
 **Metal works from a pre-login LaunchDaemon.** Ran on mac-m1; the M5 Ultra can
 be headless with no automatic login.
 
-Test validity — nobody was logged in: `/dev/console` owned by `root`, `who`
+> **Correction (2026-09-03):** this document originally also concluded that
+> FileVault and unattended restart coexist. **That was wrong.** The reboot was
+> not unattended — with FileVault on, `/System/Volumes/Data` comes up locked
+> and a password had to be supplied over SSH before any daemon could start.
+> What the trial genuinely establishes is narrower and still the thing it was
+> written to answer: **daemons run without a desktop login, and Metal works
+> from them at full speed.** The FileVault unlock is a separate, earlier gate.
+> See `macos-setup.md` → *FileVault gates every reboot*.
+
+Test validity — nobody was logged in *at the desktop*: `/dev/console` owned by `root`, `who`
 empty, `0 users`. Both daemons came up in the `system` domain as `khaney`
 (pids 564 / 563), llama-swap preloaded the model, all three ports listened,
 `/health` OK. The agents stayed unloaded, as intended.

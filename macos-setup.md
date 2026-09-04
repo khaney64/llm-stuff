@@ -335,18 +335,98 @@ fell below 2. Do not benchmark a Mac in the first ~20 minutes after a boot.
 So the M5 Ultra can run headless: daemons, no automatic login, no desktop
 session left exposed.
 
-**FileVault is on throughout, and did not have to be traded away.** The trial
-box rebooted and came back unattended with `fdesetup status` reporting
-FileVault On and the Data volume unlocked. On Apple Silicon the SSD is
-hardware-encrypted by the Secure Enclave regardless; FileVault adds
-password-gated key derivation on top.
+### FileVault gates every reboot
 
-One thing that is **not** yet established: that was a clean
-`sudo shutdown -r now`. `fdesetup authrestart` exists because a reboot does not
-normally carry the unlock forward, so a hard power cut may behave differently —
-and if the Data volume stays locked, `pmset autorestart 1` just delivers a Mac
-sitting at an unlock screen. `macos-power-loss-trial.md` settles it, cheapest
-test first.
+**With FileVault on, no reboot is unattended.** Nothing starts until a human
+supplies a password. This is separate from, and earlier than, any desktop
+login.
+
+The reason is worth knowing, because it rules out working around it: *every*
+part of the stack sits on the FileVault-protected `/System/Volumes/Data`,
+including the job definitions themselves.
+
+```
+/Library/LaunchDaemons/com.khaney.llama-proxy.plist  -> /System/Volumes/Data
+/Users/khaney/llm-stuff/proxy.sh                     -> /System/Volumes/Data
+/Users/khaney/llama/models                           -> /System/Volumes/Data
+/opt/homebrew/bin/node                               -> /System/Volumes/Data
+```
+
+launchd cannot read a plist on a locked volume, so the daemons do not merely
+fail to find their programs — they do not exist to launchd until the unlock.
+`pmset autorestart 1` therefore delivers a powered-on Mac and nothing else.
+
+macOS offers that unlock **over SSH**, which is what you will hit:
+
+```
+$ ssh mac-m1
+This system is locked. To unlock it, use a local
+account name and password. Once successfully
+unlocked, you will be able to connect normally.
+(khaney@...) Password:
+System successfully unlocked.
+You may now use SSH to authenticate normally.
+```
+
+The connection closes; reconnect and the machine is normal. Expect the first
+attempt after a reboot to time out entirely — the unlock service takes a little
+while to answer.
+
+So the real trade is:
+
+| | Unattended after a reboot or power cut | Encrypted at rest |
+| --- | :---: | :---: |
+| FileVault **on** (current) | no — a password over SSH | yes |
+| FileVault **off** | yes | hardware-only: the SSD is still encrypted by the Secure Enclave, but the key is released without a password, so anyone who can boot the machine reads it |
+
+Remote unlock makes FileVault far more tolerable than it sounds — recovery
+needs a password, not physical access — but it is not unattended, and
+`pmset autorestart 1` only gets the box powered on, not serving.
+
+For a **planned** reboot, skip the unlock by authenticating in advance:
+
+```bash
+sudo fdesetup authrestart      # unlocks for exactly one subsequent boot
+```
+
+`fdesetup supportsauthrestart` reports `true` on this hardware. It does not
+help with power loss, which by definition gives no chance to run it.
+
+### Unlocking from away from home
+
+Since the unlock is just SSH, it can be done remotely — but **not** by putting
+Tailscale on the Mac. `tailscaled` installs a LaunchDaemon under
+`/Library/LaunchDaemons`, which is on the locked volume, so it cannot start
+until after the unlock it was supposed to enable. The relay has to be a
+different machine.
+
+`llmserver` already fills that role: Linux, no full-disk encryption (so it
+boots unattended), `tailscaled` enabled at boot, and advertising the LAN as a
+subnet route that Tailscale reports as approved and serving:
+
+```
+PrimaryRoutes: ['192.168.86.0/24']
+```
+
+So from any Tailscale device, `ssh 192.168.86.34` reaches the Mac's unlock
+service directly. Verify with `tailscale status --json` on the router that
+`PrimaryRoutes` is populated — merely *advertising* a route is not enough, it
+has to be approved in the admin console.
+
+**This makes llmserver a single point of failure for remote recovery.** After a
+whole-house power cut it must come back before the Mac can be reached at all. A
+second subnet router on another always-on host removes that dependency.
+
+### Confirming the gate
+
+Observed directly on 2026-09-03 while mac-m1 sat locked after a reboot:
+
+| | |
+| --- | --- |
+| port 22 | answering — the unlock service |
+| port 8080 | dead — no daemons |
+
+That is the cheap way to tell "locked" from "broken" without touching the box.
 
 Note that automatic login and FileVault are mutually exclusive, and daemons do
 not resolve that: FileVault requires a **pre-boot unlock**, not a desktop
@@ -494,6 +574,15 @@ gpu=7.9Wpeak=7.9W (2samples)
   useful error. `boot_out` now waits for the job to actually disappear and
   `restart` verifies both agents came back, exiting nonzero if not. If you see
   it again, `manage.sh status` distinguishes "not loaded" from a crash loop.
+- **Everything is down after a reboot: `/health` times out, the llama-swap
+  dashboard shows disconnected, SSH asks for a password it never asked for
+  before** — the machine is powered on but FileVault-locked, and nothing on
+  `/System/Volumes/Data` has started. This is expected, not a fault. SSH in,
+  supply the password at the `This system is locked` prompt, let the connection
+  close, then reconnect; the stack comes up on its own. Confirmed on
+  2026-09-03: port 22 answering while port 8080 was dead, all healthy
+  immediately after the unlock. See **FileVault gates every reboot** above,
+  including how to do this from away from home.
 - **`Bootstrap failed: 125: Domain does not support specified action`, or
   `status` reports both agents "not loaded" over SSH** — nobody is logged in at
   the desktop. `gui/<uid>` is the Aqua session domain and does not exist while
