@@ -170,6 +170,57 @@ recorded but not scheduled.
 llmserver's 12GB could hold `qwen3vl-8b` plus a small chat model; mac-m1's 8GB
 cannot, so its coder variants stay a swapping group.
 
+## Measured: llmserver co-residency (2026-09-04)
+
+Benchmarked on a spare port with llama-swap stopped, so these are clean numbers.
+
+**Tuning nomic beyond mac-m1's settings buys almost nothing.** All configs were
+verified to produce byte-comparable vectors — cosine `1.00000000` against
+baseline in every case, so none of this carries re-index risk:
+
+| Config | VRAM | b1 | b5 | b16 | b64 | 40x5 concurrent |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A baseline (mac-m1 match) | 492MB | 0.004s | 0.021s | 0.062s | 0.247s | 0.62s |
+| B wide ubatch (`-b/-ub 8192`) | 492MB | 0.004s | 0.021s | 0.062s | 0.248s | 0.62s |
+| C `--parallel 4` (`-c 8192`) | 864MB | 0.004s | 0.018s | 0.057s | 0.214s | 0.51s |
+| D `--parallel 8` (`-c 16384`) | 864MB | 0.004s | 0.018s | 0.064s | 0.246s | 0.61s |
+| E baseline + `--flash-attn` | 492MB | 0.004s | 0.020s | 0.061s | 0.248s | 0.62s |
+
+Wide ubatch and flash-attn do nothing. `--parallel 4` is the only real gain —
+~13% at batch 64, ~18% under concurrency — for +372MB, which is exactly the
+resource co-residency is short of. Nomic is a 137M-parameter model and the
+logged median batch is 5 docs (21ms); the bottleneck is per-request overhead,
+not compute. **Recommendation: leave the config matching mac-m1.**
+
+Workload shape, from 31,759 logged `/v1/embeddings` requests on mac-m1: median
+~5 docs per request, p90 ~15, max 423; median latency there 0.394s.
+
+**Load order decides whether co-residency works at all.** `qwen3vl-8b` runs with
+`-fit on` and no explicit `-ngl` (its `M_NGL` is commented out in llmserver's
+`server.sh`), so it sizes itself to whatever VRAM is free at load time:
+
+| Order | Total VRAM | qwen3vl generation |
+| --- | ---: | ---: |
+| qwen3vl alone | 10715MB | 45.9 tok/s |
+| nomic (493MB) first, then qwen3vl | 10727MB | 37.3 tok/s |
+
+Loading nomic first works with no context reduction and no config change —
+`-fit` gives back ~480MB — but costs **18.8%** of vision generation throughput
+(45.9 → 37.3, ±0.1 over 4 runs), because the layers it stops offloading run on
+CPU. Embeddings served concurrently in 10.6ms for 2 docs.
+
+Load qwen3vl first and nomic may not fit at all: a freshly started qwen3vl
+leaves 1159MB, but the instance running before this test held 11504MB and left
+only 361MB, against nomic's 216MB first CUDA buffer — it OOM'd on load. So the
+leftover headroom is not stable enough to rely on. `persistent: true` on the
+embed group plus preload ordering is what makes this deterministic.
+
+**Not yet measured:** capping qwen3vl's context so both fit with *all* layers on
+GPU, trading context for the 18.8% instead. Standalone footprints are
+`-c 65535` → 10714MB, `-c 49152` → 10216MB, `-c 32768` → 8896MB, so ~49152 plus
+an explicit `-ngl` looks like it would free enough. Worth measuring before
+committing to the load-order approach.
+
 ## Files to change
 
 ### Committed, in this repo
