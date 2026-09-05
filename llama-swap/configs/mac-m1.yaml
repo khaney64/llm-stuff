@@ -5,11 +5,16 @@
 # and takes every model-specific llama.cpp setting from the host launcher
 # (llama-swap/macos/server.sh) rather than duplicating it here.
 #
-# Both models are small enough to stay resident together in 8GB (coder weights
-# ~1.04GB + ~0.9GB KV at 32768 ctx, nomic ~0.26GB), so the groups block below
-# keeps them co-resident rather than swapping. nomic-embed is real infrastructure
-# now: grepai instances point here instead of devbox, where the 35b/27b crowd
-# nomic out of VRAM and it falls back to CPU.
+# One model at a time. Every model here launches on 8082, so two resident
+# llama-servers cannot both bind and the second one dies; see the deleted groups
+# block in git history and multi-model-ports-plan.md. With no groups, llama-swap
+# defaults each model to swap:true + exclusive:true, which is exactly what we
+# want: loading any model unloads whatever else is up.
+#
+# nomic-embed is real infrastructure -- grepai instances point here instead of
+# devbox, where the 35b/27b crowd nomic out of VRAM and it falls back to CPU --
+# so it is the one model preloaded at startup. Running a coder model displaces
+# it until the next explicit nomic request swaps it back in.
 healthCheckTimeout: 600
 unloadTimeout: 60
 globalTTL: 0
@@ -43,37 +48,7 @@ models:
       - nomic-embed-text
       - nomic-embed-text-v1.5
 
-# nomic-embed is persistent: grepai calls it constantly and it must never be
-# evicted. The two coder variants share a swapping group because they are the
-# same weights on different backends and are never needed at once. Neither group
-# is exclusive, so loading a coder leaves the embedding model up.
-#
-# Ungrouped models default to swap:true + exclusive:true (one model at a time,
-# unloads everything else); every model here is grouped, so that never applies.
-#
-# NOT YET SAFE TO APPLY. Every model below launches on 8082 and proxies through
-# 8081, so the moment these groups keep two of them resident the second
-# llama-server cannot bind 8082, /health never answers, and llama-swap blocks
-# for the full 600s healthCheckTimeout. The running llama-swap predates this
-# block and is unaffected; a restart-swap would apply it. Fix the ports first —
-# see multi-model-ports-plan.md.
-groups:
-  embed:
-    persistent: true
-    swap: false
-    exclusive: false
-    members:
-      - nomic-embed
-
-  coder:
-    swap: true
-    exclusive: false
-    members:
-      - qwen25-coder-1.5b
-      - qwen25-coder-1.5b-mlx
-
 hooks:
   on_startup:
     preload:
-      - qwen25-coder-1.5b
       - nomic-embed
