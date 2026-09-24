@@ -127,6 +127,16 @@ models:
     checkEndpoint: /health
     useModelName: unsloth-Muse-Glimmer-30B-GGUF
 
+  comfyui_auto:
+    name: ComfyUI
+    cmd: >-
+      C:\development\ai\ComfyUI\.venv\Scripts\python.exe
+      C:\development\ai\ComfyUI\main.py
+      --listen 127.0.0.1 --port 8188
+    proxy: http://127.0.0.1:8188
+    checkEndpoint: /
+    unlisted: true
+
 peers:
   llmserver:
     proxy: http://llmserver.lan:8080

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Gen</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%233a5bd9'/><circle cx='5.5' cy='5.5' r='1.8' fill='white'/><path d='M2 13l4-4 3 3 2-2 3 3z' fill='white'/></svg>">
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6a65; --line: #dddbd4;
+    --accent: #3a5bd9; --accent-text: #fff; --danger: #b3261e; --drop: #eef1fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --panel: #212120; --text: #ecebe6; --muted: #9c9b95; --line: #363532;
+      --accent: #7d97ff; --accent-text: #0f1530; --danger: #ff8a80; --drop: #242a40;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 20px; margin: 0 0 14px; font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  textarea { width: 100%; min-height: 84px; resize: vertical; font: inherit; color: inherit; background: transparent;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  textarea:focus, select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .refs { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; align-items: stretch; }
+  .drop { flex: 1 1 220px; min-height: 84px; border: 1.5px dashed var(--line); border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 8px; cursor: pointer; font-size: 13px; }
+  .drop.over { background: var(--drop); border-color: var(--accent); color: var(--text); }
+  .ref { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .ref img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ref span { position: absolute; left: 0; bottom: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; padding: 1px 5px; border-top-right-radius: 6px; }
+  .ref button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0;
+    background: rgba(0,0,0,.65); color: #fff; cursor: pointer; font-size: 14px; line-height: 22px; padding: 0; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  select, input[type=number] { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  input[type=number] { width: 150px; }
+  label.c { display: flex; gap: 6px; align-items: center; font-size: 14px; padding-bottom: 7px; }
+  .go { margin-left: auto; background: var(--accent); color: var(--accent-text); border: 0; border-radius: 8px;
+    padding: 10px 22px; font: inherit; font-weight: 600; cursor: pointer; }
+  .go:disabled { opacity: .5; cursor: default; }
+  .status { margin-top: 10px; min-height: 20px; font-size: 13px; color: var(--muted); }
+  .status.err { color: var(--danger); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .card .img { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px;
+    background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 50% / 20px 20px; }
+  .card .img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .card .meta { padding: 8px 10px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .card .p { color: var(--text); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+  .card .acts button, .card .acts a { font: inherit; font-size: 12px; color: var(--accent); background: none; border: 1px solid var(--line);
+    border-radius: 6px; padding: 3px 8px; cursor: pointer; text-decoration: none; }
+  .card .acts .del { color: var(--danger); margin-left: auto; }
+  .card.err .img { color: var(--danger); padding: 12px; text-align: center; background: none; }
+  @media (max-width: 560px) { .go { width: 100%; margin-left: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Image Gen <span class="hint">· Qwen-Image 2.1</span></h1>
+  <div class="panel">
+    <textarea id="prompt" placeholder="Describe the image, or the change to make to the reference images…  (Ctrl+Enter to generate)"></textarea>
+    <div class="refs" id="refs">
+      <div class="drop" id="drop">Drop, paste or click to add reference images (optional)</div>
+    </div>
+    <p class="hint" id="refhint" hidden>image1 is the one being edited, and the output keeps its shape. Name the images in your prompt as &lt;image1&gt;, &lt;image2&gt;, …, e.g. "put the jacket from &lt;image2&gt; on the person in &lt;image1&gt;".</p>
+    <div class="controls">
+      <label class="f">Size
+        <select id="size">
+          <option value="match">Match image1</option>
+          <option value="1024x1024" selected>Square 1024²</option>
+          <option value="1152x864">Landscape 4:3</option>
+          <option value="1344x768">Landscape 16:9</option>
+          <option value="864x1152">Portrait 3:4</option>
+          <option value="768x1344">Portrait 9:16</option>
+          <option value="2048x2048">Square 2K (slow)</option>
+        </select>
+      </label>
+      <label class="f">Quality
+        <select id="steps">
+          <option value="25" selected>Fast (25 steps)</option>
+          <option value="40">Better (40 steps)</option>
+          <option value="50">Best (50 steps)</option>
+        </select>
+      </label>
+      <label class="f">Seed
+        <input type="number" id="seed" min="0" placeholder="random">
+      </label>
+      <label class="c"><input type="checkbox" id="transparent"> Transparent background</label>
+      <button class="go" id="go">Generate</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+  <div class="gallery" id="gallery"></div>
+</main>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<script>
+const $ = id => document.getElementById(id);
+const refs = [];
+
+function renderRefs() {
+  document.querySelectorAll('#refs .ref').forEach(e => e.remove());
+  refs.forEach((src, i) => {
+    const d = document.createElement('div');
+    d.className = 'ref';
+    d.innerHTML = `<img alt=""><span>image${i + 1}</span><button title="Remove">×</button>`;
+    d.querySelector('img').src = src;
+    d.querySelector('button').onclick = () => { refs.splice(i, 1); renderRefs(); };
+    $('refs').insertBefore(d, $('drop'));
+  });
+  $('refhint').hidden = !refs.length;
+  $('size').options[0].disabled = !refs.length;
+  if (refs.length && $('size').dataset.auto !== 'off') $('size').value = 'match';
+  if (!refs.length && $('size').value === 'match') $('size').value = '1024x1024';
+}
+$('size').onchange = () => { $('size').dataset.auto = 'off'; };
+
+function addFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const r = new FileReader();
+  r.onload = () => { refs.push(r.result); renderRefs(); };
+  r.readAsDataURL(file);
+}
+async function addUrl(url) {
+  const blob = await (await fetch(url)).blob();
+  addFile(new File([blob], 'ref', { type: blob.type }));
+}
+
+$('drop').onclick = () => $('file').click();
+$('file').onchange = e => { [...e.target.files].forEach(addFile); e.target.value = ''; };
+$('drop').ondragover = e => { e.preventDefault(); $('drop').classList.add('over'); };
+$('drop').ondragleave = () => $('drop').classList.remove('over');
+$('drop').ondrop = e => { e.preventDefault(); $('drop').classList.remove('over'); [...e.dataTransfer.files].forEach(addFile); };
+document.addEventListener('paste', e => [...e.clipboardData.files].forEach(addFile));
+$('prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate(); });
+$('go').onclick = generate;
+
+function setStatus(text, err) {
+  $('status').textContent = text;
+  $('status').className = 'status' + (err ? ' err' : '');
+}
+
+function card(item) {
+  const c = document.createElement('div');
+  c.className = 'card';
+  c.innerHTML = `<div class="img"></div><div class="meta"><div class="p"></div><div class="info"></div><div class="acts"></div></div>`;
+  c.querySelector('.p').textContent = item.prompt;
+  c.querySelector('.p').title = item.prompt;
+  return c;
+}
+
+function fillCard(c, item) {
+  const file = item.files[0];
+  const img = document.createElement('img');
+  img.src = '/out/' + encodeURIComponent(file);
+  img.alt = item.prompt;
+  c.querySelector('.img').replaceChildren(img);
+  const bits = [item.size === 'match' ? 'matched image1' : item.size, `seed ${item.seed}`, `${item.steps} steps`];
+  if (item.refs?.length) bits.push(`${item.refs.length} ref${item.refs.length > 1 ? 's' : ''}`);
+  if (item.transparent) bits.push('transparent');
+  if (item.seconds) bits.push(`${item.seconds}s`);
+  c.querySelector('.info').textContent = bits.join(' · ');
+  const acts = c.querySelector('.acts');
+  acts.innerHTML = `<button data-a="ref">Use as reference</button><button data-a="reuse">Reuse settings</button><a target="_blank">Open</a><button data-a="del" class="del">Delete</button>`;
+  acts.querySelector('a').href = img.src;
+  acts.querySelector('[data-a=del]').onclick = async () => {
+    if (!confirm('Delete this image? This cannot be undone.')) return;
+    const res = await fetch('/api/images/' + encodeURIComponent(file), { method: 'DELETE' });
+    if (res.ok || res.status === 404) c.remove();
+    else setStatus('Delete failed: ' + ((await res.json()).error || res.statusText), true);
+  };
+  acts.querySelector('[data-a=ref]').onclick = () => { addUrl(img.src); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  acts.querySelector('[data-a=reuse]').onclick = () => {
+    $('prompt').value = item.prompt;
+    $('seed').value = item.seed;
+    $('steps').value = item.steps;
+    $('transparent').checked = !!item.transparent;
+    if (item.size !== 'match') { $('size').value = item.size; $('size').dataset.auto = 'off'; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    $('prompt').focus();
+  };
+}
+
+async function generate() {
+  const prompt = $('prompt').value.trim();
+  if (!prompt) { setStatus('Enter a prompt first.', true); return; }
+  const seedText = $('seed').value.trim();
+  const req = {
+    prompt,
+    images: refs.slice(),
+    size: $('size').value,
+    steps: parseInt($('steps').value, 10),
+    seed: seedText === '' ? null : parseInt(seedText, 10),
+    transparent: $('transparent').checked,
+  };
+  const c = card(req);
+  c.querySelector('.img').textContent = 'Starting ComfyUI…';
+  $('gallery').prepend(c);
+  $('go').disabled = true;
+  setStatus('Sending… (the first image after using a chat model waits for ComfyUI to load)');
+  const t0 = Date.now();
+  try {
+    const res = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(req) });
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || res.statusText);
+    $('go').disabled = false;
+    setStatus('');
+    await poll(out.id, c, t0);
+  } catch (err) {
+    $('go').disabled = false;
+    c.classList.add('err');
+    c.querySelector('.img').textContent = err.message;
+    setStatus(err.message, true);
+  }
+}
+
+async function poll(id, c, t0) {
+  for (;;) {
+    await new Promise(r => setTimeout(r, 1500));
+    const res = await fetch('/api/jobs/' + id);
+    const s = await res.json();
+    if (!res.ok) throw new Error(s.error || res.statusText);
+    const secs = Math.round((Date.now() - t0) / 1000);
+    if (s.state === 'done') { fillCard(c, s.item); return; }
+    if (s.state === 'error') throw new Error(s.error);
+    c.querySelector('.img').textContent = s.state === 'running'
+      ? `Generating… ${secs}s`
+      : `Queued${s.ahead > 0 ? ` (${s.ahead} ahead)` : ''}… ${secs}s`;
+  }
+}
+
+async function loadGallery() {
+  const items = await (await fetch('/api/gallery')).json();
+  for (const item of items) {
+    const c = card(item);
+    fillCard(c, item);
+    $('gallery').append(c);
+  }
+}
+
+renderRefs();
+loadGallery();
+</script>
+</body>
+</html>
