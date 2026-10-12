@@ -82,8 +82,12 @@ case "$model" in
         M_ALIAS="nomic-embed"
         # Non-causal embedding model: llama.cpp requires the physical batch to
         # cover the whole context, so -ub must equal -c. Mean pooling is what
-        # nomic-embed-text-v1.5 was trained with.
-        M_ARGS="--embedding --pooling mean -c 2048 -b 2048 -ub 2048 -ngl 999 --parallel 1"
+        # nomic-embed-text-v1.5 was trained with. 8192 context needs YaRN
+        # (nomic's recommended --rope-freq-scale .75), and the GGUF's 2048
+        # context_length must be overridden or llama-server caps the slot at it.
+        # At 2048, grepai's whole-class C# chunks failed with "input is too
+        # large to process".
+        M_ARGS="--embedding --pooling mean -c 8192 -b 8192 -ub 8192 --rope-scaling yarn --rope-freq-scale .75 --override-kv nomic-bert.context_length=int:8192 -ngl 999 --parallel 1"
         ;;
     *)
         echo "server.sh: unknown model '$model' (known: $MODEL_NAMES)" >&2
