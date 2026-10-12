@@ -61,6 +61,11 @@ rotate() {
         "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$f" "$size" "$KEEP"
 }
 
-for name in proxy.log llama-swap.log; do
-    rotate "$LOG_DIR/$name"
+# Ollama's com.user.ollama-server agent also logs through launchd StandardOutPath,
+# so it needs the same copy-and-truncate treatment. rotate() skips a missing file.
+# launchd gives this daemon no HOME; bash's ~ then falls back to the passwd entry.
+OLLAMA_LOG="${OLLAMA_LOG:-~/.ollama/logs/server.log}"
+
+for f in "$LOG_DIR/proxy.log" "$LOG_DIR/llama-swap.log" "$OLLAMA_LOG"; do
+    rotate "$f"
 done
