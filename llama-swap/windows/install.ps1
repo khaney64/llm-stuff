@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$expectedHash = "F6C8F46A9E7641962DCE731BF12898E77175539B476EB4E64D6B2597DD9925AC"
+$expectedHash = "5D2ABD9ECDE7F42355CD17FE6C9252D49F065F8CDD1756F5A81CB11EB1B58C65"
 $resolvedArchive = (Resolve-Path -LiteralPath $ArchivePath).Path
 $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $resolvedArchive).Hash
 

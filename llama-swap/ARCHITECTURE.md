@@ -245,6 +245,43 @@ Check the memory budget first — this host has 8GB of unified memory and no
 peer to fall back to. `./llama-swap/macos/server.sh --model ID --dry-run`
 prints the exact llama.cpp command without starting it.
 
+## ComfyUI on devbox
+
+ComfyUI runs as the reserved llama-swap model `comfyui_auto`. Open it at
+`http://devbox:8080/comfyui/`. This needs llama-swap v249 or later.
+
+- ComfyUI lives in `C:\development\ai\ComfyUI` and has its own venv at
+  `.venv` (Python 3.12, torch cu130). Model files go in `ComfyUI\models\`.
+- Its port is fixed at 8188, so `start-swap.ps1` and `manage.ps1` can kill an
+  orphaned instance the same way they do llama-server on 8082.
+- It skips `proxy.js`. ComfyUI traffic is a workflow-graph POST, a websocket,
+  and static assets. The proxy has no tokens, SSE, or `/props` to read from any
+  of them.
+- llama-swap forces `compat.ignoreWebsockets`. It also refuses to let asset
+  GETs, `/ws`, and `/api/jobs` start the model, so an idle ComfyUI tab neither
+  pins the GPU nor reloads ComfyUI after a swap. Loading `/comfyui/` or
+  queueing a prompt swaps the loaded LLM out. The next LLM request swaps
+  ComfyUI out.
+- There is no `ttl`. Websocket progress does not count as activity, so a TTL
+  could unload ComfyUI in the middle of a render.
+
+### imagegen front end
+
+`http://devbox:8190/` is a simple page for Qwen-Image 2.1. It takes a prompt
+and optional reference images (the first is the image being edited), plus
+size, quality, seed and a transparent-background option. The server is
+`imagegen/server.js`, a zero-dependency Node script. It builds a fixed graph
+from the official Qwen-Image 2.1 templates and queues it through `/comfyui/`,
+so ComfyUI still loads and unloads through llama-swap.
+
+- It runs as the `\LocalAI\ImageGen` scheduled task (`imagegen/imagegen.ps1`)
+  and logs to `llama-swap/logs/imagegen.log`. `manage.ps1` starts, stops and
+  reports it with the rest of the stack.
+- Results and `history.jsonl` go to `ComfyUI\output\imggen\`. The gallery is
+  read from disk, so it loads without starting ComfyUI.
+- After a `server.js` or `index.html` change, restart only this task:
+  `Stop-ScheduledTask -TaskPath \LocalAI\ -TaskName ImageGen; Start-ScheduledTask -TaskPath \LocalAI\ -TaskName ImageGen`.
+
 ## Request and swap lifecycle
 
 1. Harness selects provider and model.

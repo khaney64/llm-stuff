@@ -23,11 +23,17 @@ $swapAction = New-ScheduledTaskAction `
     -Execute $powerShell `
     -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\development\ai\llm-stuff\llama-swap\windows\start-swap.ps1"' `
     -WorkingDirectory $repo
+$imageGenAction = New-ScheduledTaskAction `
+    -Execute $powerShell `
+    -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\development\ai\llm-stuff\imagegen\imagegen.ps1"' `
+    -WorkingDirectory $repo
 
 Register-ScheduledTask -TaskPath $taskPath -TaskName "LlamaProxy" `
     -Action $proxyAction -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 Register-ScheduledTask -TaskPath $taskPath -TaskName "LlamaSwap" `
     -Action $swapAction -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+Register-ScheduledTask -TaskPath $taskPath -TaskName "ImageGen" `
+    -Action $imageGenAction -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
 $firewallRuleName = "LocalAI llama-swap TCP 8080"
 if (-not (Get-NetFirewallRule -DisplayName $firewallRuleName -ErrorAction SilentlyContinue)) {
@@ -42,5 +48,18 @@ if (-not (Get-NetFirewallRule -DisplayName $firewallRuleName -ErrorAction Silent
         -Profile Any | Out-Null
 }
 
-Write-Host "Registered ${taskPath}LlamaProxy and ${taskPath}LlamaSwap."
-Write-Host "Allowed LAN access to llama-swap on TCP 8080."
+$imageGenRuleName = "LocalAI imagegen TCP 8190"
+if (-not (Get-NetFirewallRule -DisplayName $imageGenRuleName -ErrorAction SilentlyContinue)) {
+    New-NetFirewallRule `
+        -DisplayName $imageGenRuleName `
+        -Direction Inbound `
+        -Action Allow `
+        -Program "C:\Program Files\nodejs\node.exe" `
+        -Protocol TCP `
+        -LocalPort 8190 `
+        -RemoteAddress LocalSubnet `
+        -Profile Any | Out-Null
+}
+
+Write-Host "Registered ${taskPath}LlamaProxy, ${taskPath}LlamaSwap and ${taskPath}ImageGen."
+Write-Host "Allowed LAN access to llama-swap on TCP 8080 and imagegen on TCP 8190."
