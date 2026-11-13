@@ -1,0 +1,395 @@
+{
+  "annotations": {"list": [{"builtIn": 1, "datasource": {"type": "grafana", "uid": "-- Grafana --"}, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard"}]},
+  "title": "System Metrics",
+  "uid": "sysmetrics-01",
+  "description": "CPU, GPU, memory, disk, and network — devbox + llmserver",
+  "tags": ["sysmetrics"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "editable": true,
+  "graphTooltip": 1,
+  "links": [],
+  "schemaVersion": 38,
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "current": {"text": "All", "value": ["$__all"]},
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "host",
+        "label": "Host",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"sysmetrics\", tag: \"host\", predicate: (r) => r._measurement == \"cpu\")",
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {"text": "All", "value": ["$__all"]},
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "gpu",
+        "label": "GPU",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"sysmetrics\", tag: \"gpu\", predicate: (r) => r._measurement == \"gpu\" and r.host =~ /^${host:regex}$/)",
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+
+    {"type": "row", "title": "CPU", "id": 1, "collapsed": false, "gridPos": {"x": 0, "y": 0, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "CPU Usage %", "id": 2,
+      "gridPos": {"x": 0, "y": 1, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "percent", "min": 0, "max": 100, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"usage_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "CPU Temperature °C", "id": 3,
+      "gridPos": {"x": 12, "y": 1, "w": 6, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "celsius", "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"temp_c\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "CPU Frequency MHz", "id": 4,
+      "gridPos": {"x": 18, "y": 1, "w": 6, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 0, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"freq_mhz\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {"type": "row", "title": "GPU", "id": 5, "collapsed": false, "gridPos": {"x": 0, "y": 9, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "GPU Utilization %", "id": 6,
+      "gridPos": {"x": 0, "y": 10, "w": 6, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "percent", "min": 0, "max": 100, "custom": {"lineWidth": 2}, "displayName": "${__field.labels.host} gpu${__field.labels.gpu}"},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.gpu =~ /^${gpu:regex}$/)\n  |> group(columns: [\"_measurement\", \"_field\", \"host\", \"gpu\"])\n  |> filter(fn: (r) => r._field == \"gpu_util_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "GPU VRAM MB", "id": 7,
+      "gridPos": {"x": 6, "y": 10, "w": 6, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "decmbytes", "custom": {"lineWidth": 2}},
+        "overrides": [
+          {
+            "matcher": {"id": "byFrameRefID", "options": "A"},
+            "properties": [{"id": "displayName", "value": "${__field.labels.host} gpu${__field.labels.gpu} used"}]
+          },
+          {
+            "matcher": {"id": "byFrameRefID", "options": "B"},
+            "properties": [{"id": "displayName", "value": "${__field.labels.host} gpu${__field.labels.gpu} total"}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "vram_total_mb"},
+            "properties": [{"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [8, 4]}}]
+          }
+        ]
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.gpu =~ /^${gpu:regex}$/)\n  |> group(columns: [\"_measurement\", \"_field\", \"host\", \"gpu\"])\n  |> filter(fn: (r) => r._field == \"vram_used_mb\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.gpu =~ /^${gpu:regex}$/)\n  |> group(columns: [\"_measurement\", \"_field\", \"host\", \"gpu\"])\n  |> filter(fn: (r) => r._field == \"vram_total_mb\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> yield(name: \"total\")"
+        }
+      ]
+    },
+
+    {
+      "type": "timeseries", "title": "GPU Power W — sysmetrics vs LLM requests", "id": 8,
+      "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "watt", "custom": {"lineWidth": 2}},
+        "overrides": [
+          {
+            "matcher": {"id": "byFrameRefID", "options": "A"},
+            "properties": [{"id": "displayName", "value": "${__field.labels.host} gpu${__field.labels.gpu}"}]
+          },
+          {
+            "matcher": {"id": "byFrameRefID", "options": "D"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "purple"}},
+              {"id": "custom.lineWidth", "value": 1},
+              {"id": "custom.fillOpacity", "value": 10}
+            ]
+          },
+          {
+            "matcher": {"id": "byFrameRefID", "options": "B"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "yellow"}},
+              {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [8, 4]}}
+            ]
+          },
+          {
+            "matcher": {"id": "byFrameRefID", "options": "C"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "orange"}},
+              {"id": "custom.drawStyle", "value": "points"},
+              {"id": "custom.pointSize", "value": 6}
+            ]
+          }
+        ]
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.gpu =~ /^${gpu:regex}$/)\n  |> group(columns: [\"_measurement\", \"_field\", \"host\", \"gpu\"])\n  |> filter(fn: (r) => r._field == \"power_w\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"llm\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"gpu_avg_watts\")\n  |> group(columns: [\"host\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"llm_avg [\" + r.host + \"]\"}))\n  |> yield(name: \"llm_avg\")"
+        },
+        {
+          "refId": "C",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"llm\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"gpu_peak_watts\")\n  |> group(columns: [\"host\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"llm_peak [\" + r.host + \"]\"}))\n  |> yield(name: \"llm_peak\")"
+        },
+        {
+          "refId": "D",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"power_w\")\n  |> group(columns: [\"host\", \"gpu\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> group(columns: [\"host\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"all GPUs [\" + r.host + \"]\"}))\n  |> yield(name: \"total\")"
+        }
+      ]
+    },
+
+    {
+      "type": "timeseries", "title": "GPU Temperature °C", "id": 9,
+      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "celsius", "custom": {"lineWidth": 2}, "displayName": "${__field.labels.host} gpu${__field.labels.gpu}"},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gpu\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r.gpu =~ /^${gpu:regex}$/)\n  |> group(columns: [\"_measurement\", \"_field\", \"host\", \"gpu\"])\n  |> filter(fn: (r) => r._field == \"temp_c\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "GPU Energy per LLM Request (Wh)", "id": 21,
+      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watth",
+          "custom": {"lineWidth": 0, "drawStyle": "bars", "barMaxWidth": 8, "fillOpacity": 80}
+        },
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"llm\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"llm_request\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"gpu_energy_wh\")\n  |> yield(name: \"raw\")"
+      }]
+    },
+
+    {"type": "row", "title": "Memory", "id": 10, "collapsed": false, "gridPos": {"x": 0, "y": 27, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "Memory Used %", "id": 11,
+      "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "percent", "min": 0, "max": 100, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"memory\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "Memory Used / Available GB", "id": 12,
+      "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "decgbytes", "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"memory\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"used_gb\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"used\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"memory\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"avail_gb\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"avail\")"
+        }
+      ]
+    },
+
+    {"type": "row", "title": "Disk", "id": 13, "collapsed": false, "gridPos": {"x": 0, "y": 36, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "Disk Usage %", "id": 14,
+      "gridPos": {"x": 0, "y": 37, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "percent", "min": 0, "max": 100, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"disk\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> yield(name: \"last\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "Disk I/O MB/s", "id": 15,
+      "gridPos": {"x": 12, "y": 37, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 2, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"disk_io\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"read_mbs\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"read\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"disk_io\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"write_mbs\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"write\")"
+        }
+      ]
+    },
+
+    {"type": "row", "title": "Network", "id": 16, "collapsed": false, "gridPos": {"x": 0, "y": 45, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "Network Throughput MB/s", "id": 17,
+      "gridPos": {"x": 0, "y": 46, "w": 24, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 3, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"network\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"recv_mbs\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"recv\")"
+        },
+        {
+          "refId": "B",
+          "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+          "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"network\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"sent_mbs\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"sent\")"
+        }
+      ]
+    },
+
+    {"type": "row", "title": "System", "id": 18, "collapsed": false, "gridPos": {"x": 0, "y": 54, "w": 24, "h": 1}, "panels": []},
+
+    {
+      "type": "timeseries", "title": "Process Count", "id": 19,
+      "gridPos": {"x": 0, "y": 55, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 0, "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"proc_count\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+      }]
+    },
+
+    {
+      "type": "timeseries", "title": "System Uptime", "id": 20,
+      "gridPos": {"x": 12, "y": 55, "w": 12, "h": 8},
+      "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+      "fieldConfig": {
+        "defaults": {"unit": "s", "custom": {"lineWidth": 2}},
+        "overrides": []
+      },
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"displayMode": "list", "placement": "bottom"}},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "influxdb", "uid": "1l1mYxpDz"},
+        "query": "from(bucket: \"sysmetrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"system\")\n  |> filter(fn: (r) => r.host =~ /^${host:regex}$/)\n  |> filter(fn: (r) => r._field == \"uptime_s\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> yield(name: \"last\")"
+      }]
+    }
+
+  ]
+}

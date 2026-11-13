@@ -1,0 +1,14 @@
+[Unit]
+Description=System Metrics Collector
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/sysmetrics/venv/bin/python3 /opt/sysmetrics/sysmetrics.py --config /opt/sysmetrics/config.yaml
+Restart=on-failure
+RestartSec=10
+User=root
+WorkingDirectory=/opt/sysmetrics
+
+[Install]
+WantedBy=multi-user.target

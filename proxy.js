@@ -1522,7 +1522,8 @@ function startProxy() {
     if (powerProvider) {
       powerProvider.test((result) => {
         if (result.ok) {
-          console.log(`Power: ${powerProvider.name} — current ${result.watts}W | rate $${ELECTRIC_RATE}/kWh | idle baseline ${GPU_IDLE}W | poll ${POWER_INTERVAL}ms`);
+          const perGpu = result.perGpu ? ` (${result.perGpu.map(w => `${w}W`).join(' + ')})` : '';
+          console.log(`Power: ${powerProvider.name} — current ${result.watts}W${perGpu} | rate $${ELECTRIC_RATE}/kWh | idle baseline ${GPU_IDLE}W | poll ${POWER_INTERVAL}ms`);
         } else {
           console.error(`Power: ${powerProvider.name} — FAILED: ${result.reason} (power tracking disabled)`);
           powerProvider = null;

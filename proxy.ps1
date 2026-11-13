@@ -24,7 +24,7 @@ $proxyArgs = @(
    "--log-mode", "influxdb",
    "--backend", "llamacpp",
    "--power",
-   "--gpu-idle", "15",
+   "--gpu-idle", "20",
    "--power-interval", "250",
    "--debug-labels",
    "--cron-parse-patch"

@@ -1,0 +1,7 @@
+psutil>=5.9.0
+paho-mqtt>=1.6.0
+pyyaml>=6.0
+# NVIDIA GPU metrics — install only if an NVIDIA GPU is present
+nvidia-ml-py>=12.0.0
+# No extra dependency needed for Windows CPU temperature:
+# sysmetrics reads from LibreHardwareMonitor's HTTP API (localhost:8085/data.json)

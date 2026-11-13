@@ -291,3 +291,11 @@ test('missing wall-clock data degrades to nulls rather than throwing', () => {
     promptTokSec: null, tokSec: null, promptMs: null, durationSec: null, totalSec: null,
   });
 });
+
+test('nvidia-smi power sums every GPU line', () => {
+  const { parsePowerDraw } = require('./power-nvidia-smi.js');
+  assert.deepEqual(parsePowerDraw('24.31\n'), { watts: 24.31, perGpu: [24.31] });
+  assert.deepEqual(parsePowerDraw('210.5\r\n198.25\r\n'), { watts: 408.75, perGpu: [210.5, 198.25] });
+  assert.equal(parsePowerDraw('[N/A]\n120.0\n'), null);
+  assert.equal(parsePowerDraw(''), null);
+});

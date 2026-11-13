@@ -1,0 +1,26 @@
+# sysmetrics configuration — copy to config.yaml and edit before use
+
+# Override the hostname tag written to InfluxDB.
+# Defaults to socket.gethostname() when null.
+hostname: null
+
+mqtt:
+  host: your-mqtt-broker
+  port: 1883
+  # username: ""
+  # password: ""
+
+# Collection intervals in seconds
+intervals:
+  cpu: 10
+  gpu: 5
+  memory: 10
+  disk: 30
+  network: 10
+  system: 60
+  llm: 15
+
+# Enable LLM-specific metrics (Ollama /api/ps + llama-server process stats).
+# Only useful if Ollama is running on this machine.
+enable_llm: false
+ollama_url: http://localhost:11434

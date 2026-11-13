@@ -1,0 +1,59 @@
+# Merged HHH tickets replayed through the jira-dev-orchestrator to compare models.
+# Each replay is queued on clawserv-hermes with:
+#   jobs retry <retry_from_job> --model <profile> --reason "bench: <profile>"
+# Every baseline below is the saved .blind-baselines SHA, verified equal to the
+# merged PR's base commit. None of these tickets is a source of any lesson.
+tickets:
+  - key: HHH-376
+    kind: missing-tests
+    repo: PeakChecker
+    baseline: 4d7893e522a6aa9467497520ffda62a675a3d0e5
+    reference_pr: https://github.com/khaney64/PeakChecker/pull/2
+    reference_size: "+93/-13, 5 files"
+    merged_by: qwen27
+    retry_from_job: 3837
+
+  - key: HHH-374
+    kind: missing-tests
+    repo: PositionChecker
+    baseline: a676ae7f782460464d46dca3ef0b7e13db94994b
+    reference_pr: https://github.com/khaney64/PositionChecker/pull/2
+    reference_size: "+345/-42, 7 files"
+    merged_by: qwen27
+    retry_from_job: 3828
+
+  - key: HHH-357
+    kind: bug-fix
+    repo: AdjustTransactions
+    baseline: ad23bb0cf087cd7a40cd22d3937f99559b740601
+    reference_pr: https://github.com/khaney64/AdjustTransactions/pull/13
+    reference_size: "+57/-4, 7 files"
+    merged_by: qwen27
+    retry_from_job: 3733
+
+  - key: HHH-327
+    kind: bug-fix
+    repo: 3H.Core
+    baseline: ebee12e6d0cdebe751f28d08143aea2b7495c04b
+    reference_pr: https://github.com/khaney64/3H.Core/pull/18
+    reference_size: "+71/-2, 2 files"
+    merged_by: sol
+    retry_from_job: 3430
+
+  - key: HHH-436
+    kind: feature
+    repo: 3H.External
+    baseline: 995f44f275d85a1800c717ae930f3d0c0a7e43bd
+    reference_pr: https://github.com/khaney64/3H.External/pull/54
+    reference_size: "+184/-0, 6 files"
+    merged_by: sol
+    retry_from_job: 4067
+
+  - key: HHH-181
+    kind: refactor
+    repo: 3H.QuoteObjects
+    baseline: b6dfb1b64fb4a07ea688b81d1536289b10b20c3c
+    reference_pr: https://github.com/khaney64/3H.QuoteObjects/pull/40
+    reference_size: "+16/-84, 6 files"
+    merged_by: qwen27
+    retry_from_job: 2199  # last job failed; the PR merged via another path - confirm retry works first
