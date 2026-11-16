@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptRoot "rotating-log.ps1")
 Stop-ManagedPortOwner -Port 8080 -CommandPattern "llama-swap\.exe.*configs\\devbox\.yaml"
-Stop-ManagedPortOwner -Port 8082 -CommandPattern "llama-server\.exe.*--port 8082"
+Stop-ManagedPortOwner -Port 8082 -CommandPattern "(llama-server|tensorfold-native)\.exe.*--port 8082"
 Stop-ManagedPortOwner -Port 8188 -CommandPattern "python\.exe.*ComfyUI\\main\.py.*--port 8188"
 
 $deadline = [DateTime]::UtcNow.AddSeconds(60)

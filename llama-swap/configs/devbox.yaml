@@ -8,7 +8,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen36-35b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen36-35b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen36-35b-a3b
@@ -20,7 +20,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen36-35b-mtp -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen36-35b-mtp -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen36-35b-a3b
@@ -30,7 +30,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen36-27b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen36-27b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen36-27b
@@ -40,7 +40,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen36-27b-mtp -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen36-27b-mtp -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen36-27b
@@ -50,7 +50,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen36-27b-cap -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen36-27b-cap -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen36-27b-cap
@@ -60,7 +60,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen38-27b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen38-27b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen38-27b
@@ -70,7 +70,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen38-27b-q6 -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen38-27b-q6 -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen38-27b-q6
@@ -80,17 +80,28 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen38-27b-x2 -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen38-27b-x2 -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen38-27b-x2
+
+  qwen27-tf:
+    name: Qwen 3.8 27B (TensorFold + DFlash2)
+    cmd: >-
+      C:\development\ai\TensorFold\zig-out\native\bin\tensorfold-native.exe serve
+      TensorFold/Qwen3.8-27B-MLX-4bit --name qwen27-tf
+      --drafter z-lab/Qwen3.8-27B-DFlash2
+      --host 127.0.0.1 --port 8082 --context 73728 --parallel 1
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /health
+    useModelName: qwen27-tf
 
   flint-40b:
     name: Flint 40B A2.5B (dual GPU)
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model flint-40b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model flint-40b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: flint-40b
@@ -100,7 +111,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model nemotron-bolt -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model nemotron-bolt -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: nemotron-bolt
@@ -110,7 +121,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model qwen3-coder -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model qwen3-coder -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: qwen3-coder
@@ -120,7 +131,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model gemma4-31b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model gemma4-31b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: gemma4-31b
@@ -130,7 +141,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model gemma4-31b-qat -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model gemma4-31b-qat -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: gemma4-31b-qat
@@ -140,7 +151,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model gemma4-26b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model gemma4-26b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: gemma4-26b-a4b
@@ -152,7 +163,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model gemma4-26b-qat -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model gemma4-26b-qat -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: gemma4-26b-qat
@@ -162,7 +173,7 @@ models:
     cmd: >-
       pwsh.exe -NoProfile -ExecutionPolicy Bypass
       -File C:\development\ai\llama.cpp\pre-built\server.ps1
-      -Build b12015 -Model glimmer-30b -Port 8082 -ListenHost 127.0.0.1
+      -Build b12359 -Model glimmer-30b -Port 8082 -ListenHost 127.0.0.1
     proxy: http://127.0.0.1:8081
     checkEndpoint: /health
     useModelName: unsloth-Muse-Glimmer-30B-GGUF

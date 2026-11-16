@@ -148,7 +148,8 @@ node sysmetrics/retag-gpu.js delete --host devbox --from 0 --to 1
 
 ### Blower returned, back to one card (2026-11-12)
 The new card throttled at its thermal limit on burn-in (see Results) and was removed. The FE went
-back to 01:00.0 and is GPU 0 again, so its history was moved back.
+back to 01:00.0 and is GPU 0 again, so its history was moved back. Full findings, a comparison
+with another listing's chart, and the test plan for a replacement are in `3090-blower-evaluation.md`.
 - [x] Backed up to `sysmetrics_gpu_backup`: the blower's 7,980 points (`gpu=0`, `gpu_uuid=GPU-ec60240e-…`)
       and the FE's 8,040 points from today (`gpu=1`, 14:40 → 21:30Z)
 - [x] Deleted the blower's points from `sysmetrics` (predicate on its `gpu_uuid`)

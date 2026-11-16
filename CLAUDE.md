@@ -70,6 +70,8 @@ The proxy translates Ollama-style request fields (e.g. `options.num_predict`) in
 - `grafana-llm-dashboard.json` — Importable Grafana dashboard for visualizing proxy metrics from InfluxDB.
 - `power-nvidia-smi.js` — Default GPU power provider; reads wattage via `nvidia-smi`, summed across all GPUs.
 - `dual-3090-setup.md` — Second-3090 burn-in runbook, llama.cpp multi-GPU fields in `server.ps1` (`Devices`, `SplitMode`, `TensorSplit`, `MainGpu`, `SpecType`/`SpecDraftModel`), and the coding-bench model list.
+- `tensorfold-setup.md` — Windows source build of TensorFold (Zig 0.17, CUDA 13.4 incl. `nvvm`, VS 2026 MSVC), the `qwen27-tf` llama-swap entry, and the measured context ceiling on a 24 GB 3090.
+- `bench/` — OpenAI-API benchmark harness: `oa_bench.py` (decode speed by content type, needle-in-a-haystack prefill, thinking) and `agentic_chat_oa.py` (runs `ollama-model-tests`' agentic-chat task against any `/v1` server). Run against a standalone server on `:8082` with llama-swap stopped.
 - `power-macos.js` — Apple Silicon power provider; streams `macmon pipe` NDJSON from one long-lived child and returns the latest reading. Reports GPU watts by default; `MACMON_POWER_FIELD` selects `sys`/`cpu+gpu+ane`/etc.
 - `proxy.sh` — Shared Linux/macOS proxy launcher. Selects a host profile (power provider, `--gpu-idle`, `--default-ctx`) from `$1`, `$PROXY_HOST_PROFILE`, `hostname -s`, then `uname -s`. `proxy.ps1` is the Windows equivalent.
 - `macos-setup.md` — Apple Silicon deployment runbook (Metal build, launchd agents, macmon power, llama-swap).

@@ -23,6 +23,7 @@
         "*ThinkingCap*",
         "qwen38-27b",
         "qwen38-27b-mtp",
+        "qwen27-tf",
         "Qwen3.8-27B-*",
         "qwen35-9b",
         "qwen35-9b-q6",
@@ -51,6 +52,19 @@
       "thinkingDefault": false,
       "thinkingBudgetDefault": 0,
       "thinkingBudgetCeiling": 0
+    },
+    {
+      "name": "qwen38-coder-strata",
+      "match": [
+        "coder-st",
+        "qwen3.8-flash-next-coder-*"
+      ],
+      "maxTokensDefault": 32768,
+      "maxTokensCeiling": 32768,
+      "thinkingSupported": true,
+      "thinkingDefault": true,
+      "thinkingBudgetDefault": 4096,
+      "thinkingBudgetCeiling": 8192
     },
     {
       "name": "gemma4-31b",
