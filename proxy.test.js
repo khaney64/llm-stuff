@@ -17,6 +17,7 @@ const {
   runtimeConfig,
   compileModelPolicyConfig,
   resolveModelPolicy,
+  requestSwitchesModel,
 } = require('./proxy.js');
 
 const modelPolicyConfig = compileModelPolicyConfig(require('./proxy-models.json'), 'test config');
@@ -28,6 +29,15 @@ function transform(body) {
 function transformWithPolicy(body, detectedModel = null) {
   return JSON.parse(transformRequestBody(JSON.stringify(body), modelPolicyConfig, detectedModel));
 }
+
+test('a request for a different model triggers a /props refresh, repeats and bodiless requests do not', () => {
+  assert.equal(requestSwitchesModel(JSON.stringify({ model: 'qwen3vl-8b' })), true);
+  assert.equal(requestSwitchesModel(JSON.stringify({ model: 'qwen3vl-8b' })), false);
+  assert.equal(requestSwitchesModel(''), false);
+  assert.equal(requestSwitchesModel(JSON.stringify({ messages: [] })), false);
+  assert.equal(requestSwitchesModel(JSON.stringify({ model: 'qwen3.8-flash-next-coder-iq1_m' })), true);
+  assert.equal(requestSwitchesModel(JSON.stringify({ model: 'qwen3vl-8b' })), true);
+});
 
 test('resolves request model, detected model, glob, and safe fallback policies', () => {
   assert.equal(resolveModelPolicy('qwen36-35b', null, modelPolicyConfig).name, 'qwen-reasoning');

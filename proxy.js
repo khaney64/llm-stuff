@@ -1213,6 +1213,16 @@ const proxy = http.createServer((req, res) => {
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', () => {
+    // After llama-swap swaps models, /props still describes the old backend until
+    // the next 60s poll; re-read it before the first request for a new model.
+    if (IS_LLAMACPP && requestSwitchesModel(body)) {
+      fetchServerCtx(handleRequest);
+    } else {
+      handleRequest();
+    }
+  });
+
+  const handleRequest = () => {
     const rawBody = body;
 
     // Dump raw request body + headers to file before any transformation
@@ -1411,8 +1421,18 @@ const proxy = http.createServer((req, res) => {
 
     proxyReq.write(body);
     proxyReq.end();
-  });
+  };
 });
+
+let lastRequestModel = null;
+
+function requestSwitchesModel(bodyStr) {
+  let model;
+  try { model = JSON.parse(bodyStr).model; } catch (e) { return false; }
+  if (!model || model === lastRequestModel) return false;
+  lastRequestModel = model;
+  return true;
+}
 
 function updateServerSlots(slots) {
   if (Number.isFinite(slots) && slots > 0 && slots !== serverSlots) {
@@ -1550,6 +1570,7 @@ module.exports = {
   resolveModelPolicy,
   applyModelGenerationPolicy,
   deriveLlamaTimingMetrics,
+  requestSwitchesModel,
   runtimeConfig: {
     proxyHost: PROXY_HOST,
     proxyPort: PROXY_PORT,
