@@ -54,10 +54,10 @@
       "thinkingBudgetCeiling": 0
     },
     {
-      "name": "qwen38-coder-strata",
+      "name": "qwen38-flash-strata",
       "match": [
-        "coder-st",
-        "qwen3.8-flash-next-coder-*"
+        "qwenflash-st",
+        "qwen3.8-flash-next-iq*"
       ],
       "maxTokensDefault": 32768,
       "maxTokensCeiling": 32768,
