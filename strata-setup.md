@@ -177,7 +177,7 @@ minutes. 150K raises the threshold to about 115K, which leaves about 30% more ro
 | Item | Change |
 | --- | --- |
 | Run config | New file `/home/kevin/Strata-data/qwenflash-st-150k.json`: a copy of `qwenflash-st-128k.json` with `--max-context 153600` and the engine log at `/home/kevin/Strata-data/qwenflash-st-150k.engine.log`. Nothing else differs. The 128K file is kept. |
-| llama-swap | `qwenflash-st` in `/home/kevin/llm-stuff/llama-swap/configs/llmserver.yaml` uses the new profile and is named "(Strata, 150K)". Model id unchanged (`qwen3.8-flash-next-iq3_s`). Backup: `llmserver.yaml.bak-20261118`. Applied with `systemctl --user restart llama-swap.service` (llama-swap does not watch its config). |
+| llama-swap | `qwenflash-st` in `/home/kevin/llm-stuff/llama-swap/configs/llmserver.yaml` uses the new profile and is named "(Strata, 150K)". Model id unchanged (`qwen3.8-flash-next-iq3_s`). The earlier version is in git (before commit `d37fa81`). Applied with `systemctl --user restart llama-swap.service` (llama-swap does not watch its config). |
 | Hermes | Changed by the orchestrator agent to `context_length: 153600` with the threshold at 0.75 (about 115,200). Hermes shows `19.5k/153.6k`. **Both sides must change together**: the pinned Hermes value overrides what the server reports. |
 
 **Checked after the change** (engine 0.1.60, IQ3_S, 8-bit KV, KV streaming with 32K on the card, pictures on the CPU):
@@ -213,10 +213,18 @@ The Coder is no longer used, so the paths for it in sections 3–5 and the "Fact
   28.8 GB). Only the Coder's name was removed, and IQ3_S's file is intact.
 - Kept: `Strata-data/mtp/rt` (the draft head, which `qwenflash-st` also uses), the mmproj files, and
   `data/expert-profile-coder.bin` (tracked in git).
-- llama-swap: the `coder-st` entry was removed (backup `llmserver.yaml.bak-20261118-coder`) and the service was
+- llama-swap: the `coder-st` entry was removed (the earlier version is in git, before commit `d37fa81`) and the service was
   restarted. `qwenflash-st` came back at `n_ctx: 153600`.
 - Left as they are, since they do no harm: the `qwen38-coder-strata` rule in `~/llm-stuff/proxy-models.json` (plus a test in
   `proxy.test.js` that uses the Coder's model name), and a Coder calibration entry in `~/.config/strata/settings.json`.
+
+## 8. Switching engines: `switch-engine.sh`
+
+`~/llm-stuff/switch-engine.sh` (moved here from `~/Strata` on 2026-11-18) points the Strata run configs at another
+installed engine. With no arguments it lists the installed engines and the engine each llama-swap profile runs.
+`switch-engine.sh 0.1.61` switches the profiles named in `llmserver.yaml`, `--bench` also switches the benchmark
+configs `~/Strata/strata-*.json`, and `--dry-run` changes nothing. Install the engine first (`strata update`), and
+restart the model in llama-swap afterwards.
 
 ## Not yet verified
 
