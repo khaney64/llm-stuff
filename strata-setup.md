@@ -195,7 +195,7 @@ minutes. 150K raises the threshold to about 115K, which leaves about 30% more ro
 **Not measured:** output speed for calls near the top of the 150K window. The test answered in 9 tokens, too few to
 tell.
 
-**To undo:** point `qwenflash-st` back at `qwenflash-st-128k.json` (or restore the backup), restart
+**To undo:** point `qwenflash-st` back at `qwenflash-st-128k.json` (or check out `llmserver.yaml` from before `d37fa81`), restart
 `llama-swap.service`, and set Hermes back to `context_length: 131072`.
 
 **Further room, if needed:** 192K (`196608`) would cost about 0.9 GB of RAM instead of 0.3 GB. Past 262,144 needs yarn
