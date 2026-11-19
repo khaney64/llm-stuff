@@ -12,7 +12,7 @@ Moved here from `~/Strata/STRATA-SETUP-NOTES.md` on 2026-11-18. Paths like `docs
 | Strata | Source checkout at `/home/kevin/Strata`, version 0.2.13.1 (engine build 0.1.59.1) |
 | Python | `/home/kevin/Strata/.venv/bin/python` (3.14.4) |
 | Model | Qwen3.8-Flash-Next **Coder IQ1_M**, 58 GB, already downloaded to `/home/kevin/Strata-data/models/coder-IQ1_M/` |
-| Installed engines | `/home/kevin/Strata/engine-feed/engine/` holds `0.1.59-linux-x86_64-cuda-cuda13` and `0.1.60-linux-x86_64-cuda-cuda13` (active: 0.1.60, which passed its test start) |
+| Installed engines | `/home/kevin/Strata/engine-feed/engine/` holds `0.1.59`, `0.1.60` and `0.1.62` (`-linux-x86_64-cuda-cuda13`). Active: 0.1.62 since 2026-11-19 (section 9) |
 | Launch run config | `/home/kevin/.local/state/strata/launch/iq1_m-128k.json` |
 | Engine log | `/home/kevin/.local/state/strata/launch/iq1_m-128k.engine.log` |
 | Installed already? | `llama-swap`: no. `hermes`: no (`~/.hermes` does not exist). |
@@ -226,10 +226,65 @@ installed engine. With no arguments it lists the installed engines and the engin
 configs `~/Strata/strata-*.json`, and `--dry-run` changes nothing. Install the engine first (`strata update`), and
 restart the model in llama-swap afterwards.
 
+## 9. Engine 0.1.62 (2026-11-19)
+
+**What changed.**
+
+| Item | Change |
+| --- | --- |
+| Engine | 0.1.60 → 0.1.62, installed to `engine-feed/engine/0.1.62-linux-x86_64-cuda-cuda13/`. The update test-started it with `qwenflash-st-150k.json`: it loaded the model and answered one token within 46 s. |
+| Control | 0.1.60.1 → 0.1.62. |
+| Run config | `switch-engine.sh 0.1.62` pointed `qwenflash-st-150k.json` (`exe` and `vision.exe`) at the new engine. Backup: `qwenflash-st-150k.json.bak-20261119-031832`. |
+| Not changed | The Strata checkout stays at 0.2.15 (no `git pull`: 0.2.16 moves the Terminal into `terminal/`, which would break the paths in `llmserver.yaml`). The benchmark configs `~/Strata/strata-*.json` still run 0.1.59 (`--bench` was not used). |
+
+The update was run with the GPU free, so the test start had room:
+
+```sh
+curl -s -X POST localhost:8080/api/models/unload   # llama-swap unloads its model
+cd ~/Strata
+STRATA_COMPONENTS_DIR=~/Strata/engine-feed .venv/bin/python strata.py update --yes \
+  --model-config ~/Strata-data/qwenflash-st-150k.json
+~/llm-stuff/switch-engine.sh 0.1.62
+```
+
+**Drafting stays MTP, and that is Strata's choice.** The engine does not pick the drafter; Strata's server does, when the
+model starts (`strata_control/drafting.py`, `SET_DEFAULTS` and `CLASS_DEFAULTS`). For IQ3_S on CUDA, Auto is DFlash2,
+except on the "streaming" class: a card too small to hold most experts, such as this 12 GB RTX 4070. There Auto is
+the MTP, because Strata measured the MTP 12–44% faster than DFlash2 on a 12 GB card. This machine also has no DFlash2
+drafter file, and a start never downloads one. The devbox (RTX 3090 24 GB) runs DFlash2 with `--spec 6` for the same
+model. To try DFlash2 here anyway: `strata drafting fetch`, then `"drafting": "dflash2"` in the run config. Expect it
+to be slower.
+
+**Results.** `bench/oa_bench.py` from the devbox through each machine's llama-swap (`:8080`), the same prompts on both,
+engine 0.1.62 on both. Output tok/s, except where it says prompt:
+
+| Test | llmserver (RTX 4070 12 GB, MTP, 150K) | devbox (RTX 3090 24 GB, DFlash2, 200K) |
+| --- | --- | --- |
+| prose | 61.8 | 92.5 |
+| new code | 76.5 | 117.4 |
+| code refactor | 75.8 | 107.0 |
+| JSON extract | 80.2 | 116.2 |
+| summary | 61.0 | 83.9 |
+| thinking (4,386 tokens) | 64.6 (69 s) | 98.9 (46 s) |
+| prompt, 32K | 2,110 | 2,580 |
+| prompt, 60K | 2,091 | 2,657 |
+| prompt, 128K | 2,033 (63 s to the first token) | 2,574 (50 s) |
+| output after a 128K prompt | 59.6 | 80.3 |
+
+- The code word hidden in the 8K, 32K, 60K and 128K prompts was found every time, on both machines.
+- **Against 0.1.60 on this machine** (InfluxDB `llm_request`, 764 requests from 2026-11-17 to 11-19): prompt reading
+  was 1,820–1,960 tok/s at 8K and longer, so 0.1.62 reads prompts about 7–8% faster. Output was a median of 60 tok/s,
+  mostly agent turns. 0.1.62 gives 61–62 on prose and 76–80 on code and JSON, so no change in output speed is seen, but
+  0.1.60 never ran this benchmark: `strata components rollback` and one more run would settle it.
+- GPU power (InfluxDB): median 119 W here, 246 W on the devbox. Energy per 1,000 output tokens: 0.7 Wh here, 0.9 Wh on
+  the devbox.
+
+**To undo:** `strata components rollback` (keeps 0.1.60), or `switch-engine.sh 0.1.60`. Then restart `qwenflash-st` in
+llama-swap.
+
 ## Not yet verified
 
 - A full start of the Coder model with the engine from `engine-feed` (only `--plan` was run after the fix).
-- Whether the rewritten run config's `exe` points at the `engine-feed` engine.
 - Any part of the llama-swap setup, including model-name routing and health check timing.
 - Hermes through Strata on this machine, directly or through llama-swap.
 - The speed of the Coder IQ1_M model on this RTX 4070, and the effect of the VRAM options in step 3.
