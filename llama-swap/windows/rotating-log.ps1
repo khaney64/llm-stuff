@@ -109,6 +109,18 @@ function Invoke-RotatingNativeCommand {
     return $nativeExitCode
 }
 
+# Only loopback and wildcard listeners collide with the managed services' binds. Others, such as a
+# `tailscale serve --tcp` forward bound to the tailnet addresses, coexist on the same port.
+function Get-LocalPortListener {
+    param(
+        [Parameter(Mandatory)]
+        [int]$Port
+    )
+
+    Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue |
+        Where-Object LocalAddress -In "127.0.0.1", "0.0.0.0", "::1", "::"
+}
+
 function Stop-ManagedPortOwner {
     param(
         [Parameter(Mandatory)]
@@ -117,7 +129,7 @@ function Stop-ManagedPortOwner {
         [string]$CommandPattern
     )
 
-    $listeners = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
+    $listeners = Get-LocalPortListener -Port $Port
     foreach ($listener in $listeners) {
         $process = Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)" `
             -ErrorAction SilentlyContinue
@@ -131,7 +143,7 @@ function Stop-ManagedPortOwner {
         & "$env:SystemRoot\System32\taskkill.exe" /PID $process.ProcessId /T /F | Out-Null
         $deadline = [DateTime]::UtcNow.AddSeconds(15)
         do {
-            $remaining = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
+            $remaining = Get-LocalPortListener -Port $Port
             if (-not $remaining) {
                 break
             }
