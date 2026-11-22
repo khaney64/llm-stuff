@@ -14,7 +14,7 @@ How to update Strata so llama-swap actually runs the new engine.
   So the profile does not need editing either. What has to change is the content of `terminal\engine\`.
 - `UPDATE.bat` (= `START-HERE.bat --update`) does `git pull` and updates Python packages and the model pack,
   but it only replaces a ready-made engine that is **older than the checkout's minimum** (`MIN_ENGINE` in
-  `terminal\setup.py`, 0.1.46 as of 0.2.18). 0.1.62 is newer than that, so it is kept and the update still
+  `terminal\setup.py`, still 0.1.46 as of 0.2.19). 0.1.62 is newer than that, so it is kept and the update still
   reports success ("Strata is updated (engine 0.1.62)").
 - `strata update` gets the newest engine from the signed feed, but it puts it in
   `terminal\engine-feed\engine\<VERSION>-windows-x86_64-cuda-cuda13\` and does **not** touch `terminal\engine\`.
@@ -29,8 +29,8 @@ empty command line), because it cannot read the elevated process's command line.
 Set the versions first (change these each time):
 
 ```powershell
-$Old     = "0.1.62"   # what terminal\engine has now (see step 1)
-$New     = "0.1.64"   # what the feed offers (see step 1)
+$Old     = "0.1.64"   # what terminal\engine has now (see step 1)
+$New     = "0.1.65"   # what the feed offers (see step 1)
 $Strata  = "C:\development\ai\Strata"
 $T       = "$Strata\terminal"
 $Py      = "$T\.venv\Scripts\python.exe"
@@ -45,13 +45,18 @@ $env:PYTHONUTF8 = 1   # same as llama-swap sets
 
 ```powershell
 & "$Strata\UPDATE.bat"                    # git pull, packages, model pack (not the engine, see above)
-& $Py "$T\strata.py" --version            # Terminal version, e.g. "strata 0.2.18 (build 0.1.64 ...)"
+& $Py "$T\strata.py" --version            # Terminal version, e.g. "strata 0.2.19 (build 0.1.65 ...)"
 Get-Content "$Eng\BUILD.json"             # "version" = what runs now ($Old)
 & $Py "$T\strata.py" update --check --no-control --components-dir $Feed
 ```
 
 The check reads the feed and changes nothing. Look for
-`Engine   update available: 0.1.62 -> 0.1.64` and `selected for this PC: 0.1.64 windows-x86_64-cuda-cuda13`.
+`Engine   update available: 0.1.64 -> 0.1.65` and `selected for this PC: 0.1.65 windows-x86_64-cuda-cuda13`.
+
+Before going on, read the release notes (`gh release view -R Niko1221/Strata`) for removed or renamed flags,
+moved paths and new defaults. If the checkout was older than 0.2.16, `strata.py` and `data\` moved under
+`terminal\` (see "Paths that moved" in `linux\strata-update.md`): check every `Strata\...` path in the profile
+and in `configs\devbox.yaml` exists.
 
 ### 2. Stop llama-swap
 
@@ -66,16 +71,23 @@ Nothing should be left on 127.0.0.1/0.0.0.0/::. The `tailscaled` listener on 808
 the Tailscale forward and stays. No `strata`/`strata-vision` process should be left: Windows locks a running
 `.exe`, so it cannot be replaced.
 
+If `stop` throws `Port 8082 is owned by unexpected process <pid>:` (empty command line) and that process is
+already gone, it caught the strata server while it was exiting after llama-swap was killed (seen on the 0.1.65
+update). Run `& $Manage stop` again.
+
 ### 3. Download and test-start the new engine (into engine-feed)
 
 ```powershell
 & $Py "$T\strata.py" update --no-control --yes --components-dir $Feed --model-config $Profile
 Get-ChildItem "$Feed\engine"              # a new $New-windows-x86_64-cuda-cuda13 folder
-Get-Content "$Feed\engine\$New-windows-x86_64-cuda-cuda13\BUILD.json"   # "archs" must include 89 (RTX 4070)
+Get-Content "$Feed\engine\$New-windows-x86_64-cuda-cuda13\BUILD.json"   # "archs" must include 86 (RTX 3090)
 ```
 
 It downloads about 490 MB, checks the signature, and test-starts the engine with the profile's model (about
-30 s). It should end with `Engine  0.1.62 -> 0.1.64   updated (tested: started, answered one token, stopped)`.
+30 s). It should end with `Engine  0.1.64 -> 0.1.65   updated (tested: started, answered one token, stopped)`.
+If it reports the engine was **not** changed, read `$Feed\.updates\logs\test-start-$New.log`. The cause is
+usually a profile path (for example `read_expert_profile: cannot open`), not the engine. Fix it and rerun with
+`--force`.
 The `strata components rollback` it mentions switches the engine-feed folders only. It does not change
 `terminal\engine` (see "Going back").
 
@@ -135,18 +147,19 @@ A flag listed as `MISSING` was dropped or renamed in the new engine. Look it up 
 & $Manage status
 ```
 
-The model loads on the first request to `qwenflash-st`. Send one (about 45 s including the load):
+The model loads on the first request to `qwenflash-st`. Send one (about 50 s including the load). Keep
+`max_tokens` at 200 or more: the model reasons first, and a small budget returns empty content.
 
 ```powershell
-$body = @{ model="qwenflash-st"; max_tokens=40; messages=@(@{role="user"; content="Reply with just: ok"}) } | ConvertTo-Json -Depth 5
+$body = @{ model="qwenflash-st"; max_tokens=300; messages=@(@{role="user"; content="Reply with just: ok"}) } | ConvertTo-Json -Depth 5
 (Invoke-RestMethod http://127.0.0.1:8080/v1/chat/completions -Method Post -ContentType application/json -Body $body -TimeoutSec 540).choices[0].message.content
 Get-Process strata -ErrorAction SilentlyContinue | Select-Object Id, Path
 Select-String "C:\development\ai\Strata-data\qwenflash-st.engine.log" -Pattern 'session is up' | Select-Object -Last 1
 ```
 
-The last line should say `session is up (engine 0.1.64)`. The process path is always
+The last line should say `session is up (engine 0.1.65)`. The process path is always
 `terminal\engine\strata.exe`, so the version only shows in the log. After a text-only request, no
-`strata-vision` process was running (seen on the 0.1.64 update).
+`strata-vision` process was running (seen on the 0.1.64 and 0.1.65 updates).
 
 ## Going back
 
@@ -164,8 +177,12 @@ The last line should say `session is up (engine 0.1.64)`. The process path is al
 - **UPDATE.bat while llama-swap runs:** it can still `git pull`, but it cannot replace a running engine (Windows
   locks the `.exe`). Stop the stack first if you expect it to replace the engine.
 - **Log messages you can ignore:**
-  `this engine was built for sm_0, sm_1, ... sm_9, but a graphics card in use is sm_89` is a false alarm (see
-  `linux\strata-update.md`). Check `BUILD.json` yourself: if `archs` lists 89, the engine covers the RTX 4070.
+  `this engine was built for sm_0, sm_1, ... sm_9, but a graphics card in use is sm_86` is a false alarm (see
+  `linux\strata-update.md`). Check `BUILD.json` yourself: if `archs` lists 86, the engine covers the RTX 3090.
+- **Speed switches (from 0.1.65):** the log line
+  `strata: sm_86 (Ampere): 14 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off ...)` is for
+  information only. Set `STRATA_SM86_PERF=0` only to compare against the old behaviour. (llmserver's RTX 4070
+  logs the `sm_89 (Ada)` line instead.)
 - **Log messages that mean the profile needs a fix:**
   `the config has a "vision" section but no --vision in its args: added --vision` means the profile's `args`
   lost `--vision` (setup can rewrite the profile). Add `"--vision"` back to `args`.
