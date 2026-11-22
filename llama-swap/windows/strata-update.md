@@ -161,6 +161,11 @@ The last line should say `session is up (engine 0.1.65)`. The process path is al
 `terminal\engine\strata.exe`, so the version only shows in the log. After a text-only request, no
 `strata-vision` process was running (seen on the 0.1.64 and 0.1.65 updates).
 
+### 7. Benchmark against the previous engine (optional)
+
+To see whether the new engine is faster here, run `strata-bench-ab.ps1` and add the result to the log in
+`strata-bench.md`. Do it before the next update: it compares against `engine\.previous`, which step 4 overwrites.
+
 ## Going back
 
 ```powershell

@@ -1,0 +1,102 @@
+[
+  {
+    "label": "slow1-0.1.65",
+    "order": "slow window",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "13:27:20",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "slow2-0.1.65-sm86off",
+    "order": "slow window",
+    "engine": "0.1.65",
+    "env": "STRATA_SM86_PERF=0",
+    "start": "13:30:40",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "fwd-0.1.62",
+    "order": "forward",
+    "engine": "0.1.62",
+    "env": "",
+    "start": "13:34:20",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "fwd-0.1.64",
+    "order": "forward",
+    "engine": "0.1.64",
+    "env": "",
+    "start": "13:37:09",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "fwd-0.1.65",
+    "order": "forward",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "13:39:29",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "fwd-0.1.65-vdh0",
+    "order": "forward",
+    "engine": "0.1.65",
+    "env": "STRATA_VERIFY_DEVICE_HITS=0",
+    "start": "13:41:36",
+    "free_ram_gib": null,
+    "free_commit_gib": null,
+    "exit": 0
+  },
+  {
+    "label": "rev-0.1.65-vdh0",
+    "order": "reverse",
+    "engine": "0.1.65",
+    "env": "STRATA_VERIFY_DEVICE_HITS=0",
+    "start": "13:44:30",
+    "free_ram_gib": 69.3,
+    "free_commit_gib": 68.6,
+    "exit": 0
+  },
+  {
+    "label": "rev-0.1.65",
+    "order": "reverse",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "13:46:11",
+    "free_ram_gib": 22.3,
+    "free_commit_gib": 33.1,
+    "exit": 0
+  },
+  {
+    "label": "rev-0.1.64",
+    "order": "reverse",
+    "engine": "0.1.64",
+    "env": "",
+    "start": "13:47:53",
+    "free_ram_gib": 21.8,
+    "free_commit_gib": 31.9,
+    "exit": 0
+  },
+  {
+    "label": "rev-0.1.62",
+    "order": "reverse",
+    "engine": "0.1.62",
+    "env": "",
+    "start": "13:49:34",
+    "free_ram_gib": 20.9,
+    "free_commit_gib": 32.3,
+    "exit": 0
+  }
+]

@@ -1,0 +1,58 @@
+Starting strata-iq3_s-0162.json on port 8080 (loading takes 1-3 minutes; the PC may be slow meanwhile) ...
+  still loading (2 s) ...
+Running the suite (about 3-10 minutes) ...
+warming up (not measured) ...
+  calibrated: about 1.08 tokens per word
+chat: 3 short questions x 3 runs, up to 100 new tokens
+  run 1 q1: decode 73.7 tok/s, first token 0.594 s, 100 tokens
+  run 1 q2: decode 47.7 tok/s, first token 0.616 s, 100 tokens
+  run 1 q3: decode 59.8 tok/s, first token 0.592 s, 100 tokens
+  run 2 q1: decode 71.4 tok/s, first token 0.592 s, 100 tokens
+  run 2 q2: decode 62.9 tok/s, first token 0.554 s, 100 tokens
+  run 2 q3: decode 58.6 tok/s, first token 0.566 s, 100 tokens
+  run 3 q1: decode 72.4 tok/s, first token 0.611 s, 100 tokens
+  run 3 q2: decode 57.4 tok/s, first token 0.547 s, 100 tokens
+  run 3 q3: decode 67.3 tok/s, first token 0.551 s, 100 tokens
+4K prompt: 3 fresh prompts of about 4096 tokens, 24 new tokens
+  run 1: 4019 tokens, prompt 911.0 tok/s (0 reused), first token 4.432 s
+  run 2: 4019 tokens, prompt 906.7 tok/s (0 reused), first token 4.465 s
+  run 3: 4019 tokens, prompt 892.4 tok/s (0 reused), first token 4.537 s
+16K prompt: 3 fresh prompts of about 16384 tokens, 24 new tokens
+  run 1: 16058 tokens, prompt 1103.5 tok/s (0 reused), first token 14.584 s
+  run 2: 16058 tokens, prompt 1121.8 tok/s (0 reused), first token 14.352 s
+  run 3: 16058 tokens, prompt 979.2 tok/s (0 reused), first token 16.428 s
+agent: a session of 6 turns with four tools, x 3 runs
+  run 1 turn 0: prompt 609, reused 0, read 609, first token 1.471 s
+  run 1 turn 1: prompt 2267, reused 625, read 1642, first token 1.825 s
+  run 1 turn 2: prompt 3973, reused 2330, read 1643, first token 1.952 s
+  run 1 turn 3: prompt 5679, reused 4036, read 1643, first token 2.243 s
+  run 1 turn 4: prompt 7385, reused 5742, read 1643, first token 2.484 s
+  run 1 turn 5: prompt 9090, reused 7448, read 1642, first token 2.655 s
+  run 2 turn 0: prompt 609, reused 0, read 609, first token 1.873 s
+  run 2 turn 1: prompt 2263, reused 621, read 1642, first token 1.948 s
+  run 2 turn 2: prompt 3969, reused 2326, read 1643, first token 2.175 s
+  run 2 turn 3: prompt 5675, reused 4032, read 1643, first token 2.04 s
+  run 2 turn 4: prompt 7381, reused 5738, read 1643, first token 2.086 s
+  run 2 turn 5: prompt 9083, reused 7441, read 1642, first token 2.244 s
+  run 3 turn 0: prompt 609, reused 0, read 609, first token 1.602 s
+  run 3 turn 1: prompt 2268, reused 626, read 1642, first token 1.862 s
+  run 3 turn 2: prompt 3974, reused 2331, read 1643, first token 1.897 s
+  run 3 turn 3: prompt 5680, reused 4037, read 1643, first token 2.302 s
+  run 3 turn 4: prompt 7386, reused 5743, read 1643, first token 2.365 s
+  run 3 turn 5: prompt 9092, reused 7449, read 1643, first token 2.263 s
+
+Results (median, range over the runs):
+  chat decode tok/s                     62.90   (47.70 - 73.70, n=9)
+  chat first token (s)                   0.59   (0.55 - 0.62, n=9)
+  4K prompt tok/s                      906.70   (892.40 - 911.00, n=3)
+  4K first token (s)                     4.46   (4.43 - 4.54, n=3)
+  16K prompt tok/s                    1103.50   (979.20 - 1121.80, n=3)
+  16K first token (s)                   14.58   (14.35 - 16.43, n=3)
+  agent cache hit %                     71.08   (71.05 - 71.08, n=3)
+  agent re-read tokens/session           5.00   (5.00 - 5.00, n=3)
+  agent turn first token (s)             2.17   (1.82 - 2.65, n=15)
+  agent decode tok/s                    64.40   (54.80 - 76.40, n=15)
+
+Report: <scratch>\results-0162\2026-11-22-community-rtx-3090-qwen3-8-flash-next-iq3-s\README.md
+Share it: open a pull request that adds the folder <scratch>\results-0162\2026-11-22-community-rtx-3090-qwen3-8-flash-next-iq3-s (see docs/COMMUNITY_BENCHMARKS.md), or paste README.md into a GitHub issue. Home folders, user and host names and IP addresses are already replaced; read it once before you share it.
+For results other people can compare with, run the standard benchmark: strata bench run (docs/BENCHMARK_PROTOCOL.md).
