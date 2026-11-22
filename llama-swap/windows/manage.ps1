@@ -22,7 +22,7 @@ function Stop-Stack {
     Stop-ScheduledTask -TaskPath $taskPath -TaskName "LlamaProxy" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
     Stop-ManagedPortOwner -Port 8080 -CommandPattern "llama-swap\.exe.*configs\\devbox\.yaml"
-    Stop-ManagedPortOwner -Port 8082 -CommandPattern "(llama-server|tensorfold-native)\.exe.*--port 8082"
+    Stop-ManagedPortOwner -Port 8082 -CommandPattern "((llama-server|tensorfold-native)\.exe|strata\.py serve).*--port 8082"
     Stop-ManagedPortOwner -Port 8188 -CommandPattern "python\.exe.*ComfyUI\\main\.py.*--port 8188"
     Stop-ManagedPortOwner -Port 8190 -CommandPattern "node\.exe.*imagegen\\server\.js"
     Stop-ManagedPortOwner -Port 8081 -CommandPattern "node\.exe.*proxy\.js.*--proxy-port 8081"

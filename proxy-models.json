@@ -57,6 +57,7 @@
       "name": "qwen38-flash-strata",
       "match": [
         "qwenflash-st",
+        "qwenflash-lc",
         "qwen3.8-flash-next-iq*"
       ],
       "maxTokensDefault": 32768,
