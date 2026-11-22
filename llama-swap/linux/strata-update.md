@@ -159,6 +159,12 @@ curl -s localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
 
 nvtop shows the same engine path.
 
+### 8. Benchmark the new engine (optional)
+
+To see whether the new engine is faster here, run the A/B benchmark in `strata-bench.md`
+(`strata-bench-ab.sh <old> <new>`). Do not compare against a single earlier run or a report in
+`docs/bench-results/`: decode varies about ±20% between runs.
+
 ## Going back
 
 ```sh

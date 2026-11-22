@@ -1,0 +1,7 @@
+{"label":"warmup1","engine":"0.1.59","env":"","start":"19:08:17","end":"19:10:45","mem_available_gib":58.9,"exit":0,"switches":""}
+{"label":"fwd-0.1.59","engine":"0.1.59","env":"","start":"19:10:45","end":"19:13:14","mem_available_gib":58.7,"exit":0,"switches":""}
+{"label":"fwd-0.1.64","engine":"0.1.64","env":"","start":"19:13:14","end":"19:15:43","mem_available_gib":58.9,"exit":0,"switches":""}
+{"label":"fwd-0.1.65","engine":"0.1.65","env":"","start":"19:15:43","end":"19:18:08","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 11 exact speed switches on"}
+{"label":"rev-0.1.65","engine":"0.1.65","env":"","start":"19:18:08","end":"19:20:30","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 11 exact speed switches on"}
+{"label":"rev-0.1.64","engine":"0.1.64","env":"","start":"19:20:30","end":"19:22:58","mem_available_gib":58.7,"exit":0,"switches":""}
+{"label":"rev-0.1.59","engine":"0.1.59","env":"","start":"19:22:58","end":"19:25:28","mem_available_gib":58.7,"exit":0,"switches":""}
