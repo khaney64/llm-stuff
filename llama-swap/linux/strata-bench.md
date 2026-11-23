@@ -44,6 +44,44 @@ Then add a section to the results log below and commit the results folder with i
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, per-run reports and `summary.md`
 are in the folder named in each section.
 
+### 2026-11-23: 0.2.20 / engine 0.1.66 (from 0.1.65), with 0.1.59 and two variants
+
+Folder: `bench/results/strata-ab-2026-11-23-llmserver/`. Engines 0.1.59, 0.1.65, 0.1.66 with their defaults, plus
+two 0.1.66 variants: `sm89old` = `STRATA_L2_PF=1,STRATA_QFUSE=1` (the two switches 0.1.66 took out of the sm_89
+defaults, #6431 / #6583) and `chunk32k` = `STRATA_NV_CHUNK=1` (lifts 0.1.66's new 8192 cap on bare `--prefill auto`
+for cards of 16.5 GiB or less, #5199). Warm-up + 10 runs, 00:30-00:58.
+
+0.1.66 prints `sm_89 (Ada): 17 speed switches on` (no "exact": it adds `ADAPT_FETCH=2` for cards of 16 GiB or less,
+which is not bit-exact). The list: ADAPT_LAG ATTN_DAILY GR_UP75 GU_SWIGLU QSA_ROWS B6_MMVQ_ROWS HC_UPMIX Q80_ROWS1
+EXP_MODE SIDE_MIXER DEQUANT_SIDE LFUSE PLE_COMPACT PLE_COPY_STREAM PREFILL_CPU_SHARE_NT PREFILL_CPU_SHARE_MAX
+ADAPT_FETCH. 0.1.65 had 11, including L2_PF and QFUSE. The script's grep only knew the "exact" wording and
+reported "none" for 0.1.66; fixed in the script, and this run's `summary.md` / `runs.jsonl` were corrected by hand.
+
+| Metric (fwd / rev) | 0.1.59 | 0.1.65 | 0.1.66 | 0.1.66 vs 0.1.65 | sm89old | chunk32k |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4K prompt tok/s | 1619 / 1624 | 1479 / 1483 | 1937 / 1938 | **+31%** | 1931 / 1934 | 1925 / 1932 |
+| 4K first token (s) | 2.51 / 2.51 | 2.75 / 2.74 | 2.11 / 2.10 | -23% | 2.11 / 2.11 | 2.12 / 2.11 |
+| 16K prompt tok/s | 1735 / 1754 | 2155 / 2155 | 2195 / 2193 | +2% | 2194 / 2189 | 2190 / 2192 |
+| 16K first token (s) | 9.29 / 9.19 | 7.49 / 7.49 | 7.35 / 7.35 | -2% | 7.35 / 7.37 | 7.37 / 7.36 |
+| chat decode tok/s | 40.8 / 43.6 | 42.0 / 43.1 | 41.0 / 41.8 | none (noise) | 42.6 / 41.6 | 42.6 / 44.3 |
+| chat first token (s) | 0.83 / 0.83 | 0.74 / 0.74 | 0.71 / 0.70 | -4% | 0.71 / 0.71 | 0.71 / 0.71 |
+| agent decode tok/s | 44.8 / 47.8 | 46.9 / 49.3 | 50.1 / 49.3 | none (noise) | 50.0 / 47.9 | 47.1 / 47.5 |
+| agent turn first token (s) | 2.36 / 2.37 | 2.43 / 2.44 | 2.44 / 2.44 | none | 2.42 / 2.44 | 2.43 / 2.44 |
+
+Result: **4K prompts +31%, 16K prompts +2%, decode unchanged.** 0.1.65's 4K regression is gone: 0.1.66 against
+0.1.59 is 4K +19%, 16K +25%. Every prompt difference holds in both orders to within 1%.
+
+Variants: **neither changes anything here.** Both are within 0.5% of 0.1.66 defaults on prompts; decode differences
+(up to 6%) are under the ~10% noise line and do not hold in both directions. Putting L2_PF and QFUSE back does not
+bring back the decode loss upstream measured, nor any gain. The chunk cap does nothing on this setup: in serve mode
+every 0.1.66 run, capped or not, logged `small expert cache ... prompt chunk auto: 4864 tokens` (the 4070 holds 1,609
+of 24,576 experts), so the 8192 vs 32768 ceiling is never reached.
+
+Not comparable to 11-22: "agent turn first token" is 2.4 s for every engine today (1.5-1.6 s on 11-22, 0.1.59
+included). The bench tool in the 0.2.20 checkout changed; prompt speeds of 0.1.59 and 0.1.65 match 11-22 within 1%.
+
+Kept: 0.1.66 with its defaults. llama-swap's profile uses bare `--prefill auto`; no `STRATA_NV_CHUNK` needed.
+
 ### 2026-11-22: 0.2.19 / engine 0.1.65 (from 0.1.64), with 0.1.59
 
 Folder: `bench/results/strata-ab-2026-11-22-llmserver/`. Engines 0.1.59, 0.1.64, 0.1.65 from `engine-feed/engine/`,

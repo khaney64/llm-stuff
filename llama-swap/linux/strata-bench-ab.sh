@@ -87,7 +87,7 @@ EOF
     >"$OUT_DIR/runs/$label.log" 2>&1
   rc=$?
   set -e
-  sm=$(grep -m1 -oE 'sm_[0-9]+ \([A-Za-z]+\): [0-9]+ exact speed switches on' "$OUT_DIR/runs/$label.engine.log" 2>/dev/null || true)
+  sm=$(grep -m1 -oE 'sm_[0-9]+ \([A-Za-z]+\): [0-9]+ (exact )?speed switches on' "$OUT_DIR/runs/$label.engine.log" 2>/dev/null || true)
   echo "=== $label exit $rc $(date +%T) ${sm:-no speed-switch line}"
   printf '{"label":"%s","engine":"%s","env":"%s","start":"%s","end":"%s","mem_available_gib":%s,"exit":%d,"switches":"%s"}\n' \
     "$label" "$v" "$e" "$start" "$(date +%T)" "$avail" "$rc" "$sm" >>"$meta"

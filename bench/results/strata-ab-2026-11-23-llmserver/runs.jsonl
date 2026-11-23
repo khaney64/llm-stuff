@@ -1,0 +1,11 @@
+{"label":"warmup1","engine":"0.1.59","env":"","start":"00:30:24","end":"00:33:03","mem_available_gib":58.3,"exit":0,"switches":""}
+{"label":"fwd-0.1.59","engine":"0.1.59","env":"","start":"00:33:03","end":"00:35:46","mem_available_gib":58.6,"exit":0,"switches":""}
+{"label":"fwd-0.1.65","engine":"0.1.65","env":"","start":"00:35:46","end":"00:38:21","mem_available_gib":58.8,"exit":0,"switches":"sm_89 (Ada): 11 exact speed switches on"}
+{"label":"fwd-0.1.66","engine":"0.1.66","env":"","start":"00:38:21","end":"00:40:54","mem_available_gib":58.8,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"fwd-0.1.66-sm89old","engine":"0.1.66","env":"STRATA_L2_PF=1,STRATA_QFUSE=1","start":"00:40:54","end":"00:43:21","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"fwd-0.1.66-chunk32k","engine":"0.1.66","env":"STRATA_NV_CHUNK=1","start":"00:43:21","end":"00:45:50","mem_available_gib":58.8,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.66-chunk32k","engine":"0.1.66","env":"STRATA_NV_CHUNK=1","start":"00:45:50","end":"00:48:21","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.66-sm89old","engine":"0.1.66","env":"STRATA_L2_PF=1,STRATA_QFUSE=1","start":"00:48:21","end":"00:50:53","mem_available_gib":58.8,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.66","engine":"0.1.66","env":"","start":"00:50:53","end":"00:53:23","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.65","engine":"0.1.65","env":"","start":"00:53:23","end":"00:55:56","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 11 exact speed switches on"}
+{"label":"rev-0.1.59","engine":"0.1.59","env":"","start":"00:55:56","end":"00:58:37","mem_available_gib":58.9,"exit":0,"switches":""}
