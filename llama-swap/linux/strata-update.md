@@ -1,7 +1,8 @@
 # Updating Strata (llama-swap setup)
 
 How to update the Strata checkout and engine so llama-swap runs the new version.
-Last done 2026-11-22: 0.2.15 / engine 0.1.60 → 0.2.19 / engine 0.1.65.
+Last done 2026-11-23: 0.2.19 / engine 0.1.65 → 0.2.20 / engine 0.1.66 (no path changes).
+Before that 2026-11-22: 0.2.15 / engine 0.1.60 → 0.2.19 / engine 0.1.65.
 
 ## Why this is needed
 
@@ -189,6 +190,10 @@ Keep the old engine folder until the new one has run for a while. Old folders in
   (Not seen on 0.2.19 / 0.1.65.)
 - `sm_89 (Ada): 11 exact speed switches on by default` - new in 0.2.19, informational.
   `STRATA_SM89_PERF=0` turns them off if you need to compare against the old behaviour.
+- `sm_89 (Ada): 17 speed switches on by default (... ADAPT_FETCH is on because this card has 16 GiB ...)` -
+  0.1.66 wording. No "exact" any more because `STRATA_ADAPT_FETCH=2` is not bit-exact; `STRATA_ADAPT_FETCH=0` turns it off.
+- `NVIDIA (11.6 GiB): --prefill auto stays at 8192 ...` - new in 0.1.66. Harmless here: serve reads prompts in
+  4864-token chunks on this card anyway (`STRATA_NV_CHUNK=1` measured no change, see `strata-bench.md` 2026-11-23).
 
 ## Log messages that mean the profile needs a fix
 
