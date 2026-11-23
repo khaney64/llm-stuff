@@ -226,4 +226,4 @@ peers:
 hooks:
   on_startup:
     preload:
-      - qwen36-35b
+      - qwenflash-st

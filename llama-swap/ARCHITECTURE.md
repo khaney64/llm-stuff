@@ -162,7 +162,7 @@ Important fields:
 | `hooks.on_startup.preload` | Loads the normal warm model after service startup |
 | `peers` | Makes llmserver models available through the devbox front door |
 
-Devbox preloads `qwen36-35b`. llmserver preloads `qwen3vl-8b`. Requesting
+Devbox preloads `qwenflash-st`. llmserver preloads `qwen3vl-8b`. Requesting
 another model swaps only the GPU host that owns it.
 
 These are startup preloads, not default routing fallbacks. A request must name a
