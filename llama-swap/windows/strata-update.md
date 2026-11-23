@@ -187,7 +187,8 @@ To see whether the new engine is faster here, run `strata-bench-ab.ps1` and add 
 - **Speed switches (from 0.1.65):** the log line
   `strata: sm_86 (Ampere): 14 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off ...)` is for
   information only. Set `STRATA_SM86_PERF=0` only to compare against the old behaviour. (llmserver's RTX 4070
-  logs the `sm_89 (Ada)` line instead.)
+  logs the `sm_89 (Ada)` line instead.) 0.1.66 turns on 17: against 0.1.65 it adds `HC_UPMIX`, `Q80_ROWS1`,
+  `EXP_MODE` and `PREFILL_CPU_SHARE_NT`, and drops `QFUSE`.
 - **Log messages that mean the profile needs a fix:**
   `the config has a "vision" section but no --vision in its args: added --vision` means the profile's `args`
   lost `--vision` (setup can rewrite the profile). Add `"--vision"` back to `args`.

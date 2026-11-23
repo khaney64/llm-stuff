@@ -50,7 +50,11 @@ Then add a section to the results log below and commit `bench\results\strata-ab-
 6. **Switches.** To test an environment switch, add a variant, for example
    `-Variants @(@{ name = "0.1.65-sm86off"; engine = "0.1.65"; env = @{ STRATA_SM86_PERF = "0" } })`.
    The engine log names the switches that are on by default (`sm_86 (Ampere): N exact speed switches ...`).
-7. **Don't compare with `docs\bench-results\` in the Strata checkout.** That is where the bench writes when run
+7. **Bench at llama-swap's VRAM reserve.** The default config reserves 700 MiB. At that reserve an engine without
+   the 0.1.66 WDDM floor can fill the card so far that Windows pages GPU memory to RAM, and prompt speed falls by a
+   third (2026-11-22 evening). Pass a copy of the config with `--vram-reserve-mib 1600` as `-BaseConfig`, like
+   `bench\results\strata-ab-2026-11-22-0.1.66-r1600\base-iq3_s-r1600.json`.
+8. **Don't compare with `docs\bench-results\` in the Strata checkout.** That is where the bench writes when run
    by hand. The 2026-11-18 report there (0.1.62, 923 tok/s at 4K) was very likely taken in the slow state: 0.1.62
    measured 1935 tok/s at 4K on 2026-11-22.
 
@@ -74,6 +78,51 @@ Not yet checked: whether it happens every time after `manage.ps1 stop`. To check
 
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, `results.json` and per-run reports
 are in the folder named in each section.
+
+### 2026-11-22 (evening): 0.2.20 / engine 0.1.66 (from 0.1.65)
+
+Two runs, both with `STRATA_SM86_PERF=0` on 0.1.66 as a variant:
+
+- `bench\results\strata-ab-2026-11-22-0.1.66\`: the default bench config (`--vram-reserve-mib 700`), after a
+  15-minute settle.
+- `bench\results\strata-ab-2026-11-22-0.1.66-r1600\`: the same config with `--vram-reserve-mib 1600`, as in
+  llama-swap's `qwenflash-st.json` (`base-iq3_s-r1600.json` in the folder). **This is the one that counts.**
+
+At 1600 MiB (fwd / rev):
+
+| Metric | 0.1.65 | 0.1.66 | 0.1.66 sm86off |
+| --- | ---: | ---: | ---: |
+| 4K prompt tok/s | 1935 / 1943 | 1902 / 1907 | 1913 / 1919 |
+| 16K prompt tok/s | 2697 / 2651 | 2753 / 2732 | 2721 / 2711 |
+| 16K first token (s) | 5.98 / 6.10 | 5.86 / 5.91 | 5.93 / 5.97 |
+| chat decode tok/s | 98.3 / 89.5 | 96.3 / 88.4 | 79.8 / 77.0 |
+| chat first token (s) | 0.36 / 0.36 | 0.37 / 0.39 | 0.43 / 0.44 |
+| agent decode tok/s | 104.5 / 106.2 | 102.7 / 99.4 | 92.5 / 93.8 |
+| agent turn first token (s) | 1.97 / 1.96 | 1.91 / 1.93 | 2.00 / 2.00 |
+
+Result: **no measurable change at llama-swap's settings.** 0.1.66 against 0.1.65: 4K prompt -2%, 16K prompt +2-3%,
+decode the same within noise. The release notes' CUDA speedups do not show here.
+
+`STRATA_SM86_PERF=0` (all 17 sm_86 switches off): prompt speed the same, chat decode 13-17% lower and agent decode
+6-10% lower in both orders, and the same direction in the 700 MiB run. The switches help decode; keep them on.
+
+At 700 MiB, 0.1.66 read +45% (4K) and +54% (16K) over 0.1.65, in both orders. That is the reserve, not the engine:
+
+- 0.1.66 adds a Windows WDDM floor: `keeping 1280 MiB VRAM reserve (was 700 MiB) so the driver does not page GPU
+  memory to host RAM`, so it ran with ~7,570 expert slots. 0.1.65 kept 700 MiB and filled 8,251 slots (15.65 GiB),
+  and its 4K prompt fell to 1320 tok/s.
+- That morning, 0.1.65 with the same 700 MiB config measured 1957 tok/s. Its engine log was not kept, so why it did
+  not page then is not known (free VRAM at start decides the slot count).
+- Even at 1600 MiB, 0.1.65 warned twice that under 1024 MiB of VRAM was free at the start of a request. 0.1.66
+  did not.
+
+The server picks `--draft-conf` from the slot count (`CONF_STEPS` in `terminal\strata_control\drafting.py`): 0.5 at
+700 MiB, 0.7 at 1600 MiB. That is one more reason to bench at the reserve llama-swap uses.
+
+From 0.2.20, `strata_bench.py`'s agent test sends the repo's own documents instead of generated filler (#6628), so
+agent rows are not comparable with earlier sections (agent first token 1.15 s -> 1.9 s on the same engine).
+
+Kept: 0.1.66 with its defaults. Nothing was changed in the profile.
 
 ### 2026-11-22: 0.2.19 / engine 0.1.65 (from 0.1.64)
 

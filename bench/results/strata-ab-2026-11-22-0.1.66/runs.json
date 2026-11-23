@@ -1,0 +1,79 @@
+[
+  {
+    "label": "warmup1",
+    "order": "warmup",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "20:26:02",
+    "free_ram_gib": 68.4,
+    "free_commit_gib": 71.4,
+    "exit": 0,
+    "end": "20:28:19"
+  },
+  {
+    "label": "fwd-0.1.65",
+    "order": "forward",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "20:28:20",
+    "free_ram_gib": 15.6,
+    "free_commit_gib": 25.8,
+    "exit": 0,
+    "end": "20:30:36"
+  },
+  {
+    "label": "fwd-0.1.66",
+    "order": "forward",
+    "engine": "0.1.66",
+    "env": "",
+    "start": "20:30:37",
+    "free_ram_gib": 17.4,
+    "free_commit_gib": 28.0,
+    "exit": 0,
+    "end": "20:32:27"
+  },
+  {
+    "label": "fwd-0.1.66-sm86off",
+    "order": "forward",
+    "engine": "0.1.66",
+    "env": "STRATA_SM86_PERF=0",
+    "start": "20:32:27",
+    "free_ram_gib": 14.1,
+    "free_commit_gib": 23.4,
+    "exit": 0,
+    "end": "20:34:22"
+  },
+  {
+    "label": "rev-0.1.66-sm86off",
+    "order": "reverse",
+    "engine": "0.1.66",
+    "env": "STRATA_SM86_PERF=0",
+    "start": "20:34:23",
+    "free_ram_gib": 16.0,
+    "free_commit_gib": 25.5,
+    "exit": 0,
+    "end": "20:36:17"
+  },
+  {
+    "label": "rev-0.1.66",
+    "order": "reverse",
+    "engine": "0.1.66",
+    "env": "",
+    "start": "20:36:18",
+    "free_ram_gib": 14.7,
+    "free_commit_gib": 24.1,
+    "exit": 0,
+    "end": "20:38:07"
+  },
+  {
+    "label": "rev-0.1.65",
+    "order": "reverse",
+    "engine": "0.1.65",
+    "env": "",
+    "start": "20:38:08",
+    "free_ram_gib": 18.5,
+    "free_commit_gib": 28.5,
+    "exit": 0,
+    "end": "20:40:23"
+  }
+]
