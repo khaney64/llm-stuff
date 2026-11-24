@@ -1,0 +1,58 @@
+Starting strata-0.1.67.json on port 8080 (loading takes 1-3 minutes; the PC may be slow meanwhile) ...
+  still loading (2 s) ...
+Running the suite (about 3-10 minutes) ...
+warming up (not measured) ...
+  calibrated: about 1.08 tokens per word
+chat: 3 short questions x 3 runs, up to 100 new tokens
+  run 1 q1: decode 105.5 tok/s, first token 0.426 s, 100 tokens
+  run 1 q2: decode 76.0 tok/s, first token 0.368 s, 100 tokens
+  run 1 q3: decode 72.7 tok/s, first token 0.378 s, 100 tokens
+  run 2 q1: decode 113.1 tok/s, first token 0.37 s, 100 tokens
+  run 2 q2: decode 93.0 tok/s, first token 0.339 s, 100 tokens
+  run 2 q3: decode 93.5 tok/s, first token 0.347 s, 100 tokens
+  run 3 q1: decode 98.5 tok/s, first token 0.464 s, 100 tokens
+  run 3 q2: decode 88.4 tok/s, first token 0.37 s, 100 tokens
+  run 3 q3: decode 90.8 tok/s, first token 0.357 s, 100 tokens
+4K prompt: 3 fresh prompts of about 4096 tokens, 24 new tokens
+  run 1: 4019 tokens, prompt 1885.5 tok/s (0 reused), first token 2.152 s
+  run 2: 4019 tokens, prompt 1898.6 tok/s (0 reused), first token 2.156 s
+  run 3: 4019 tokens, prompt 1897.1 tok/s (0 reused), first token 2.136 s
+16K prompt: 3 fresh prompts of about 16384 tokens, 24 new tokens
+  run 1: 16058 tokens, prompt 2776.6 tok/s (0 reused), first token 5.822 s
+  run 2: 16058 tokens, prompt 2747.9 tok/s (0 reused), first token 5.881 s
+  run 3: 16058 tokens, prompt 2733.2 tok/s (0 reused), first token 5.9 s
+agent: a session of 6 turns with four tools, x 3 runs (corpus: repo_docs)
+  run 1 turn 0: prompt 609, reused 0, read 609, first token 1.078 s
+  run 1 turn 1: prompt 5003, reused 629, read 4374, first token 2.232 s
+  run 1 turn 2: prompt 6539, reused 5066, read 1473, first token 1.314 s
+  run 1 turn 3: prompt 9836, reused 6602, read 3234, first token 2.049 s
+  run 1 turn 4: prompt 11904, reused 9871, read 2033, first token 1.463 s
+  run 1 turn 5: prompt 14806, reused 11920, read 2886, first token 1.927 s
+  run 2 turn 0: prompt 609, reused 0, read 609, first token 1.218 s
+  run 2 turn 1: prompt 5004, reused 630, read 4374, first token 2.184 s
+  run 2 turn 2: prompt 6540, reused 5067, read 1473, first token 1.258 s
+  run 2 turn 3: prompt 9837, reused 6603, read 3234, first token 2.054 s
+  run 2 turn 4: prompt 11934, reused 9900, read 2034, first token 1.461 s
+  run 2 turn 5: prompt 14876, reused 11990, read 2886, first token 1.865 s
+  run 3 turn 0: prompt 609, reused 0, read 609, first token 1.322 s
+  run 3 turn 1: prompt 5003, reused 629, read 4374, first token 2.18 s
+  run 3 turn 2: prompt 6539, reused 5066, read 1473, first token 1.294 s
+  run 3 turn 3: prompt 9836, reused 6602, read 3234, first token 2.029 s
+  run 3 turn 4: prompt 11933, reused 9899, read 2034, first token 1.466 s
+  run 3 turn 5: prompt 14848, reused 11962, read 2886, first token 1.869 s
+
+Results (median, range over the runs):
+  chat decode tok/s                     93.00   (72.70 - 113.10, n=9)
+  chat first token (s)                   0.37   (0.34 - 0.46, n=9)
+  4K prompt tok/s                     1897.10   (1885.50 - 1898.60, n=3)
+  4K first token (s)                     2.15   (2.14 - 2.16, n=3)
+  16K prompt tok/s                    2747.90   (2733.20 - 2776.60, n=3)
+  16K first token (s)                    5.88   (5.82 - 5.90, n=3)
+  agent cache hit %                     70.93   (70.89 - 70.95, n=3)
+  agent re-read tokens/session           5.00   (5.00 - 5.00, n=3)
+  agent turn first token (s)             1.87   (1.26 - 2.23, n=15)
+  agent decode tok/s                   101.10   (81.30 - 130.70, n=15)
+
+Report: C:\development\ai\llm-stuff\bench\results\strata-ab-2026-11-24-0.1.67-r1600\runs\fwd-0.1.67\2026-11-24-community-rtx-3090-qwen3-8-flash-next-iq3-s\README.md
+Share it: open a pull request that adds the folder C:\development\ai\llm-stuff\bench\results\strata-ab-2026-11-24-0.1.67-r1600\runs\fwd-0.1.67\2026-11-24-community-rtx-3090-qwen3-8-flash-next-iq3-s (see docs/COMMUNITY_BENCHMARKS.md), or paste README.md into a GitHub issue. Home folders, user and host names and IP addresses are already replaced; read it once before you share it.
+For results other people can compare with, run the standard benchmark: strata bench run (docs/BENCHMARK_PROTOCOL.md).

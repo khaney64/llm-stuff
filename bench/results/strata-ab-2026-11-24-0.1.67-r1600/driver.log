@@ -1,0 +1,36 @@
+settling 15 min
+=== warmup1 start 14:52:46 freeRAM=67.2GiB freeCommit=68.1GiB
+=== warmup1 exit 0 14:54:36
+=== warmup2 start 14:54:37 freeRAM=12.1GiB freeCommit=23.6GiB
+=== warmup2 exit 0 14:56:28
+=== fwd-0.1.66 start 14:56:29 freeRAM=15GiB freeCommit=26.6GiB
+=== fwd-0.1.66 exit 0 14:58:19
+=== fwd-0.1.67 start 14:58:20 freeRAM=14.8GiB freeCommit=26.3GiB
+=== fwd-0.1.67 exit 0 15:00:10
+=== rev-0.1.67 start 15:00:11 freeRAM=13.5GiB freeCommit=25GiB
+=== rev-0.1.67 exit 0 15:02:02
+=== rev-0.1.66 start 15:02:02 freeRAM=15GiB freeCommit=26.8GiB
+=== rev-0.1.66 exit 0 15:03:52
+
+# Strata engine A/B 2026-11-24
+
+Config: `C:\development\ai\llm-stuff\bench\results\strata-ab-2026-11-24-0.1.67-r1600\base-iq3_s-r1600.json` (engine paths swapped per run). Medians over 3 runs per test, range in brackets.
+
+| Metric | warmup1 | warmup2 | fwd-0.1.66 | fwd-0.1.67 | rev-0.1.67 | rev-0.1.66 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| chat decode tok/s | 90.70 (75.40-109.40) | 91.20 (70.40-111.70) | 93.80 (68.90-111.70) | 93.00 (72.70-113.10) | 91.40 (72.20-117.00) | 91.80 (72.20-111.60) |
+| chat first token (s) | 0.37 (0.34-0.40) | 0.36 (0.34-0.44) | 0.38 (0.35-0.43) | 0.37 (0.34-0.46) | 0.37 (0.34-0.41) | 0.37 (0.34-0.40) |
+| 4K prompt tok/s | 1860.20 (1848.20-1871.10) | 1870.90 (1867.30-1877.90) | 1886.00 (1858.60-1899.60) | 1897.10 (1885.50-1898.60) | 1886.90 (1885.30-1918.80) | 1902.10 (1886.10-1910.30) |
+| 4K first token (s) | 2.18 (2.17-2.19) | 2.19 (2.18-2.19) | 2.16 (2.13-2.18) | 2.15 (2.14-2.16) | 2.15 (2.11-2.15) | 2.14 (2.14-2.15) |
+| 16K prompt tok/s | 2754.40 (2739.00-2788.90) | 2767.80 (2744.10-2780.40) | 2752.90 (2719.40-2794.70) | 2747.90 (2733.20-2776.60) | 2741.20 (2712.90-2762.60) | 2739.00 (2733.50-2774.60) |
+| 16K first token (s) | 5.85 (5.80-5.89) | 5.85 (5.80-5.88) | 5.86 (5.77-5.95) | 5.88 (5.82-5.90) | 5.89 (5.84-5.95) | 5.90 (5.83-5.90) |
+| agent turn first token (s) | 1.89 (1.25-2.23) | 1.90 (1.26-2.21) | 1.89 (1.28-2.20) | 1.87 (1.26-2.23) | 1.90 (1.28-2.19) | 1.89 (1.24-2.19) |
+| agent decode tok/s | 106.10 (86.70-140.20) | 103.40 (89.70-129.30) | 106.40 (87.40-127.10) | 101.10 (81.30-130.70) | 101.90 (91.40-119.50) | 105.70 (77.90-133.30) |
+| start / free RAM GiB / free commit GiB | 14:52:46 / 67.2 / 68.1 | 14:54:37 / 12.1 / 23.6 | 14:56:29 / 15 / 26.6 | 14:58:20 / 14.8 / 26.3 | 15:00:11 / 13.5 / 25 | 15:02:02 / 15 / 26.8 |
+
+Engines:
+
+- `0.1.66`: `C:\development\ai\Strata\terminal\engine\.previous`
+- `0.1.67`: `C:\development\ai\Strata\terminal\engine`
+
+Results: C:\development\ai\llm-stuff\bench\results\strata-ab-2026-11-24-0.1.67-r1600

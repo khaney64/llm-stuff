@@ -20,6 +20,22 @@ It stops llama-swap, then benches the old and the new engine back to back: a dis
 then new → old. It writes everything to `llm-stuff\bench\results\strata-ab-<date>\` (`summary.md` is the table)
 and starts llama-swap again. About 2 minutes per run, so about 12 minutes for two engines.
 
+The run that counts (used from 2026-11-24): llama-swap's 1600 MiB reserve (item 7), a 15-minute settle and two
+warm-ups, so the slow start cannot reach the measured runs. About 30 minutes:
+
+```powershell
+$Out = "C:\development\ai\llm-stuff\bench\results\strata-ab-$(Get-Date -Format yyyy-MM-dd)-<new>-r1600"
+New-Item -ItemType Directory -Force $Out | Out-Null
+$c = Get-Content C:\development\ai\Strata\terminal\strata-iq3_s.json -Raw | ConvertFrom-Json
+$i = [array]::IndexOf($c.args, '--vram-reserve-mib'); $c.args[$i + 1] = '1600'
+$c | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8NoBOM "$Out\base-iq3_s-r1600.json"
+& C:\development\ai\llm-stuff\llama-swap\windows\strata-bench-ab.ps1 -BaseConfig "$Out\base-iq3_s-r1600.json" `
+    -OutDir $Out -SettleMinutes 15 -WarmupRuns 2
+```
+
+Read the two warm-up columns first. If the 4K prompt there is far below the measured columns (under about
+1800 tok/s), the slow state reached the bench: check that forward and reverse still agree.
+
 Then add a section to the results log below and commit `bench\results\strata-ab-<date>\` with it.
 
 ## Method, and why
@@ -71,13 +87,49 @@ engine warming up. The cause is not known:
 - the engine logs in the slow window show Windows memory commit almost used up (0.3-1.2 GiB left) and, on one run,
   low-VRAM warnings. The killed llama-swap engine had about 50 GB of RAM pinned. This is a guess, not a finding.
 
-Not yet checked: whether it happens every time after `manage.ps1 stop`. To check, run the script with
-`-WarmupRuns 0` straight after a stop and look at whether the forward and reverse numbers agree.
+On 2026-11-24, with a 15-minute settle after `manage.ps1 stop`, it did not happen: the first warm-up already gave
+4K 1860 tok/s and 16K 2754 tok/s, within 2% of the measured runs. `mem.csv` in that run's folder logs memory every
+30 s. What it showed:
+
+- Just before the stop, llama-swap's engine left 1.1 GiB of commit free. The pagefile had peaked at its full
+  32 GB at some point, and the Memory Compression store held 5.5 GB.
+- Within 10 s of the stop, free RAM was 67.6 GiB and free commit 68.2 GiB. The pagefile was back to 1.6 GB and
+  nothing was paging in afterwards. The compression store only shrank to 5.3 GB over the 15 minutes.
+- Every bench engine took free commit down to 0.1-1.1 GiB while it ran (both engines), and free RAM to 12-15 GiB.
+  So each run sits at the commit limit, as llama-swap does. Whether the slow start needs that and something
+  else at the same time is still unknown.
+
+Still not checked: whether it happens every time without a settle. To check, run the script with
+`-SettleMinutes 0 -WarmupRuns 0` straight after a stop and see whether the forward and reverse numbers agree.
 
 ## Results log
 
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, `results.json` and per-run reports
 are in the folder named in each section.
+
+### 2026-11-24: 0.2.21 / engine 0.1.67 (from 0.1.66)
+
+Folder: `bench\results\strata-ab-2026-11-24-0.1.67-r1600\`. Config `--vram-reserve-mib 1600`
+(`base-iq3_s-r1600.json`, otherwise the same as `terminal\strata-iq3_s.json`). It ran after a 15-minute settle,
+with 2 discarded warm-ups (0.1.66), and llama-swap was stopped throughout.
+
+| Metric (fwd / rev) | 0.1.66 | 0.1.67 |
+| --- | ---: | ---: |
+| 4K prompt tok/s | 1886 / 1902 | 1897 / 1887 |
+| 16K prompt tok/s | 2753 / 2739 | 2748 / 2741 |
+| 16K first token (s) | 5.86 / 5.90 | 5.88 / 5.89 |
+| chat decode tok/s | 93.8 / 91.8 | 93.0 / 91.4 |
+| chat first token (s) | 0.38 / 0.37 | 0.37 / 0.37 |
+| agent decode tok/s | 106.4 / 105.7 | 101.1 / 101.9 |
+| agent turn first token (s) | 1.89 / 1.89 | 1.87 / 1.90 |
+
+Result: **no measurable change**, as the release notes say for Qwen. Prompt speed and first-token times match within
+1%. Agent decode is 4-5% lower in both orders, but its ranges are ±20% (81-131 tok/s), so that is noise. Both
+engines turn on the same 17 sm_86 switches. Expert cache: 7,330-7,439 slots on 0.1.66 and 7,439-7,524 on 0.1.67
+(it varies from start to start). No WDDM or low-VRAM warnings were logged. 0.1.67's Qwen change is an accuracy
+fix in prompt reading (#6776), which can change answers after a few tokens. This bench does not check answers.
+
+Kept: 0.1.67 with its defaults. Nothing was changed in the profile.
 
 ### 2026-11-22 (evening): 0.2.20 / engine 0.1.66 (from 0.1.65)
 

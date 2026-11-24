@@ -1,0 +1,1231 @@
+[strata] 2026-11-24 14:52:52 engine started: C:\development\ai\Strata\terminal\engine\.previous\strata.exe --serve --pack C:\development\ai\Strata-data\packs\iq3_s --native C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile C:\development\ai\Strata\terminal\data\expert-profile.bin --expert-cache auto --prefill auto --max-context 204800 --kv int8 --kv-resident 32768 --vision --vram-reserve-mib 1600 --pool-workers 10 --adapt-every 1 --adapt-swaps 160 --adapt-decay 0.97 --draft dflash2 --draft-model C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack --draft-fallback none --mtp-draft-vocab C:\development\ai\Strata-data\dflash2\draft_vocab.bin --spec 6 --draft-conf 0.7 --vram-elastic
+strata: sm_86 (Ampere): 17 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off; a switch you set is kept): ADAPT_LAG CPU_IQ_ALL_EXACT1 SIDE_MIXER ATTN_DAILY GR_UP75 GU_SWIGLU QSA_ROWS B6_MMVQ_ROWS DEQUANT_SIDE LFUSE PLE_COMPACT PLE_COPY_STREAM HC_UPMIX Q80_ROWS1 EXP_MODE PREFILL_CPU_SHARE_NT VERIFY_DEVICE_HITS
+strata generate: NVIDIA: --prefill auto may take chunks up to 32768 (STRATA_NV_CHUNK=0 keeps 8192, =16 keeps 16384)
+strata generate: memory guard: limit 95.8 GiB (source: meminfo), current 29.2 GiB, reclaimable cache credited 0.0 GiB; available 66.6 GiB (MemAvailable 66.6 GiB), floor 2560 MiB
+strata generate: PCIe probe: 23.6 GB/s host->device (best of 23.6 23.6 23.6 23.5) -> pcie_frac 0.55 (default 0.55)
+strata generate: STRATA_VERIFY_DEVICE_HITS=1 -> pcie_frac 0.00 (on-device VRAM hit planning; pass --pcie-frac or STRATA_VERIFY_DEVICE_HITS=0 to override)
+strata generate: CPU expert kernels: AVX-2
+strata generate: native pack: C:\development\ai\Strata-data\packs\iq3_s experts (largest blob 2.66 MB), token embedding IQ4_XS in mapped host memory (322 MiB, 0.3 s)
+strata generate: 1466 MiB of weights loaded from C:\development\ai\Strata-data\packs\iq3_s in 0.4 s (302 canonical tensors skipped: served natively)
+strata generate: 300 native projection matrices, 2018.88 MiB of weights, in 1.6 s
+strata generate: PLE direct read probe: 203479 rows/s (fine)
+strata generate: the SSD is kept awake while rows are read: one page of the table after 100 ms without a read, until 60 s after the last request (STRATA_SSD_KEEPALIVE=0 turns it off)
+strata generate: profile C:\development\ai\Strata\terminal\data\expert-profile.bin: 24576 ranked pairs, built for 24576 slots
+strata generate: KV streaming: 32768 of 204800 cells per QSA layer in VRAM, the K/V in 2.42 GiB of pinned RAM
+strata generate: PLE on, table 320001536 rows of C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+strata generate: experimental native Q6_K head, 521472000 bytes, in 0.4 s
+strata generate: GPU 0: NVIDIA GeForce RTX 3090, compute capability 8.6
+strata: pinned-memory headroom: holding 800 MiB for the buffers allocated after the expert arena (released after it: 640 MiB; kept until needed: 160 MiB; STRATA_PIN_RESERVE_MIB changes it)
+strata generate: expert arena read unbuffered (0 of 16 probe reads from the file cache; 15.6 GiB available, 51.1 GiB of files)
+strata: pinned-memory headroom: 640 MiB handed back after the expert arena
+strata generate: expert arena: cudaHostRegister PORTABLE ok; large pages refused for 50295996416 B (GetLargePageMinimum=2097152, VirtualAlloc error 1314); using 4 KB pages
+strata generate: loaded 46.84 GiB at 5.65 GiB/s
+strata generate: CPU pool tasks/phase: 33 (automatic), participating threads: 11
+strata generate: 10 pool workers on logical processors 2,4,6,8,10,12,14,16,17,18, the host thread on 0 (draining too) (--host-core first)
+strata generate: CPU workers on logical processors 2,4,6,8,10,12,14,16,17,18 (10 workers, one per physical core; host on 0)
+strata aux cpus: not available on this system
+strata prefill: warmed the BF16 and FP16 GEMM libraries on GPU 0 in 15490 ms (STRATA_PREFILL_WARM=0 skips)
+strata generate: expert cache auto: 16.95 GiB free, 1600 MiB reserved (+380 MiB for the draft head, +384 MiB for what is allocated after the cache) -> 7682 slots
+strata generate: only 1886 MiB free once the slots are written (need 2364 MiB: reserve 1600 MiB + 764 MiB post-cache); shrinking the expert cache
+strata generate: expert cache 7439 slots, 14.11 GiB of VRAM; policy is
+strata generate: the GPU computes the experts in the cache; it rounds differently from the CPU,
+                 so a reply can differ slightly from a run without the cache (same quality:
+                 bench/results/2026-09-27-cache-parity).
+                 PROFILE, ranked by routing frequency, no eviction.
+strata generate: pre-filled 7439 of 7439 slots from the profile in 0.8 s (20119 MB/s); slot 0 verified
+strata generate: R4 hit path ON - resident experts are computed on the GPU
+strata generate: 10 expert-pool workers + the host thread
+strata generate: session is up (engine 0.1.66)
+strata generate: token graph hit path: 7439 resident experts, decided on the device
+prefill: the CPU share is ON by default for prompt chunks up to 3072 tokens (the idle CPU takes some of the experts the GPU would stream; answers can differ slightly from 0.1.40.3, mean KL ~0.004 below 1024 tokens, ~0.011 at 1-3K). STRATA_PREFILL_CPU_SHARE=0 turns it off, STRATA_PREFILL_CPU_SHARE_MAX=1024 keeps the old limit.
+strata: prompt kernels: chunks of 3072 tokens or more run 48 of 48 layers on the fused kernels; shorter chunks run 48 on the staged fused entry.
+strata serve: Windows commit: 1.1 GiB left of a 133.1 GiB limit (RAM + page file); the page files may grow by 112.9 GiB more
+strata serve: prompt chunk auto: 32768 tokens, a 512-slot ring
+strata serve: the prompt path borrows 5724 CUDA0 cache slots (10.81 GiB)
+strata hc: CUDA0: the hyper-connection read runs as staged (the norm per token and stream, the down projection's activations staged ahead by cp.async); checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 for the earlier ones)
+strata verify: window up to 8 tokens, 87.2 MiB of device buffers
+strata dflash2: 106299-token draft head (212.9 MiB), drafter 800 MiB of VRAM (Q4_0 weights)
+strata serve: DFlash2 drafter on (C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack, graphs captured in 4 ms); windows up to 8 tokens; no MTP layer is loaded (--draft-fallback none)
+strata serve: conversation cache sized from the free RAM: 4864 MiB for up to 4 parked conversations, so an agent's next turn reuses its prompt (--conversation-cache-mib N sets it, 0 turns it off)
+strata serve: conversation cache: SSD tier in C:\development\ai\Strata-data\conversation-spill\109108-c308ab9a3e2abf64, up to 32768 MiB, 1 folder of ended engines removed
+strata serve: STRATA_VERIFY_DEVICE_HITS=1: planning VRAM expert hits on-device (--pcie-frac 0: no plan/PCIe flag waits)
+strata serve: adaptive overlap: off: not with STRATA_ADAPT_LAG / STRATA_ADAPT_NOWAIT
+strata serve: the adaptive tier's evictions reach the device's table before the next window (STRATA_ADAPT_EVICT_SYNC=0: when its copies land)
+strata serve: adaptive tier: blocking, and the asynchronous tier is tried once the session shows the swaps hold the windows up (--adapt-async 0 or STRATA_ADAPT_ASYNC=0: never)
+strata serve: 1964 MiB of VRAM free with everything loaded
+strata verify: capturing the 1-token window (1964 MiB of VRAM free)
+strata verify: captured the 1-token window (upload no error, sync no error) in 8.8 ms
+strata ab: GATE=STRATA_CPU_IQ_ALL_EXACT1 active=1
+strata verify: capturing the 2-token window (1952 MiB of VRAM free)
+strata verify: captured the 2-token window (upload no error, sync no error) in 7.5 ms
+strata verify: capturing the 3-token window (1940 MiB of VRAM free)
+strata verify: captured the 3-token window (upload no error, sync no error) in 7.0 ms
+strata verify: capturing the 4-token window (1928 MiB of VRAM free)
+strata verify: captured the 4-token window (upload no error, sync no error) in 7.1 ms
+strata verify: capturing the 5-token window (1916 MiB of VRAM free)
+strata verify: captured the 5-token window (upload no error, sync no error) in 8.4 ms
+strata verify: capturing the 6-token window (1902 MiB of VRAM free)
+strata verify: captured the 6-token window (upload no error, sync no error) in 6.9 ms
+strata verify: capturing the 7-token window (1890 MiB of VRAM free)
+strata verify: captured the 7-token window (upload no error, sync no error) in 8.5 ms
+strata verify: capturing the 8-token window (1825 MiB of VRAM free)
+strata verify: captured the 8-token window (upload no error, sync no error) in 7.0 ms
+strata serve: window warm-up: ms per width 1:23 2:24 3:28 4:32 5:38 6:55 7:85 8:61, total 408 ms
+strata serve: prompt 34 tokens = 0 reused + 34 read in 299 ms (113.9 tok/s), 24 generated in 315 ms (76.1 tok/s), drafts accepted 18 of 20, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 43.3% (5404 hits / 12480 lookups)
+strata serve: KV streaming: 96.74% of 5520 block reads hit VRAM, 0.7 MiB read from RAM
+strata serve: conversation cache: parked 57 tokens in 22.4 ms; parked=1 bytes=236983704 evictions=0 snapshot_bytes=236983704 reused_kv_bytes=0
+strata prefill: QSA layers: norm + rope in one pass on, attention gate in the attention epilogue off
+strata serve: prompt 260 tokens = 0 reused + 260 read in 469 ms (553.9 tok/s), 1 generated in 21 ms (47.8 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 77.3% (371 hits / 480 lookups)
+strata serve: KV streaming: 85.62% of 5424 block reads hit VRAM, 3.1 MiB read from RAM
+strata serve: conversation cache: parked 260 tokens in 36.4 ms; parked=2 bytes=476816868 evictions=0 snapshot_bytes=239833164 reused_kv_bytes=0
+strata serve: prompt 906 tokens = 0 reused + 906 read in 754 ms (1201.1 tok/s), 1 generated in 21 ms (48.4 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.8% (402 hits / 480 lookups)
+strata serve: KV streaming: 85.66% of 18996 block reads hit VRAM, 11.0 MiB read from RAM
+strata serve: conversation cache: parked 906 tokens in 39.1 ms; parked=3 bytes=725855840 evictions=0 snapshot_bytes=249038972 reused_kv_bytes=0
+strata serve: prompt 1028 tokens = 0 reused + 1028 read in 757 ms (1358.6 tok/s), 8 generated in 138 ms (58.1 tok/s), drafts accepted 2 of 3, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.0% (3022 hits / 4320 lookups)
+strata serve: KV streaming: 93.30% of 46368 block reads hit VRAM, 12.5 MiB read from RAM
+strata serve: conversation cache: parked 1035 tokens in 63.3 ms; parked=4 bytes=976714440 evictions=0 snapshot_bytes=250858600 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 381 ms (134.0 tok/s), 100 generated in 914 ms (109.4 tok/s), drafts accepted 77 of 82, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 73.6% (37116 hits / 50400 lookups)
+strata serve: KV streaming: 98.72% of 36684 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 3 of 3 drafts accepted
+strata serve: conversation cache: not spilling 57 tokens (evicted from RAM): reading them again (about 34 ms here) costs less than the SSD round trip of 226 MiB (about 474 ms)
+strata serve: conversation cache: parked 150 tokens in 37.0 ms; parked=4 bytes=978022016 evictions=1 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 347 ms (124.0 tok/s), 100 generated in 1327 ms (75.4 tok/s), drafts accepted 50 of 79, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.9% (47013 hits / 61920 lookups)
+strata serve: KV streaming: 98.90% of 39288 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 260 tokens (evicted from RAM): reading them again (about 155 ms here) costs less than the SSD round trip of 228 MiB (about 480 ms)
+strata serve: conversation cache: parked 142 tokens in 56.7 ms; parked=4 bytes=976366404 evictions=2 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: adaptive tier: the swaps held the windows up by 10.5% (12.90 ms per token): trying the asynchronous tier for a while
+strata serve: prompt 46 tokens = 0 reused + 46 read in 369 ms (124.6 tok/s), 100 generated in 1263 ms (79.2 tok/s), drafts accepted 51 of 66, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 74.4% (41094 hits / 55200 lookups)
+strata serve: asynchronous adaptive tier: 1 rounds, 0 experts swapped in, 0.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.27 ms/round)
+strata serve: KV streaming: 98.79% of 36672 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 906 tokens (evicted from RAM): reading them again (about 541 ms here) costs less than the SSD round trip of 237 MiB (about 498 ms)
+strata serve: conversation cache: parked 145 tokens in 37.2 ms; parked=4 bytes=965561840 evictions=3 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 377 ms (135.4 tok/s), 100 generated in 937 ms (106.7 tok/s), drafts accepted 77 of 93, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 73.3% (40831 hits / 55680 lookups)
+strata serve: asynchronous adaptive tier: 24 rounds, 1585 experts swapped in, 38.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.33 ms/round)
+strata serve: KV streaming: 98.85% of 40680 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 3 windows, 6 of 16 drafts accepted
+strata serve: conversation cache: not spilling 1035 tokens (evicted from RAM): reading them again (about 618 ms here) costs less than the SSD round trip of 239 MiB (about 502 ms)
+strata serve: conversation cache: parked 150 tokens in 25.8 ms; parked=4 bytes=952994520 evictions=4 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: adaptive tier: the asynchronous tier stays on (10.22 against 12.90 ms per token)
+strata serve: prompt 43 tokens = 0 reused + 43 read in 302 ms (142.3 tok/s), 100 generated in 1080 ms (92.6 tok/s), drafts accepted 48 of 62, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.6% (45174 hits / 54720 lookups)
+strata serve: asynchronous adaptive tier: 76 rounds, 3347 experts swapped in, 27.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.26 ms/round)
+strata serve: KV streaming: 98.73% of 33900 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 38.2 ms; parked=4 bytes=952880792 evictions=5 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 334 ms (137.8 tok/s), 100 generated in 1102 ms (90.7 tok/s), drafts accepted 50 of 74, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.6% (49191 hits / 59520 lookups)
+strata serve: asynchronous adaptive tier: 126 rounds, 5604 experts swapped in, 25.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.89% of 39912 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 85 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 37.1 ms; parked=4 bytes=952937648 evictions=6 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 372 ms (137.2 tok/s), 100 generated in 920 ms (108.7 tok/s), drafts accepted 79 of 88, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.7% (36979 hits / 52320 lookups)
+strata serve: asynchronous adaptive tier: 147 rounds, 7839 experts swapped in, 27.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.77% of 38112 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 5 of 9 drafts accepted
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 87 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 150 tokens in 37.0 ms; parked=4 bytes=952994520 evictions=7 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 325 ms (132.1 tok/s), 100 generated in 1144 ms (87.4 tok/s), drafts accepted 46 of 67, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.2% (47156 hits / 58080 lookups)
+strata serve: asynchronous adaptive tier: 201 rounds, 9930 experts swapped in, 26.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.21 ms/round)
+strata serve: KV streaming: 98.82% of 36732 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 37.1 ms; parked=4 bytes=952880792 evictions=8 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 342 ms (134.3 tok/s), 100 generated in 1122 ms (89.1 tok/s), drafts accepted 49 of 76, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.6% (50344 hits / 60960 lookups)
+strata serve: asynchronous adaptive tier: 252 rounds, 12217 experts swapped in, 25.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.20 ms/round)
+strata serve: KV streaming: 98.94% of 41796 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 85 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 36.5 ms; parked=4 bytes=952937648 evictions=9 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: the lent prompt buffers are sized for the request's own short last chunk (tail 0 tokens, not the stream floor's 3071); STRATA_PREFILL_TAIL_LOAN=0 keeps the floor's
+strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, #136)
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2148 ms (1871.1 tok/s), 24 generated in 326 ms (73.6 tok/s), drafts accepted 9 of 11, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.4% (8780 hits / 12480 lookups)
+strata serve: asynchronous adaptive tier: 267 rounds, 13094 experts swapped in, 25.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.30% of 197196 block reads hit VRAM, 45.2 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 83 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 55.6 ms; parked=4 bytes=1008323496 evictions=10 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2174 ms (1848.2 tok/s), 24 generated in 299 ms (80.4 tok/s), drafts accepted 8 of 14, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 85.6% (12329 hits / 14400 lookups)
+strata serve: asynchronous adaptive tier: 283 rounds, 13590 experts swapped in, 24.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.87% of 221832 block reads hit VRAM, 45.8 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 84 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 4042 tokens in 57.3 ms; parked=4 bytes=1063652472 evictions=11 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2161 ms (1860.2 tok/s), 24 generated in 258 ms (92.9 tok/s), drafts accepted 8 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.2% (13119 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 299 rounds, 13849 experts swapped in, 24.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 94.74% of 215664 block reads hit VRAM, 45.7 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 78 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 63.9 ms; parked=4 bytes=1119095176 evictions=12 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5758 ms (2788.9 tok/s), 24 generated in 280 ms (85.6 tok/s), drafts accepted 7 of 14, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.1% (13998 hits / 14880 lookups)
+strata serve: asynchronous adaptive tier: 316 rounds, 14245 experts swapped in, 24.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 90.56% of 227988 block reads hit VRAM, 86.7 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 68 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 16081 tokens in 155.1 ms; parked=4 bytes=1345641656 evictions=13 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5830 ms (2754.4 tok/s), 24 generated in 252 ms (95.3 tok/s), drafts accepted 8 of 12, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 96.1% (12912 hits / 13440 lookups)
+strata serve: asynchronous adaptive tier: 332 rounds, 14395 experts swapped in, 23.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 89.80% of 209508 block reads hit VRAM, 86.1 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 176.2 ms; parked=4 bytes=1516802288 evictions=14 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 219.5 ms; on SSD 1, 280 MiB
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5863 ms (2739.0 tok/s), 24 generated in 268 ms (89.6 tok/s), drafts accepted 7 of 15, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 98.2% (15078 hits / 15360 lookups)
+strata serve: asynchronous adaptive tier: 349 rounds, 14506 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 90.44% of 234144 block reads hit VRAM, 90.2 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 140.8 ms; parked=4 bytes=1687962920 evictions=15 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 212.3 ms; on SSD 2, 560 MiB
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1097 ms (555.0 tok/s), 22 generated in 269 ms (81.7 tok/s), drafts accepted 10 of 15, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.7% (9813 hits / 12960 lookups)
+strata serve: asynchronous adaptive tier: 361 rounds, 15170 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 96.90% of 61176 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 5004 tokens = 630 reused + 4374 read in 2188 ms (1999.5 tok/s), 64 generated in 691 ms (92.6 tok/s), drafts accepted 34 of 51, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.8% (32200 hits / 38880 lookups)
+strata serve: asynchronous adaptive tier: 391 rounds, 16670 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 97.66% of 597252 block reads hit VRAM, 56.3 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 6540 tokens = 5067 reused + 1473 read in 1303 ms (1130.8 tok/s), 64 generated in 738 ms (86.7 tok/s), drafts accepted 33 of 64, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 86.5% (39443 hits / 45600 lookups)
+strata serve: asynchronous adaptive tier: 422 rounds, 17869 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.47% of 1219572 block reads hit VRAM, 75.1 MiB read from RAM
+strata serve: prompt 9837 tokens = 6603 reused + 3234 read in 2048 ms (1579.1 tok/s), 64 generated in 667 ms (95.9 tok/s), drafts accepted 36 of 50, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.3% (31580 hits / 37440 lookups)
+strata serve: asynchronous adaptive tier: 450 rounds, 18976 experts swapped in, 23.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.41% of 1737120 block reads hit VRAM, 111.5 MiB read from RAM
+strata serve: suffix drafts: 3 windows, 5 of 7 drafts accepted
+strata serve: prompt 11934 tokens = 9900 reused + 2034 read in 1451 ms (1401.8 tok/s), 49 generated in 420 ms (116.7 tok/s), drafts accepted 31 of 49, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.4% (29405 hits / 32160 lookups)
+strata serve: asynchronous adaptive tier: 468 rounds, 19460 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.45% of 2186952 block reads hit VRAM, 136.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 14868 tokens = 11982 reused + 2886 read in 1919 ms (1504.0 tok/s), 35 generated in 330 ms (106.1 tok/s), drafts accepted 18 of 28, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.7% (19809 hits / 21600 lookups)
+strata serve: asynchronous adaptive tier: 485 rounds, 19798 experts swapped in, 23.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.35% of 2501208 block reads hit VRAM, 166.4 MiB read from RAM
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 183.5 ms; on SSD 3, 840 MiB
+strata serve: conversation cache: parked 14902 tokens in 319.4 ms; parked=4 bytes=2432801272 evictions=16 snapshot_bytes=1038458608 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1288 ms (472.8 tok/s), 27 generated in 331 ms (81.5 tok/s), drafts accepted 13 of 28, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.0% (16522 hits / 20160 lookups)
+strata serve: asynchronous adaptive tier: 499 rounds, 20524 experts swapped in, 23.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.86% of 89628 block reads hit VRAM, 7.7 MiB read from RAM
+strata serve: prompt 5009 tokens = 635 reused + 4374 read in 2162 ms (2023.3 tok/s), 64 generated in 595 ms (107.5 tok/s), drafts accepted 34 of 55, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 93.0% (37955 hits / 40800 lookups)
+strata serve: asynchronous adaptive tier: 529 rounds, 21092 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.86% of 650364 block reads hit VRAM, 56.1 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 6545 tokens = 5072 reused + 1473 read in 1235 ms (1192.7 tok/s), 64 generated in 593 ms (107.9 tok/s), drafts accepted 32 of 39, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.2% (30748 hits / 34080 lookups)
+strata serve: asynchronous adaptive tier: 561 rounds, 21731 experts swapped in, 22.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.35% of 1124820 block reads hit VRAM, 75.0 MiB read from RAM
+strata serve: prompt 9842 tokens = 6608 reused + 3234 read in 2057 ms (1572.5 tok/s), 61 generated in 577 ms (105.8 tok/s), drafts accepted 30 of 40, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.3% (31463 hits / 34080 lookups)
+strata serve: asynchronous adaptive tier: 592 rounds, 22267 experts swapped in, 22.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.29% of 1599324 block reads hit VRAM, 110.2 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 3 drafts accepted
+strata serve: prompt 11935 tokens = 9902 reused + 2033 read in 1423 ms (1428.5 tok/s), 40 generated in 348 ms (115.0 tok/s), drafts accepted 25 of 46, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.1% (27549 hits / 29280 lookups)
+strata serve: asynchronous adaptive tier: 607 rounds, 22584 experts swapped in, 22.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.34% of 2012196 block reads hit VRAM, 134.9 MiB read from RAM
+strata serve: prompt 14860 tokens = 11974 reused + 2886 read in 1866 ms (1546.6 tok/s), 64 generated in 667 ms (96.0 tok/s), drafts accepted 38 of 53, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.1% (31888 hits / 37920 lookups)
+strata serve: asynchronous adaptive tier: 633 rounds, 23719 experts swapped in, 22.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.35% of 2535948 block reads hit VRAM, 168.7 MiB read from RAM
+strata serve: suffix drafts: 7 windows, 13 of 19 drafts accepted
+strata serve: conversation cache: spilled 16081 tokens to the SSD tier (evicted from RAM, written in the background) in 293.3 ms; on SSD 4, 1283 MiB
+strata serve: conversation cache: parked 14923 tokens in 308.2 ms; parked=4 bytes=3006825064 evictions=17 snapshot_bytes=1038804680 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1276 ms (477.1 tok/s), 19 generated in 230 ms (82.8 tok/s), drafts accepted 10 of 20, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 80.2% (11163 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 642 rounds, 24187 experts swapped in, 22.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 97.08% of 64896 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5001 tokens = 627 reused + 4374 read in 2173 ms (2012.5 tok/s), 64 generated in 576 ms (111.1 tok/s), drafts accepted 35 of 53, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.6% (36463 hits / 39360 lookups)
+strata serve: asynchronous adaptive tier: 671 rounds, 24787 experts swapped in, 22.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 97.71% of 607176 block reads hit VRAM, 55.9 MiB read from RAM
+strata serve: prompt 6537 tokens = 5064 reused + 1473 read in 1265 ms (1164.9 tok/s), 64 generated in 707 ms (90.5 tok/s), drafts accepted 29 of 49, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.1% (36345 hits / 40320 lookups)
+strata serve: asynchronous adaptive tier: 706 rounds, 25657 experts swapped in, 22.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.41% of 1161744 block reads hit VRAM, 74.6 MiB read from RAM
+strata serve: prompt 9834 tokens = 6600 reused + 3234 read in 2057 ms (1571.8 tok/s), 26 generated in 185 ms (140.2 tok/s), drafts accepted 17 of 21, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.7% (13639 hits / 14400 lookups)
+strata serve: asynchronous adaptive tier: 715 rounds, 25819 experts swapped in, 22.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.09% of 1383588 block reads hit VRAM, 106.5 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 3 of 3 drafts accepted
+strata serve: prompt 11892 tokens = 9859 reused + 2033 read in 1441 ms (1411.3 tok/s), 43 generated in 352 ms (122.3 tok/s), drafts accepted 28 of 40, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.7% (23953 hits / 26400 lookups)
+strata serve: asynchronous adaptive tier: 730 rounds, 26263 experts swapped in, 22.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.14% of 1759464 block reads hit VRAM, 131.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 3 drafts accepted
+strata serve: prompt 14820 tokens = 11934 reused + 2886 read in 1869 ms (1544.1 tok/s), 19 generated in 194 ms (97.7 tok/s), drafts accepted 10 of 19, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.4% (12425 hits / 13440 lookups)
+strata serve: asynchronous adaptive tier: 739 rounds, 26362 experts swapped in, 22.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.03% of 1968996 block reads hit VRAM, 156.4 MiB read from RAM
+[strata] 2026-11-24 14:54:43 engine started: C:\development\ai\Strata\terminal\engine\.previous\strata.exe --serve --pack C:\development\ai\Strata-data\packs\iq3_s --native C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile C:\development\ai\Strata\terminal\data\expert-profile.bin --expert-cache auto --prefill auto --max-context 204800 --kv int8 --kv-resident 32768 --vision --vram-reserve-mib 1600 --pool-workers 10 --adapt-every 1 --adapt-swaps 160 --adapt-decay 0.97 --draft dflash2 --draft-model C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack --draft-fallback none --mtp-draft-vocab C:\development\ai\Strata-data\dflash2\draft_vocab.bin --spec 6 --draft-conf 0.7 --vram-elastic
+strata: sm_86 (Ampere): 17 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off; a switch you set is kept): ADAPT_LAG CPU_IQ_ALL_EXACT1 SIDE_MIXER ATTN_DAILY GR_UP75 GU_SWIGLU QSA_ROWS B6_MMVQ_ROWS DEQUANT_SIDE LFUSE PLE_COMPACT PLE_COPY_STREAM HC_UPMIX Q80_ROWS1 EXP_MODE PREFILL_CPU_SHARE_NT VERIFY_DEVICE_HITS
+strata generate: NVIDIA: --prefill auto may take chunks up to 32768 (STRATA_NV_CHUNK=0 keeps 8192, =16 keeps 16384)
+strata generate: memory guard: limit 95.8 GiB (source: meminfo), current 28.9 GiB, reclaimable cache credited 0.0 GiB; available 66.9 GiB (MemAvailable 66.9 GiB), floor 2560 MiB
+strata generate: PCIe probe: 23.5 GB/s host->device (best of 23.5 23.5 23.5 23.1) -> pcie_frac 0.55 (default 0.55)
+strata generate: STRATA_VERIFY_DEVICE_HITS=1 -> pcie_frac 0.00 (on-device VRAM hit planning; pass --pcie-frac or STRATA_VERIFY_DEVICE_HITS=0 to override)
+strata generate: CPU expert kernels: AVX-2
+strata generate: native pack: C:\development\ai\Strata-data\packs\iq3_s experts (largest blob 2.66 MB), token embedding IQ4_XS in mapped host memory (322 MiB, 0.3 s)
+strata generate: 1466 MiB of weights loaded from C:\development\ai\Strata-data\packs\iq3_s in 0.4 s (302 canonical tensors skipped: served natively)
+strata generate: 300 native projection matrices, 2018.88 MiB of weights, in 1.7 s
+strata generate: PLE direct read probe: 198088 rows/s (fine)
+strata generate: the SSD is kept awake while rows are read: one page of the table after 100 ms without a read, until 60 s after the last request (STRATA_SSD_KEEPALIVE=0 turns it off)
+strata generate: profile C:\development\ai\Strata\terminal\data\expert-profile.bin: 24576 ranked pairs, built for 24576 slots
+strata generate: KV streaming: 32768 of 204800 cells per QSA layer in VRAM, the K/V in 2.42 GiB of pinned RAM
+strata generate: PLE on, table 320001536 rows of C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+strata generate: experimental native Q6_K head, 521472000 bytes, in 0.4 s
+strata generate: GPU 0: NVIDIA GeForce RTX 3090, compute capability 8.6
+strata: pinned-memory headroom: holding 800 MiB for the buffers allocated after the expert arena (released after it: 640 MiB; kept until needed: 160 MiB; STRATA_PIN_RESERVE_MIB changes it)
+strata prefill: warmed the BF16 and FP16 GEMM libraries on GPU 0 in 8849 ms (STRATA_PREFILL_WARM=0 skips)
+strata generate: expert arena read unbuffered (3 of 16 probe reads from the file cache; 15.8 GiB available, 51.1 GiB of files)
+strata: pinned-memory headroom: 640 MiB handed back after the expert arena
+strata generate: expert arena: cudaHostRegister PORTABLE ok; large pages refused for 50295996416 B (GetLargePageMinimum=2097152, VirtualAlloc error 1314); using 4 KB pages
+strata generate: loaded 46.84 GiB at 5.58 GiB/s
+strata generate: CPU pool tasks/phase: 33 (automatic), participating threads: 11
+strata generate: 10 pool workers on logical processors 2,4,6,8,10,12,14,16,17,18, the host thread on 0 (draining too) (--host-core first)
+strata generate: CPU workers on logical processors 2,4,6,8,10,12,14,16,17,18 (10 workers, one per physical core; host on 0)
+strata aux cpus: not available on this system
+strata generate: expert cache auto: 16.95 GiB free, 1600 MiB reserved (+380 MiB for the draft head, +384 MiB for what is allocated after the cache) -> 7682 slots
+strata generate: only 1672 MiB free once the slots are written (need 2364 MiB: reserve 1600 MiB + 764 MiB post-cache); shrinking the expert cache
+strata generate: expert cache 7330 slots, 13.90 GiB of VRAM; policy is
+strata generate: the GPU computes the experts in the cache; it rounds differently from the CPU,
+                 so a reply can differ slightly from a run without the cache (same quality:
+                 bench/results/2026-09-27-cache-parity).
+                 PROFILE, ranked by routing frequency, no eviction.
+strata generate: pre-filled 7330 of 7330 slots from the profile in 0.7 s (20152 MB/s); slot 0 verified
+strata generate: R4 hit path ON - resident experts are computed on the GPU
+strata generate: 10 expert-pool workers + the host thread
+strata generate: session is up (engine 0.1.66)
+strata generate: token graph hit path: 7330 resident experts, decided on the device
+prefill: the CPU share is ON by default for prompt chunks up to 3072 tokens (the idle CPU takes some of the experts the GPU would stream; answers can differ slightly from 0.1.40.3, mean KL ~0.004 below 1024 tokens, ~0.011 at 1-3K). STRATA_PREFILL_CPU_SHARE=0 turns it off, STRATA_PREFILL_CPU_SHARE_MAX=1024 keeps the old limit.
+strata: prompt kernels: chunks of 3072 tokens or more run 48 of 48 layers on the fused kernels; shorter chunks run 48 on the staged fused entry.
+strata serve: Windows commit: 1.4 GiB left of a 133.1 GiB limit (RAM + page file); the page files may grow by 111.6 GiB more
+strata serve: prompt chunk auto: 32768 tokens, a 512-slot ring
+strata serve: the prompt path borrows 5726 CUDA0 cache slots (10.81 GiB)
+strata hc: CUDA0: the hyper-connection read runs as staged (the norm per token and stream, the down projection's activations staged ahead by cp.async); checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 for the earlier ones)
+strata verify: window up to 8 tokens, 87.2 MiB of device buffers
+strata dflash2: 106299-token draft head (212.9 MiB), drafter 800 MiB of VRAM (Q4_0 weights)
+strata serve: DFlash2 drafter on (C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack, graphs captured in 3 ms); windows up to 8 tokens; no MTP layer is loaded (--draft-fallback none)
+strata serve: conversation cache sized from the free RAM: 4608 MiB for up to 4 parked conversations, so an agent's next turn reuses its prompt (--conversation-cache-mib N sets it, 0 turns it off)
+strata serve: conversation cache: SSD tier in C:\development\ai\Strata-data\conversation-spill\12088-0a058065d2c46b81, up to 32768 MiB, 1 folder of ended engines removed
+strata serve: STRATA_VERIFY_DEVICE_HITS=1: planning VRAM expert hits on-device (--pcie-frac 0: no plan/PCIe flag waits)
+strata serve: adaptive overlap: off: not with STRATA_ADAPT_LAG / STRATA_ADAPT_NOWAIT
+strata serve: the adaptive tier's evictions reach the device's table before the next window (STRATA_ADAPT_EVICT_SYNC=0: when its copies land)
+strata serve: adaptive tier: blocking, and the asynchronous tier is tried once the session shows the swaps hold the windows up (--adapt-async 0 or STRATA_ADAPT_ASYNC=0: never)
+strata serve: 2178 MiB of VRAM free with everything loaded
+strata verify: capturing the 1-token window (2178 MiB of VRAM free)
+strata verify: captured the 1-token window (upload no error, sync no error) in 9.7 ms
+strata ab: GATE=STRATA_CPU_IQ_ALL_EXACT1 active=1
+strata verify: capturing the 2-token window (2166 MiB of VRAM free)
+strata verify: captured the 2-token window (upload no error, sync no error) in 25.7 ms
+strata verify: capturing the 3-token window (2102 MiB of VRAM free)
+strata verify: captured the 3-token window (upload no error, sync no error) in 9.0 ms
+strata verify: capturing the 4-token window (2037 MiB of VRAM free)
+strata verify: captured the 4-token window (upload no error, sync no error) in 6.9 ms
+strata verify: capturing the 5-token window (2129 MiB of VRAM free)
+strata verify: captured the 5-token window (upload no error, sync no error) in 8.2 ms
+strata verify: capturing the 6-token window (2115 MiB of VRAM free)
+strata verify: captured the 6-token window (upload no error, sync no error) in 7.7 ms
+strata verify: capturing the 7-token window (2103 MiB of VRAM free)
+strata verify: captured the 7-token window (upload no error, sync no error) in 7.4 ms
+strata verify: capturing the 8-token window (2091 MiB of VRAM free)
+strata verify: captured the 8-token window (upload no error, sync no error) in 7.0 ms
+strata serve: window warm-up: ms per width 1:22 2:27 3:30 4:34 5:39 6:48 7:53 8:60, total 395 ms
+strata serve: prompt 34 tokens = 0 reused + 34 read in 295 ms (115.1 tok/s), 24 generated in 327 ms (73.5 tok/s), drafts accepted 18 of 20, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 42.6% (5312 hits / 12480 lookups)
+strata serve: KV streaming: 96.74% of 5520 block reads hit VRAM, 0.7 MiB read from RAM
+strata serve: conversation cache: parked 57 tokens in 22.1 ms; parked=1 bytes=236983704 evictions=0 snapshot_bytes=236983704 reused_kv_bytes=0
+strata prefill: QSA layers: norm + rope in one pass on, attention gate in the attention epilogue off
+strata serve: prompt 260 tokens = 0 reused + 260 read in 456 ms (569.6 tok/s), 1 generated in 21 ms (46.7 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 77.5% (372 hits / 480 lookups)
+strata serve: KV streaming: 85.62% of 5424 block reads hit VRAM, 3.1 MiB read from RAM
+strata serve: conversation cache: parked 260 tokens in 35.3 ms; parked=2 bytes=476816868 evictions=0 snapshot_bytes=239833164 reused_kv_bytes=0
+strata serve: prompt 906 tokens = 0 reused + 906 read in 725 ms (1249.9 tok/s), 1 generated in 21 ms (47.4 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.5% (401 hits / 480 lookups)
+strata serve: KV streaming: 85.66% of 18996 block reads hit VRAM, 11.0 MiB read from RAM
+strata serve: conversation cache: parked 906 tokens in 57.3 ms; parked=3 bytes=725855840 evictions=0 snapshot_bytes=249038972 reused_kv_bytes=0
+strata serve: prompt 1028 tokens = 0 reused + 1028 read in 792 ms (1297.4 tok/s), 8 generated in 146 ms (54.8 tok/s), drafts accepted 2 of 4, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 68.3% (3280 hits / 4800 lookups)
+strata serve: KV streaming: 93.72% of 49476 block reads hit VRAM, 12.5 MiB read from RAM
+strata serve: conversation cache: parked 1035 tokens in 100.3 ms; parked=4 bytes=976714440 evictions=0 snapshot_bytes=250858600 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 428 ms (119.2 tok/s), 100 generated in 895 ms (111.7 tok/s), drafts accepted 78 of 79, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 73.2% (35485 hits / 48480 lookups)
+strata serve: KV streaming: 98.69% of 34836 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 3 of 3 drafts accepted
+strata serve: conversation cache: not spilling 57 tokens (evicted from RAM): reading them again (about 34 ms here) costs less than the SSD round trip of 226 MiB (about 474 ms)
+strata serve: conversation cache: parked 150 tokens in 37.0 ms; parked=4 bytes=978022016 evictions=1 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 373 ms (115.2 tok/s), 100 generated in 1420 ms (70.4 tok/s), drafts accepted 42 of 59, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 73.2% (41117 hits / 56160 lookups)
+strata serve: KV streaming: 98.78% of 35424 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 260 tokens (evicted from RAM): reading them again (about 155 ms here) costs less than the SSD round trip of 228 MiB (about 480 ms)
+strata serve: conversation cache: parked 142 tokens in 39.3 ms; parked=4 bytes=976366404 evictions=2 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: adaptive tier: the swaps held the windows up by 10.5% (13.62 ms per token): trying the asynchronous tier for a while
+strata serve: prompt 46 tokens = 0 reused + 46 read in 367 ms (125.4 tok/s), 100 generated in 1357 ms (73.7 tok/s), drafts accepted 49 of 73, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 74.9% (44591 hits / 59520 lookups)
+strata serve: asynchronous adaptive tier: 10 rounds, 261 experts swapped in, 22.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.27 ms/round)
+strata serve: KV streaming: 98.88% of 39732 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 906 tokens (evicted from RAM): reading them again (about 540 ms here) costs less than the SSD round trip of 237 MiB (about 498 ms)
+strata serve: conversation cache: parked 145 tokens in 36.9 ms; parked=4 bytes=965561840 evictions=3 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 340 ms (149.9 tok/s), 100 generated in 991 ms (100.9 tok/s), drafts accepted 77 of 96, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 72.6% (41442 hits / 57120 lookups)
+strata serve: asynchronous adaptive tier: 33 rounds, 2164 experts swapped in, 35.4 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.29 ms/round)
+strata serve: KV streaming: 98.88% of 41604 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 3 windows, 6 of 16 drafts accepted
+strata serve: conversation cache: not spilling 1035 tokens (evicted from RAM): reading them again (about 617 ms here) costs less than the SSD round trip of 239 MiB (about 502 ms)
+strata serve: conversation cache: parked 150 tokens in 37.1 ms; parked=4 bytes=952994520 evictions=4 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: adaptive tier: the asynchronous tier stays on (11.18 against 13.62 ms per token)
+strata serve: prompt 43 tokens = 0 reused + 43 read in 324 ms (132.8 tok/s), 100 generated in 1285 ms (77.8 tok/s), drafts accepted 47 of 74, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.4% (49614 hits / 60960 lookups)
+strata serve: asynchronous adaptive tier: 86 rounds, 4077 experts swapped in, 28.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.25 ms/round)
+strata serve: KV streaming: 98.84% of 38376 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 36.8 ms; parked=4 bytes=952880792 evictions=5 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 346 ms (133.0 tok/s), 100 generated in 1069 ms (93.6 tok/s), drafts accepted 49 of 62, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.5% (44223 hits / 54240 lookups)
+strata serve: asynchronous adaptive tier: 137 rounds, 6195 experts swapped in, 26.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.77% of 36192 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 85 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 36.5 ms; parked=4 bytes=952937648 evictions=6 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 378 ms (134.8 tok/s), 100 generated in 965 ms (103.6 tok/s), drafts accepted 78 of 90, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.4% (37872 hits / 53760 lookups)
+strata serve: asynchronous adaptive tier: 159 rounds, 8578 experts swapped in, 28.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.80% of 39036 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 5 of 9 drafts accepted
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 86 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 150 tokens in 36.7 ms; parked=4 bytes=952994520 evictions=7 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 327 ms (131.5 tok/s), 100 generated in 1115 ms (89.7 tok/s), drafts accepted 51 of 74, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 80.1% (47305 hits / 59040 lookups)
+strata serve: asynchronous adaptive tier: 208 rounds, 10774 experts swapped in, 27.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.84% of 37368 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 37.7 ms; parked=4 bytes=952880792 evictions=8 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 340 ms (135.4 tok/s), 100 generated in 1097 ms (91.2 tok/s), drafts accepted 50 of 61, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 80.7% (43020 hits / 53280 lookups)
+strata serve: asynchronous adaptive tier: 258 rounds, 12873 experts swapped in, 26.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.20 ms/round)
+strata serve: KV streaming: 98.74% of 35340 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 85 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 26.0 ms; parked=4 bytes=952937648 evictions=9 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: the lent prompt buffers are sized for the request's own short last chunk (tail 0 tokens, not the stream floor's 3071); STRATA_PREFILL_TAIL_LOAN=0 keeps the floor's
+strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, #136)
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2140 ms (1878.0 tok/s), 24 generated in 350 ms (68.7 tok/s), drafts accepted 8 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.1% (10456 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 274 rounds, 13680 experts swapped in, 26.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.20 ms/round)
+strata serve: KV streaming: 94.75% of 215664 block reads hit VRAM, 45.7 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 83 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 43.1 ms; parked=4 bytes=1008323496 evictions=10 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2152 ms (1867.3 tok/s), 24 generated in 291 ms (82.4 tok/s), drafts accepted 8 of 10, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.5% (10542 hits / 12480 lookups)
+strata serve: asynchronous adaptive tier: 290 rounds, 14198 experts swapped in, 25.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.31% of 197196 block reads hit VRAM, 45.2 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 84 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 4042 tokens in 56.2 ms; parked=4 bytes=1063652472 evictions=11 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2148 ms (1870.9 tok/s), 24 generated in 267 ms (89.8 tok/s), drafts accepted 8 of 12, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.7% (12454 hits / 13440 lookups)
+strata serve: asynchronous adaptive tier: 306 rounds, 14468 experts swapped in, 25.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.57% of 209520 block reads hit VRAM, 45.9 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 77 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 43.7 ms; parked=4 bytes=1119095176 evictions=12 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5776 ms (2780.4 tok/s), 24 generated in 285 ms (84.3 tok/s), drafts accepted 7 of 14, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.3% (14032 hits / 14880 lookups)
+strata serve: asynchronous adaptive tier: 323 rounds, 14785 experts swapped in, 24.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 90.61% of 227988 block reads hit VRAM, 86.3 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 68 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 16081 tokens in 101.6 ms; parked=4 bytes=1345641656 evictions=13 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5802 ms (2767.7 tok/s), 24 generated in 252 ms (95.1 tok/s), drafts accepted 8 of 10, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 96.0% (11984 hits / 12480 lookups)
+strata serve: asynchronous adaptive tier: 339 rounds, 14954 experts swapped in, 24.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 89.47% of 197184 block reads hit VRAM, 83.6 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 162.3 ms; parked=4 bytes=1516802288 evictions=14 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 204.8 ms; on SSD 1, 280 MiB
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5852 ms (2744.1 tok/s), 24 generated in 259 ms (92.7 tok/s), drafts accepted 10 of 11, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 89.3% (10722 hits / 12000 lookups)
+strata serve: asynchronous adaptive tier: 353 rounds, 15167 experts swapped in, 24.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 88.48% of 191028 block reads hit VRAM, 88.6 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 107.6 ms; parked=4 bytes=1687962920 evictions=15 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 258.3 ms; on SSD 2, 560 MiB
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1156 ms (526.9 tok/s), 22 generated in 282 ms (77.9 tok/s), drafts accepted 11 of 21, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 76.0% (11676 hits / 15360 lookups)
+strata serve: asynchronous adaptive tier: 364 rounds, 15996 experts swapped in, 24.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 97.31% of 70464 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5004 tokens = 630 reused + 4374 read in 2173 ms (2012.6 tok/s), 64 generated in 639 ms (100.2 tok/s), drafts accepted 38 of 56, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.2% (32338 hits / 39360 lookups)
+strata serve: asynchronous adaptive tier: 390 rounds, 17446 experts swapped in, 24.4 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 97.73% of 612696 block reads hit VRAM, 56.0 MiB read from RAM
+strata serve: prompt 6540 tokens = 5067 reused + 1473 read in 1427 ms (1032.4 tok/s), 64 generated in 713 ms (89.8 tok/s), drafts accepted 35 of 69, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 85.9% (40428 hits / 47040 lookups)
+strata serve: asynchronous adaptive tier: 419 rounds, 18765 experts swapped in, 24.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 98.52% of 1253508 block reads hit VRAM, 74.8 MiB read from RAM
+strata serve: prompt 9837 tokens = 6603 reused + 3234 read in 2055 ms (1574.0 tok/s), 39 generated in 377 ms (103.4 tok/s), drafts accepted 19 of 30, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.3% (22151 hits / 24000 lookups)
+strata serve: asynchronous adaptive tier: 439 rounds, 19189 experts swapped in, 24.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.30% of 1598568 block reads hit VRAM, 109.4 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 3 of 4 drafts accepted
+strata serve: prompt 11908 tokens = 9875 reused + 2033 read in 1490 ms (1364.7 tok/s), 24 generated in 217 ms (110.8 tok/s), drafts accepted 15 of 27, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.4% (15799 hits / 17280 lookups)
+strata serve: asynchronous adaptive tier: 448 rounds, 19418 experts swapped in, 24.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.23% of 1857372 block reads hit VRAM, 132.7 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 4 drafts accepted
+strata serve: prompt 14817 tokens = 11931 reused + 2886 read in 1890 ms (1527.1 tok/s), 64 generated in 603 ms (106.1 tok/s), drafts accepted 40 of 45, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.7% (27385 hits / 33120 lookups)
+strata serve: asynchronous adaptive tier: 472 rounds, 20459 experts swapped in, 24.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.22% of 2319516 block reads hit VRAM, 166.6 MiB read from RAM
+strata serve: suffix drafts: 4 windows, 11 of 11 drafts accepted
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 204.1 ms; on SSD 3, 840 MiB
+strata serve: conversation cache: parked 14880 tokens in 306.2 ms; parked=4 bytes=2432466028 evictions=16 snapshot_bytes=1038123364 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1298 ms (469.1 tok/s), 24 generated in 277 ms (86.5 tok/s), drafts accepted 14 of 28, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.3% (14831 hits / 18240 lookups)
+strata serve: asynchronous adaptive tier: 482 rounds, 20998 experts swapped in, 24.4 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 97.67% of 81936 block reads hit VRAM, 7.7 MiB read from RAM
+strata serve: prompt 5006 tokens = 632 reused + 4374 read in 2159 ms (2025.6 tok/s), 64 generated in 495 ms (129.3 tok/s), drafts accepted 40 of 51, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.8% (33407 hits / 36000 lookups)
+strata serve: asynchronous adaptive tier: 506 rounds, 21513 experts swapped in, 24.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 97.60% of 581052 block reads hit VRAM, 56.1 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 2 drafts accepted
+strata serve: prompt 6542 tokens = 5069 reused + 1473 read in 1240 ms (1187.6 tok/s), 64 generated in 660 ms (96.9 tok/s), drafts accepted 36 of 61, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 87.0% (37173 hits / 42720 lookups)
+strata serve: asynchronous adaptive tier: 534 rounds, 22465 experts swapped in, 24.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.40% of 1166472 block reads hit VRAM, 75.0 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 7 drafts accepted
+strata serve: prompt 9839 tokens = 6605 reused + 3234 read in 2020 ms (1601.3 tok/s), 42 generated in 426 ms (98.7 tok/s), drafts accepted 23 of 35, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 87.1% (22566 hits / 25920 lookups)
+strata serve: asynchronous adaptive tier: 553 rounds, 22846 experts swapped in, 24.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.20% of 1536204 block reads hit VRAM, 111.3 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 11913 tokens = 9880 reused + 2033 read in 1445 ms (1407.1 tok/s), 33 generated in 321 ms (102.8 tok/s), drafts accepted 19 of 35, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.9% (21610 hits / 23520 lookups)
+strata serve: asynchronous adaptive tier: 567 rounds, 23351 experts swapped in, 24.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.20% of 1875084 block reads hit VRAM, 135.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 4 drafts accepted
+strata serve: prompt 14831 tokens = 11945 reused + 2886 read in 1859 ms (1552.7 tok/s), 29 generated in 268 ms (108.3 tok/s), drafts accepted 16 of 22, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.0% (15288 hits / 16800 lookups)
+strata serve: asynchronous adaptive tier: 580 rounds, 23554 experts swapped in, 24.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.08% of 2127732 block reads hit VRAM, 164.7 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 4 of 4 drafts accepted
+strata serve: conversation cache: spilled 16081 tokens to the SSD tier (evicted from RAM, written in the background) in 305.9 ms; on SSD 4, 1283 MiB
+strata serve: conversation cache: parked 14859 tokens in 323.1 ms; parked=4 bytes=3005580012 evictions=17 snapshot_bytes=1037894872 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1259 ms (483.6 tok/s), 19 generated in 241 ms (79.0 tok/s), drafts accepted 9 of 21, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.3% (12398 hits / 14880 lookups)
+strata serve: asynchronous adaptive tier: 590 rounds, 24013 experts swapped in, 24.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.24% of 68664 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5001 tokens = 627 reused + 4374 read in 2144 ms (2040.5 tok/s), 64 generated in 544 ms (117.6 tok/s), drafts accepted 36 of 47, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.5% (33308 hits / 36000 lookups)
+strata serve: asynchronous adaptive tier: 618 rounds, 24537 experts swapped in, 23.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.56% of 567780 block reads hit VRAM, 55.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 4 drafts accepted
+strata serve: prompt 6537 tokens = 5064 reused + 1473 read in 1245 ms (1183.0 tok/s), 64 generated in 575 ms (111.2 tok/s), drafts accepted 34 of 40, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.5% (30396 hits / 33600 lookups)
+strata serve: asynchronous adaptive tier: 648 rounds, 25087 experts swapped in, 23.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.21% of 1036104 block reads hit VRAM, 74.9 MiB read from RAM
+strata serve: prompt 9834 tokens = 6600 reused + 3234 read in 2033 ms (1591.1 tok/s), 60 generated in 586 ms (102.3 tok/s), drafts accepted 29 of 41, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.7% (31687 hits / 34560 lookups)
+strata serve: asynchronous adaptive tier: 679 rounds, 25658 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.19% of 1516728 block reads hit VRAM, 110.4 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 11926 tokens = 9893 reused + 2033 read in 1442 ms (1409.4 tok/s), 58 generated in 475 ms (122.2 tok/s), drafts accepted 38 of 62, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 93.6% (36843 hits / 39360 lookups)
+strata serve: asynchronous adaptive tier: 699 rounds, 26134 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.36% of 2058960 block reads hit VRAM, 135.6 MiB read from RAM
+strata serve: prompt 14869 tokens = 11983 reused + 2886 read in 1874 ms (1539.7 tok/s), 64 generated in 689 ms (92.9 tok/s), drafts accepted 39 of 70, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 86.3% (39332 hits / 45600 lookups)
+strata serve: asynchronous adaptive tier: 724 rounds, 26964 experts swapped in, 23.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.42% of 2681304 block reads hit VRAM, 170.2 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 7 of 8 drafts accepted
+[strata] 2026-11-24 14:56:35 engine started: C:\development\ai\Strata\terminal\engine\.previous\strata.exe --serve --pack C:\development\ai\Strata-data\packs\iq3_s --native C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile C:\development\ai\Strata\terminal\data\expert-profile.bin --expert-cache auto --prefill auto --max-context 204800 --kv int8 --kv-resident 32768 --vision --vram-reserve-mib 1600 --pool-workers 10 --adapt-every 1 --adapt-swaps 160 --adapt-decay 0.97 --draft dflash2 --draft-model C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack --draft-fallback none --mtp-draft-vocab C:\development\ai\Strata-data\dflash2\draft_vocab.bin --spec 6 --draft-conf 0.7 --vram-elastic
+strata: sm_86 (Ampere): 17 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off; a switch you set is kept): ADAPT_LAG CPU_IQ_ALL_EXACT1 SIDE_MIXER ATTN_DAILY GR_UP75 GU_SWIGLU QSA_ROWS B6_MMVQ_ROWS DEQUANT_SIDE LFUSE PLE_COMPACT PLE_COPY_STREAM HC_UPMIX Q80_ROWS1 EXP_MODE PREFILL_CPU_SHARE_NT VERIFY_DEVICE_HITS
+strata generate: NVIDIA: --prefill auto may take chunks up to 32768 (STRATA_NV_CHUNK=0 keeps 8192, =16 keeps 16384)
+strata generate: memory guard: limit 95.8 GiB (source: meminfo), current 28.9 GiB, reclaimable cache credited 0.0 GiB; available 66.9 GiB (MemAvailable 66.9 GiB), floor 2560 MiB
+strata generate: PCIe probe: 23.5 GB/s host->device (best of 23.5 22.8 23.4 23.5) -> pcie_frac 0.55 (default 0.55)
+strata generate: STRATA_VERIFY_DEVICE_HITS=1 -> pcie_frac 0.00 (on-device VRAM hit planning; pass --pcie-frac or STRATA_VERIFY_DEVICE_HITS=0 to override)
+strata generate: CPU expert kernels: AVX-2
+strata generate: native pack: C:\development\ai\Strata-data\packs\iq3_s experts (largest blob 2.66 MB), token embedding IQ4_XS in mapped host memory (322 MiB, 0.3 s)
+strata generate: 1466 MiB of weights loaded from C:\development\ai\Strata-data\packs\iq3_s in 0.4 s (302 canonical tensors skipped: served natively)
+strata generate: 300 native projection matrices, 2018.88 MiB of weights, in 1.6 s
+strata generate: PLE direct read probe: 207264 rows/s (fine)
+strata generate: the SSD is kept awake while rows are read: one page of the table after 100 ms without a read, until 60 s after the last request (STRATA_SSD_KEEPALIVE=0 turns it off)
+strata generate: profile C:\development\ai\Strata\terminal\data\expert-profile.bin: 24576 ranked pairs, built for 24576 slots
+strata generate: KV streaming: 32768 of 204800 cells per QSA layer in VRAM, the K/V in 2.42 GiB of pinned RAM
+strata generate: PLE on, table 320001536 rows of C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+strata generate: experimental native Q6_K head, 521472000 bytes, in 0.4 s
+strata generate: GPU 0: NVIDIA GeForce RTX 3090, compute capability 8.6
+strata: pinned-memory headroom: holding 800 MiB for the buffers allocated after the expert arena (released after it: 640 MiB; kept until needed: 160 MiB; STRATA_PIN_RESERVE_MIB changes it)
+strata prefill: warmed the BF16 and FP16 GEMM libraries on GPU 0 in 8721 ms (STRATA_PREFILL_WARM=0 skips)
+strata generate: expert arena read unbuffered (2 of 16 probe reads from the file cache; 15.8 GiB available, 51.1 GiB of files)
+strata: pinned-memory headroom: 640 MiB handed back after the expert arena
+strata generate: expert arena: cudaHostRegister PORTABLE ok; large pages refused for 50295996416 B (GetLargePageMinimum=2097152, VirtualAlloc error 1314); using 4 KB pages
+strata generate: loaded 46.84 GiB at 5.61 GiB/s
+strata generate: CPU pool tasks/phase: 33 (automatic), participating threads: 11
+strata generate: 10 pool workers on logical processors 2,4,6,8,10,12,14,16,17,18, the host thread on 0 (draining too) (--host-core first)
+strata generate: CPU workers on logical processors 2,4,6,8,10,12,14,16,17,18 (10 workers, one per physical core; host on 0)
+strata aux cpus: not available on this system
+strata generate: expert cache auto: 16.95 GiB free, 1600 MiB reserved (+380 MiB for the draft head, +384 MiB for what is allocated after the cache) -> 7682 slots
+strata generate: only 1885 MiB free once the slots are written (need 2364 MiB: reserve 1600 MiB + 764 MiB post-cache); shrinking the expert cache
+strata generate: expert cache 7439 slots, 14.11 GiB of VRAM; policy is
+strata generate: the GPU computes the experts in the cache; it rounds differently from the CPU,
+                 so a reply can differ slightly from a run without the cache (same quality:
+                 bench/results/2026-09-27-cache-parity).
+                 PROFILE, ranked by routing frequency, no eviction.
+strata generate: pre-filled 7439 of 7439 slots from the profile in 0.7 s (20359 MB/s); slot 0 verified
+strata generate: R4 hit path ON - resident experts are computed on the GPU
+strata generate: 10 expert-pool workers + the host thread
+strata generate: session is up (engine 0.1.66)
+strata generate: token graph hit path: 7439 resident experts, decided on the device
+prefill: the CPU share is ON by default for prompt chunks up to 3072 tokens (the idle CPU takes some of the experts the GPU would stream; answers can differ slightly from 0.1.40.3, mean KL ~0.004 below 1024 tokens, ~0.011 at 1-3K). STRATA_PREFILL_CPU_SHARE=0 turns it off, STRATA_PREFILL_CPU_SHARE_MAX=1024 keeps the old limit.
+strata: prompt kernels: chunks of 3072 tokens or more run 48 of 48 layers on the fused kernels; shorter chunks run 48 on the staged fused entry.
+strata serve: Windows commit: 1.1 GiB left of a 133.1 GiB limit (RAM + page file); the page files may grow by 111.6 GiB more
+strata serve: prompt chunk auto: 32768 tokens, a 512-slot ring
+strata serve: the prompt path borrows 5724 CUDA0 cache slots (10.81 GiB)
+strata hc: CUDA0: the hyper-connection read runs as staged (the norm per token and stream, the down projection's activations staged ahead by cp.async); checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 for the earlier ones)
+strata verify: window up to 8 tokens, 87.2 MiB of device buffers
+strata dflash2: 106299-token draft head (212.9 MiB), drafter 800 MiB of VRAM (Q4_0 weights)
+strata serve: DFlash2 drafter on (C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack, graphs captured in 3 ms); windows up to 8 tokens; no MTP layer is loaded (--draft-fallback none)
+strata serve: conversation cache sized from the free RAM: 4608 MiB for up to 4 parked conversations, so an agent's next turn reuses its prompt (--conversation-cache-mib N sets it, 0 turns it off)
+strata serve: conversation cache: SSD tier in C:\development\ai\Strata-data\conversation-spill\13436-e3255c60d1948f8e, up to 32768 MiB, 1 folder of ended engines removed
+strata serve: STRATA_VERIFY_DEVICE_HITS=1: planning VRAM expert hits on-device (--pcie-frac 0: no plan/PCIe flag waits)
+strata serve: adaptive overlap: off: not with STRATA_ADAPT_LAG / STRATA_ADAPT_NOWAIT
+strata serve: the adaptive tier's evictions reach the device's table before the next window (STRATA_ADAPT_EVICT_SYNC=0: when its copies land)
+strata serve: adaptive tier: blocking, and the asynchronous tier is tried once the session shows the swaps hold the windows up (--adapt-async 0 or STRATA_ADAPT_ASYNC=0: never)
+strata serve: 1964 MiB of VRAM free with everything loaded
+strata verify: capturing the 1-token window (1964 MiB of VRAM free)
+strata verify: captured the 1-token window (upload no error, sync no error) in 8.7 ms
+strata ab: GATE=STRATA_CPU_IQ_ALL_EXACT1 active=1
+strata verify: capturing the 2-token window (1952 MiB of VRAM free)
+strata verify: captured the 2-token window (upload no error, sync no error) in 8.9 ms
+strata verify: capturing the 3-token window (1940 MiB of VRAM free)
+strata verify: captured the 3-token window (upload no error, sync no error) in 8.5 ms
+strata verify: capturing the 4-token window (1928 MiB of VRAM free)
+strata verify: captured the 4-token window (upload no error, sync no error) in 8.2 ms
+strata verify: capturing the 5-token window (1722 MiB of VRAM free)
+strata verify: captured the 5-token window (upload no error, sync no error) in 8.3 ms
+strata verify: capturing the 6-token window (1902 MiB of VRAM free)
+strata verify: captured the 6-token window (upload no error, sync no error) in 8.2 ms
+strata verify: capturing the 7-token window (1890 MiB of VRAM free)
+strata verify: captured the 7-token window (upload no error, sync no error) in 8.1 ms
+strata verify: capturing the 8-token window (1822 MiB of VRAM free)
+strata verify: captured the 8-token window (upload no error, sync no error) in 8.1 ms
+strata serve: window warm-up: ms per width 1:29 2:26 3:30 4:38 5:40 6:46 7:87 8:62, total 426 ms
+strata serve: prompt 34 tokens = 0 reused + 34 read in 398 ms (85.5 tok/s), 24 generated in 305 ms (78.8 tok/s), drafts accepted 18 of 20, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 43.3% (5404 hits / 12480 lookups)
+strata serve: KV streaming: 96.74% of 5520 block reads hit VRAM, 0.7 MiB read from RAM
+strata serve: conversation cache: parked 57 tokens in 21.3 ms; parked=1 bytes=236983704 evictions=0 snapshot_bytes=236983704 reused_kv_bytes=0
+strata prefill: QSA layers: norm + rope in one pass on, attention gate in the attention epilogue off
+strata serve: prompt 260 tokens = 0 reused + 260 read in 483 ms (538.5 tok/s), 1 generated in 20 ms (50.5 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 77.5% (372 hits / 480 lookups)
+strata serve: KV streaming: 85.62% of 5424 block reads hit VRAM, 3.1 MiB read from RAM
+strata serve: conversation cache: parked 260 tokens in 32.8 ms; parked=2 bytes=476816868 evictions=0 snapshot_bytes=239833164 reused_kv_bytes=0
+strata serve: prompt 906 tokens = 0 reused + 906 read in 729 ms (1242.9 tok/s), 1 generated in 19 ms (52.1 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.5% (401 hits / 480 lookups)
+strata serve: KV streaming: 85.66% of 18996 block reads hit VRAM, 11.0 MiB read from RAM
+strata serve: conversation cache: parked 906 tokens in 62.1 ms; parked=3 bytes=725855840 evictions=0 snapshot_bytes=249038972 reused_kv_bytes=0
+strata serve: prompt 1028 tokens = 0 reused + 1028 read in 748 ms (1373.7 tok/s), 8 generated in 151 ms (52.9 tok/s), drafts accepted 2 of 4, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 69.0% (3312 hits / 4800 lookups)
+strata serve: KV streaming: 93.72% of 49476 block reads hit VRAM, 12.5 MiB read from RAM
+strata serve: conversation cache: parked 1035 tokens in 58.6 ms; parked=4 bytes=976714440 evictions=0 snapshot_bytes=250858600 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 390 ms (130.8 tok/s), 100 generated in 908 ms (110.1 tok/s), drafts accepted 79 of 83, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 73.0% (36466 hits / 49920 lookups)
+strata serve: KV streaming: 98.71% of 36216 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 3 of 3 drafts accepted
+strata serve: conversation cache: not spilling 57 tokens (evicted from RAM): reading them again (about 33 ms here) costs less than the SSD round trip of 226 MiB (about 474 ms)
+strata serve: conversation cache: parked 150 tokens in 36.1 ms; parked=4 bytes=978022016 evictions=1 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 342 ms (125.7 tok/s), 100 generated in 1452 ms (68.9 tok/s), drafts accepted 43 of 64, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 74.7% (43390 hits / 58080 lookups)
+strata serve: KV streaming: 98.82% of 36720 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 260 tokens (evicted from RAM): reading them again (about 153 ms here) costs less than the SSD round trip of 228 MiB (about 480 ms)
+strata serve: conversation cache: parked 142 tokens in 35.5 ms; parked=4 bytes=976366404 evictions=2 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: adaptive tier: the swaps held the windows up by 10.3% (13.13 ms per token): trying the asynchronous tier for a while
+strata serve: prompt 46 tokens = 0 reused + 46 read in 359 ms (128.1 tok/s), 100 generated in 1246 ms (80.3 tok/s), drafts accepted 51 of 65, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.4% (41263 hits / 54720 lookups)
+strata serve: asynchronous adaptive tier: 6 rounds, 164 experts swapped in, 15.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.28 ms/round)
+strata serve: KV streaming: 98.78% of 36264 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 906 tokens (evicted from RAM): reading them again (about 532 ms here) costs less than the SSD round trip of 237 MiB (about 498 ms)
+strata serve: conversation cache: parked 145 tokens in 24.0 ms; parked=4 bytes=965561840 evictions=3 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 331 ms (154.2 tok/s), 100 generated in 895 ms (111.7 tok/s), drafts accepted 79 of 90, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 72.7% (38746 hits / 53280 lookups)
+strata serve: asynchronous adaptive tier: 27 rounds, 1818 experts swapped in, 36.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.29 ms/round)
+strata serve: KV streaming: 98.79% of 38568 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 3 of 7 drafts accepted
+strata serve: conversation cache: not spilling 1035 tokens (evicted from RAM): reading them again (about 607 ms here) costs less than the SSD round trip of 239 MiB (about 502 ms)
+strata serve: conversation cache: parked 150 tokens in 56.2 ms; parked=4 bytes=952994520 evictions=4 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: adaptive tier: the asynchronous tier stays on (10.01 against 13.13 ms per token)
+strata serve: prompt 43 tokens = 0 reused + 43 read in 342 ms (125.8 tok/s), 100 generated in 1132 ms (88.3 tok/s), drafts accepted 49 of 66, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.7% (45891 hits / 56160 lookups)
+strata serve: asynchronous adaptive tier: 78 rounds, 3685 experts swapped in, 27.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.25 ms/round)
+strata serve: KV streaming: 98.78% of 35364 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 88 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 38.9 ms; parked=4 bytes=952880792 evictions=5 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 358 ms (128.4 tok/s), 100 generated in 1066 ms (93.8 tok/s), drafts accepted 50 of 59, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.5% (42635 hits / 52320 lookups)
+strata serve: asynchronous adaptive tier: 128 rounds, 5743 experts swapped in, 25.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.74% of 35172 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 83 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 36.6 ms; parked=4 bytes=952937648 evictions=6 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 409 ms (124.6 tok/s), 100 generated in 940 ms (106.4 tok/s), drafts accepted 79 of 90, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.5% (37547 hits / 53280 lookups)
+strata serve: asynchronous adaptive tier: 149 rounds, 8056 experts swapped in, 27.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.79% of 38568 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 3 of 7 drafts accepted
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 85 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 150 tokens in 26.3 ms; parked=4 bytes=952994520 evictions=7 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 311 ms (138.3 tok/s), 100 generated in 1133 ms (88.3 tok/s), drafts accepted 47 of 67, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 80.7% (46511 hits / 57600 lookups)
+strata serve: asynchronous adaptive tier: 202 rounds, 10152 experts swapped in, 26.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.21 ms/round)
+strata serve: KV streaming: 98.81% of 36300 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 88 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 56.3 ms; parked=4 bytes=952880792 evictions=8 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 364 ms (126.4 tok/s), 100 generated in 1060 ms (94.4 tok/s), drafts accepted 50 of 61, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.2% (43281 hits / 53280 lookups)
+strata serve: asynchronous adaptive tier: 252 rounds, 12306 experts swapped in, 25.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.20 ms/round)
+strata serve: KV streaming: 98.74% of 35340 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 83 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 36.2 ms; parked=4 bytes=952937648 evictions=9 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: the lent prompt buffers are sized for the request's own short last chunk (tail 0 tokens, not the stream floor's 3071); STRATA_PREFILL_TAIL_LOAN=0 keeps the floor's
+strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, #136)
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2116 ms (1899.6 tok/s), 24 generated in 337 ms (71.2 tok/s), drafts accepted 8 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 74.9% (10428 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 268 rounds, 13128 experts swapped in, 25.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.73% of 215664 block reads hit VRAM, 45.7 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 82 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 39.4 ms; parked=4 bytes=1008323496 evictions=10 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2131 ms (1886.0 tok/s), 24 generated in 270 ms (89.0 tok/s), drafts accepted 8 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.4% (12862 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 284 rounds, 13483 experts swapped in, 24.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.74% of 215664 block reads hit VRAM, 45.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 82 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 4042 tokens in 73.2 ms; parked=4 bytes=1063652472 evictions=11 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2162 ms (1858.6 tok/s), 24 generated in 253 ms (94.7 tok/s), drafts accepted 8 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 95.4% (13281 hits / 13920 lookups)
+strata serve: asynchronous adaptive tier: 300 rounds, 13778 experts swapped in, 24.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 94.74% of 215664 block reads hit VRAM, 45.7 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 77 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 38.9 ms; parked=4 bytes=1119095176 evictions=12 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5746 ms (2794.7 tok/s), 24 generated in 269 ms (89.3 tok/s), drafts accepted 7 of 10, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.7% (12269 hits / 12960 lookups)
+strata serve: asynchronous adaptive tier: 317 rounds, 14189 experts swapped in, 23.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 89.54% of 203352 block reads hit VRAM, 85.7 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 68 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 16081 tokens in 117.7 ms; parked=4 bytes=1345641656 evictions=13 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5833 ms (2752.9 tok/s), 24 generated in 256 ms (93.7 tok/s), drafts accepted 8 of 12, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 95.3% (12815 hits / 13440 lookups)
+strata serve: asynchronous adaptive tier: 333 rounds, 14280 experts swapped in, 23.4 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 89.82% of 209508 block reads hit VRAM, 85.9 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 179.0 ms; parked=4 bytes=1516802288 evictions=14 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 195.8 ms; on SSD 1, 280 MiB
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5905 ms (2719.4 tok/s), 24 generated in 256 ms (93.6 tok/s), drafts accepted 9 of 10, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 89.0% (10680 hits / 12000 lookups)
+strata serve: asynchronous adaptive tier: 348 rounds, 14544 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 88.47% of 191028 block reads hit VRAM, 88.7 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 113.5 ms; parked=4 bytes=1687962920 evictions=15 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 240.6 ms; on SSD 2, 560 MiB
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1054 ms (577.5 tok/s), 24 generated in 338 ms (71.0 tok/s), drafts accepted 12 of 22, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 77.1% (12581 hits / 16320 lookups)
+strata serve: asynchronous adaptive tier: 360 rounds, 15347 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 97.44% of 74400 block reads hit VRAM, 7.7 MiB read from RAM
+strata serve: prompt 5006 tokens = 632 reused + 4374 read in 2166 ms (2019.2 tok/s), 64 generated in 656 ms (97.5 tok/s), drafts accepted 36 of 50, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.2% (30764 hits / 37440 lookups)
+strata serve: asynchronous adaptive tier: 388 rounds, 16723 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 97.64% of 592032 block reads hit VRAM, 56.3 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 6542 tokens = 5069 reused + 1473 read in 1304 ms (1129.4 tok/s), 64 generated in 694 ms (92.3 tok/s), drafts accepted 33 of 55, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 85.8% (35423 hits / 41280 lookups)
+strata serve: asynchronous adaptive tier: 419 rounds, 17905 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.39% of 1158924 block reads hit VRAM, 75.2 MiB read from RAM
+strata serve: prompt 9839 tokens = 6605 reused + 3234 read in 2017 ms (1603.0 tok/s), 53 generated in 506 ms (104.8 tok/s), drafts accepted 27 of 33, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 88.9% (25186 hits / 28320 lookups)
+strata serve: asynchronous adaptive tier: 445 rounds, 18544 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.24% of 1559460 block reads hit VRAM, 110.7 MiB read from RAM
+strata serve: prompt 11924 tokens = 9891 reused + 2033 read in 1501 ms (1354.2 tok/s), 27 generated in 252 ms (107.2 tok/s), drafts accepted 16 of 31, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.6% (18669 hits / 20160 lookups)
+strata serve: asynchronous adaptive tier: 456 rounds, 18830 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.19% of 1855236 block reads hit VRAM, 134.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 14836 tokens = 11950 reused + 2886 read in 1900 ms (1518.9 tok/s), 53 generated in 529 ms (100.2 tok/s), drafts accepted 32 of 42, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.7% (25302 hits / 30240 lookups)
+strata serve: asynchronous adaptive tier: 477 rounds, 19764 experts swapped in, 23.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.18% of 2280384 block reads hit VRAM, 167.4 MiB read from RAM
+strata serve: suffix drafts: 5 windows, 11 of 16 drafts accepted
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 191.0 ms; on SSD 3, 840 MiB
+strata serve: conversation cache: parked 14888 tokens in 327.8 ms; parked=4 bytes=2432579888 evictions=16 snapshot_bytes=1038237224 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1292 ms (471.2 tok/s), 14 generated in 188 ms (74.6 tok/s), drafts accepted 6 of 13, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 79.7% (8034 hits / 10080 lookups)
+strata serve: asynchronous adaptive tier: 485 rounds, 20186 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 96.24% of 49776 block reads hit VRAM, 7.5 MiB read from RAM
+strata serve: prompt 4996 tokens = 622 reused + 4374 read in 2121 ms (2062.3 tok/s), 64 generated in 573 ms (111.7 tok/s), drafts accepted 36 of 55, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.2% (36739 hits / 39840 lookups)
+strata serve: asynchronous adaptive tier: 513 rounds, 20748 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.69% of 598188 block reads hit VRAM, 55.7 MiB read from RAM
+strata serve: prompt 6532 tokens = 5059 reused + 1473 read in 1281 ms (1150.2 tok/s), 64 generated in 614 ms (104.2 tok/s), drafts accepted 35 of 48, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 88.5% (32708 hits / 36960 lookups)
+strata serve: asynchronous adaptive tier: 542 rounds, 21643 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.33% of 1109628 block reads hit VRAM, 74.6 MiB read from RAM
+strata serve: prompt 9829 tokens = 6595 reused + 3234 read in 1999 ms (1617.5 tok/s), 55 generated in 629 ms (87.4 tok/s), drafts accepted 27 of 52, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 87.2% (33494 hits / 38400 lookups)
+strata serve: asynchronous adaptive tier: 570 rounds, 22494 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.32% of 1639572 block reads hit VRAM, 111.1 MiB read from RAM
+strata serve: prompt 11916 tokens = 9883 reused + 2033 read in 1432 ms (1419.4 tok/s), 51 generated in 401 ms (127.1 tok/s), drafts accepted 32 of 40, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.7% (25969 hits / 28320 lookups)
+strata serve: asynchronous adaptive tier: 589 rounds, 22822 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.34% of 2040096 block reads hit VRAM, 136.2 MiB read from RAM
+strata serve: prompt 14852 tokens = 11966 reused + 2886 read in 1854 ms (1556.9 tok/s), 64 generated in 580 ms (110.3 tok/s), drafts accepted 43 of 58, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.6% (32083 hits / 37920 lookups)
+strata serve: asynchronous adaptive tier: 610 rounds, 23811 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.35% of 2563872 block reads hit VRAM, 170.6 MiB read from RAM
+strata serve: suffix drafts: 4 windows, 12 of 14 drafts accepted
+strata serve: conversation cache: spilled 16081 tokens to the SSD tier (evicted from RAM, written in the background) in 309.3 ms; on SSD 4, 1283 MiB
+strata serve: conversation cache: parked 14915 tokens in 313.8 ms; parked=4 bytes=3006489720 evictions=17 snapshot_bytes=1038690720 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1283 ms (474.6 tok/s), 21 generated in 265 ms (79.2 tok/s), drafts accepted 11 of 22, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.6% (11615 hits / 15360 lookups)
+strata serve: asynchronous adaptive tier: 620 rounds, 24380 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.31% of 70440 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5003 tokens = 629 reused + 4374 read in 2150 ms (2034.7 tok/s), 64 generated in 589 ms (108.7 tok/s), drafts accepted 35 of 46, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.2% (32824 hits / 36000 lookups)
+strata serve: asynchronous adaptive tier: 649 rounds, 25062 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.58% of 569568 block reads hit VRAM, 55.6 MiB read from RAM
+strata serve: prompt 6539 tokens = 5066 reused + 1473 read in 1244 ms (1184.3 tok/s), 64 generated in 728 ms (87.9 tok/s), drafts accepted 30 of 56, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 88.8% (38349 hits / 43200 lookups)
+strata serve: asynchronous adaptive tier: 683 rounds, 26100 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.41% of 1161156 block reads hit VRAM, 74.5 MiB read from RAM
+strata serve: prompt 9836 tokens = 6602 reused + 3234 read in 2012 ms (1607.7 tok/s), 53 generated in 456 ms (116.2 tok/s), drafts accepted 29 of 39, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 93.6% (28299 hits / 30240 lookups)
+strata serve: asynchronous adaptive tier: 707 rounds, 26506 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.28% of 1586340 block reads hit VRAM, 109.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 11921 tokens = 9888 reused + 2033 read in 1422 ms (1429.4 tok/s), 19 generated in 179 ms (106.4 tok/s), drafts accepted 11 of 23, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.5% (14062 hits / 14880 lookups)
+strata serve: asynchronous adaptive tier: 715 rounds, 26692 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.18% of 1814304 block reads hit VRAM, 132.8 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 14825 tokens = 11939 reused + 2886 read in 1828 ms (1578.9 tok/s), 9 generated in 80 ms (112.2 tok/s), drafts accepted 5 of 8, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 96.6% (5565 hits / 5760 lookups)
+strata serve: asynchronous adaptive tier: 719 rounds, 26798 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.03% of 1925220 block reads hit VRAM, 152.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 3 of 3 drafts accepted
+[strata] 2026-11-24 15:02:08 engine started: C:\development\ai\Strata\terminal\engine\.previous\strata.exe --serve --pack C:\development\ai\Strata-data\packs\iq3_s --native C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile C:\development\ai\Strata\terminal\data\expert-profile.bin --expert-cache auto --prefill auto --max-context 204800 --kv int8 --kv-resident 32768 --vision --vram-reserve-mib 1600 --pool-workers 10 --adapt-every 1 --adapt-swaps 160 --adapt-decay 0.97 --draft dflash2 --draft-model C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack --draft-fallback none --mtp-draft-vocab C:\development\ai\Strata-data\dflash2\draft_vocab.bin --spec 6 --draft-conf 0.7 --vram-elastic
+strata: sm_86 (Ampere): 17 exact speed switches on by default (STRATA_SM86_PERF=0 turns them off; a switch you set is kept): ADAPT_LAG CPU_IQ_ALL_EXACT1 SIDE_MIXER ATTN_DAILY GR_UP75 GU_SWIGLU QSA_ROWS B6_MMVQ_ROWS DEQUANT_SIDE LFUSE PLE_COMPACT PLE_COPY_STREAM HC_UPMIX Q80_ROWS1 EXP_MODE PREFILL_CPU_SHARE_NT VERIFY_DEVICE_HITS
+strata generate: NVIDIA: --prefill auto may take chunks up to 32768 (STRATA_NV_CHUNK=0 keeps 8192, =16 keeps 16384)
+strata generate: memory guard: limit 95.8 GiB (source: meminfo), current 28.9 GiB, reclaimable cache credited 0.0 GiB; available 66.8 GiB (MemAvailable 66.8 GiB), floor 2560 MiB
+strata generate: PCIe probe: 23.5 GB/s host->device (best of 23.4 23.4 23.5 23.4) -> pcie_frac 0.55 (default 0.55)
+strata generate: STRATA_VERIFY_DEVICE_HITS=1 -> pcie_frac 0.00 (on-device VRAM hit planning; pass --pcie-frac or STRATA_VERIFY_DEVICE_HITS=0 to override)
+strata generate: CPU expert kernels: AVX-2
+strata generate: native pack: C:\development\ai\Strata-data\packs\iq3_s experts (largest blob 2.66 MB), token embedding IQ4_XS in mapped host memory (322 MiB, 0.3 s)
+strata generate: 1466 MiB of weights loaded from C:\development\ai\Strata-data\packs\iq3_s in 0.4 s (302 canonical tensors skipped: served natively)
+strata generate: 300 native projection matrices, 2018.88 MiB of weights, in 1.7 s
+strata generate: PLE direct read probe: 191289 rows/s (fine)
+strata generate: the SSD is kept awake while rows are read: one page of the table after 100 ms without a read, until 60 s after the last request (STRATA_SSD_KEEPALIVE=0 turns it off)
+strata generate: profile C:\development\ai\Strata\terminal\data\expert-profile.bin: 24576 ranked pairs, built for 24576 slots
+strata generate: KV streaming: 32768 of 204800 cells per QSA layer in VRAM, the K/V in 2.42 GiB of pinned RAM
+strata generate: PLE on, table 320001536 rows of C:\development\ai\Strata-data\models\IQ3_S\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+strata generate: experimental native Q6_K head, 521472000 bytes, in 0.4 s
+strata generate: GPU 0: NVIDIA GeForce RTX 3090, compute capability 8.6
+strata: pinned-memory headroom: holding 800 MiB for the buffers allocated after the expert arena (released after it: 640 MiB; kept until needed: 160 MiB; STRATA_PIN_RESERVE_MIB changes it)
+strata prefill: warmed the BF16 and FP16 GEMM libraries on GPU 0 in 8506 ms (STRATA_PREFILL_WARM=0 skips)
+strata generate: expert arena read unbuffered (2 of 16 probe reads from the file cache; 15.7 GiB available, 51.1 GiB of files)
+strata: pinned-memory headroom: 640 MiB handed back after the expert arena
+strata generate: expert arena: cudaHostRegister PORTABLE ok; large pages refused for 50295996416 B (GetLargePageMinimum=2097152, VirtualAlloc error 1314); using 4 KB pages
+strata generate: loaded 46.84 GiB at 5.48 GiB/s
+strata generate: CPU pool tasks/phase: 33 (automatic), participating threads: 11
+strata generate: 10 pool workers on logical processors 2,4,6,8,10,12,14,16,17,18, the host thread on 0 (draining too) (--host-core first)
+strata generate: CPU workers on logical processors 2,4,6,8,10,12,14,16,17,18 (10 workers, one per physical core; host on 0)
+strata aux cpus: not available on this system
+strata generate: expert cache auto: 16.95 GiB free, 1600 MiB reserved (+380 MiB for the draft head, +384 MiB for what is allocated after the cache) -> 7682 slots
+strata generate: only 1886 MiB free once the slots are written (need 2364 MiB: reserve 1600 MiB + 764 MiB post-cache); shrinking the expert cache
+strata generate: expert cache 7439 slots, 14.11 GiB of VRAM; policy is
+strata generate: the GPU computes the experts in the cache; it rounds differently from the CPU,
+                 so a reply can differ slightly from a run without the cache (same quality:
+                 bench/results/2026-09-27-cache-parity).
+                 PROFILE, ranked by routing frequency, no eviction.
+strata generate: pre-filled 7439 of 7439 slots from the profile in 0.7 s (20600 MB/s); slot 0 verified
+strata generate: R4 hit path ON - resident experts are computed on the GPU
+strata generate: 10 expert-pool workers + the host thread
+strata generate: session is up (engine 0.1.66)
+strata generate: token graph hit path: 7439 resident experts, decided on the device
+prefill: the CPU share is ON by default for prompt chunks up to 3072 tokens (the idle CPU takes some of the experts the GPU would stream; answers can differ slightly from 0.1.40.3, mean KL ~0.004 below 1024 tokens, ~0.011 at 1-3K). STRATA_PREFILL_CPU_SHARE=0 turns it off, STRATA_PREFILL_CPU_SHARE_MAX=1024 keeps the old limit.
+strata: prompt kernels: chunks of 3072 tokens or more run 48 of 48 layers on the fused kernels; shorter chunks run 48 on the staged fused entry.
+strata serve: Windows commit: 1.5 GiB left of a 133.2 GiB limit (RAM + page file); the page files may grow by 128.1 GiB more
+strata serve: prompt chunk auto: 32768 tokens, a 512-slot ring
+strata serve: the prompt path borrows 5724 CUDA0 cache slots (10.81 GiB)
+strata hc: CUDA0: the hyper-connection read runs as staged (the norm per token and stream, the down projection's activations staged ahead by cp.async); checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 for the earlier ones)
+strata verify: window up to 8 tokens, 87.2 MiB of device buffers
+strata dflash2: 106299-token draft head (212.9 MiB), drafter 800 MiB of VRAM (Q4_0 weights)
+strata serve: DFlash2 drafter on (C:\development\ai\Strata-data\dflash2\qwen3.8-flash-next-dflash2.q4_0.pack, graphs captured in 4 ms); windows up to 8 tokens; no MTP layer is loaded (--draft-fallback none)
+strata serve: conversation cache sized from the free RAM: 4864 MiB for up to 4 parked conversations, so an agent's next turn reuses its prompt (--conversation-cache-mib N sets it, 0 turns it off)
+strata serve: conversation cache: SSD tier in C:\development\ai\Strata-data\conversation-spill\112300-0aa45fa7969d9d20, up to 32768 MiB, 1 folder of ended engines removed
+strata serve: STRATA_VERIFY_DEVICE_HITS=1: planning VRAM expert hits on-device (--pcie-frac 0: no plan/PCIe flag waits)
+strata serve: adaptive overlap: off: not with STRATA_ADAPT_LAG / STRATA_ADAPT_NOWAIT
+strata serve: the adaptive tier's evictions reach the device's table before the next window (STRATA_ADAPT_EVICT_SYNC=0: when its copies land)
+strata serve: adaptive tier: blocking, and the asynchronous tier is tried once the session shows the swaps hold the windows up (--adapt-async 0 or STRATA_ADAPT_ASYNC=0: never)
+strata serve: 1964 MiB of VRAM free with everything loaded
+strata verify: capturing the 1-token window (1964 MiB of VRAM free)
+strata verify: captured the 1-token window (upload no error, sync no error) in 8.5 ms
+strata ab: GATE=STRATA_CPU_IQ_ALL_EXACT1 active=1
+strata verify: capturing the 2-token window (1952 MiB of VRAM free)
+strata verify: captured the 2-token window (upload no error, sync no error) in 7.6 ms
+strata verify: capturing the 3-token window (1940 MiB of VRAM free)
+strata verify: captured the 3-token window (upload no error, sync no error) in 7.4 ms
+strata verify: capturing the 4-token window (1928 MiB of VRAM free)
+strata verify: captured the 4-token window (upload no error, sync no error) in 7.3 ms
+strata verify: capturing the 5-token window (1916 MiB of VRAM free)
+strata verify: captured the 5-token window (upload no error, sync no error) in 8.4 ms
+strata verify: capturing the 6-token window (1902 MiB of VRAM free)
+strata verify: captured the 6-token window (upload no error, sync no error) in 8.3 ms
+strata verify: capturing the 7-token window (1822 MiB of VRAM free)
+strata verify: captured the 7-token window (upload no error, sync no error) in 6.8 ms
+strata verify: capturing the 8-token window (1878 MiB of VRAM free)
+strata verify: captured the 8-token window (upload no error, sync no error) in 7.1 ms
+strata serve: window warm-up: ms per width 1:23 2:25 3:31 4:34 5:38 6:49 7:57 8:60, total 379 ms
+strata serve: prompt 34 tokens = 0 reused + 34 read in 434 ms (78.3 tok/s), 24 generated in 310 ms (77.4 tok/s), drafts accepted 18 of 20, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 43.3% (5404 hits / 12480 lookups)
+strata serve: KV streaming: 96.74% of 5520 block reads hit VRAM, 0.7 MiB read from RAM
+strata serve: conversation cache: parked 57 tokens in 24.3 ms; parked=1 bytes=236983704 evictions=0 snapshot_bytes=236983704 reused_kv_bytes=0
+strata prefill: QSA layers: norm + rope in one pass on, attention gate in the attention epilogue off
+strata serve: prompt 260 tokens = 0 reused + 260 read in 460 ms (565.2 tok/s), 1 generated in 22 ms (45.6 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 76.9% (369 hits / 480 lookups)
+strata serve: KV streaming: 85.62% of 5424 block reads hit VRAM, 3.1 MiB read from RAM
+strata serve: conversation cache: parked 260 tokens in 37.3 ms; parked=2 bytes=476816868 evictions=0 snapshot_bytes=239833164 reused_kv_bytes=0
+strata serve: prompt 906 tokens = 0 reused + 906 read in 719 ms (1259.5 tok/s), 1 generated in 22 ms (46.3 tok/s), drafts accepted 0 of 0, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.3% (400 hits / 480 lookups)
+strata serve: KV streaming: 85.66% of 18996 block reads hit VRAM, 11.0 MiB read from RAM
+strata serve: conversation cache: parked 906 tokens in 60.4 ms; parked=3 bytes=725855840 evictions=0 snapshot_bytes=249038972 reused_kv_bytes=0
+strata serve: prompt 1028 tokens = 0 reused + 1028 read in 779 ms (1319.6 tok/s), 8 generated in 143 ms (55.9 tok/s), drafts accepted 2 of 3, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.0% (3022 hits / 4320 lookups)
+strata serve: KV streaming: 93.30% of 46368 block reads hit VRAM, 12.5 MiB read from RAM
+strata serve: conversation cache: parked 1035 tokens in 42.0 ms; parked=4 bytes=976714440 evictions=0 snapshot_bytes=250858600 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 369 ms (138.3 tok/s), 100 generated in 896 ms (111.6 tok/s), drafts accepted 77 of 78, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 74.2% (35966 hits / 48480 lookups)
+strata serve: KV streaming: 98.69% of 34836 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 3 of 3 drafts accepted
+strata serve: conversation cache: not spilling 57 tokens (evicted from RAM): reading them again (about 34 ms here) costs less than the SSD round trip of 226 MiB (about 474 ms)
+strata serve: conversation cache: parked 150 tokens in 35.1 ms; parked=4 bytes=978022016 evictions=1 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 347 ms (123.8 tok/s), 100 generated in 1386 ms (72.2 tok/s), drafts accepted 44 of 71, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 76.1% (46388 hits / 60960 lookups)
+strata serve: KV streaming: 98.88% of 38628 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 260 tokens (evicted from RAM): reading them again (about 154 ms here) costs less than the SSD round trip of 228 MiB (about 480 ms)
+strata serve: conversation cache: parked 142 tokens in 36.4 ms; parked=4 bytes=976366404 evictions=2 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: adaptive tier: the swaps held the windows up by 10.2% (12.91 ms per token): trying the asynchronous tier for a while
+strata serve: prompt 46 tokens = 0 reused + 46 read in 353 ms (130.5 tok/s), 100 generated in 1268 ms (78.9 tok/s), drafts accepted 50 of 68, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 75.1% (42563 hits / 56640 lookups)
+strata serve: asynchronous adaptive tier: 8 rounds, 154 experts swapped in, 18.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.26 ms/round)
+strata serve: KV streaming: 98.85% of 38592 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 906 tokens (evicted from RAM): reading them again (about 536 ms here) costs less than the SSD round trip of 237 MiB (about 498 ms)
+strata serve: conversation cache: parked 145 tokens in 37.2 ms; parked=4 bytes=965561840 evictions=3 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 347 ms (147.1 tok/s), 100 generated in 977 ms (102.4 tok/s), drafts accepted 77 of 96, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 72.7% (41512 hits / 57120 lookups)
+strata serve: asynchronous adaptive tier: 31 rounds, 1961 experts swapped in, 35.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.29 ms/round)
+strata serve: KV streaming: 98.88% of 41604 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 3 windows, 6 of 16 drafts accepted
+strata serve: conversation cache: not spilling 1035 tokens (evicted from RAM): reading them again (about 613 ms here) costs less than the SSD round trip of 239 MiB (about 502 ms)
+strata serve: conversation cache: parked 150 tokens in 37.1 ms; parked=4 bytes=952994520 evictions=4 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: adaptive tier: the asynchronous tier stays on (10.23 against 12.91 ms per token)
+strata serve: prompt 43 tokens = 0 reused + 43 read in 321 ms (134.1 tok/s), 100 generated in 1089 ms (91.8 tok/s), drafts accepted 50 of 68, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 82.5% (46700 hits / 56640 lookups)
+strata serve: asynchronous adaptive tier: 81 rounds, 3799 experts swapped in, 27.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.26 ms/round)
+strata serve: KV streaming: 98.78% of 35400 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 26.4 ms; parked=4 bytes=952880792 evictions=5 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 330 ms (139.5 tok/s), 100 generated in 1151 ms (86.9 tok/s), drafts accepted 49 of 80, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.9% (51515 hits / 62880 lookups)
+strata serve: asynchronous adaptive tier: 132 rounds, 6119 experts swapped in, 25.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.97% of 43128 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 84 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 37.0 ms; parked=4 bytes=952937648 evictions=6 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: prompt 51 tokens = 0 reused + 51 read in 382 ms (133.4 tok/s), 100 generated in 928 ms (107.7 tok/s), drafts accepted 78 of 87, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 70.6% (36924 hits / 52320 lookups)
+strata serve: asynchronous adaptive tier: 154 rounds, 8389 experts swapped in, 27.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.22 ms/round)
+strata serve: KV streaming: 98.77% of 37944 block reads hit VRAM, 1.9 MiB read from RAM
+strata serve: suffix drafts: 2 windows, 5 of 9 drafts accepted
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 86 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 150 tokens in 38.1 ms; parked=4 bytes=952994520 evictions=7 snapshot_bytes=238291280 reused_kv_bytes=0
+strata serve: prompt 43 tokens = 0 reused + 43 read in 363 ms (118.4 tok/s), 100 generated in 1191 ms (83.9 tok/s), drafts accepted 44 of 58, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.5% (44614 hits / 54720 lookups)
+strata serve: asynchronous adaptive tier: 210 rounds, 10505 experts swapped in, 26.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.21 ms/round)
+strata serve: KV streaming: 98.75% of 34440 block reads hit VRAM, 1.7 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 89 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 142 tokens in 36.9 ms; parked=4 bytes=952880792 evictions=8 snapshot_bytes=238177552 reused_kv_bytes=0
+strata serve: prompt 46 tokens = 0 reused + 46 read in 347 ms (132.7 tok/s), 100 generated in 1040 ms (96.2 tok/s), drafts accepted 50 of 58, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.0% (43020 hits / 51840 lookups)
+strata serve: asynchronous adaptive tier: 260 rounds, 12570 experts swapped in, 25.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 98.74% of 35100 block reads hit VRAM, 1.8 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 84 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 145 tokens in 24.2 ms; parked=4 bytes=952937648 evictions=9 snapshot_bytes=238234408 reused_kv_bytes=0
+strata serve: the lent prompt buffers are sized for the request's own short last chunk (tail 0 tokens, not the stream floor's 3071); STRATA_PREFILL_TAIL_LOAN=0 keeps the floor's
+strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, #136)
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2113 ms (1902.1 tok/s), 24 generated in 349 ms (68.8 tok/s), drafts accepted 9 of 10, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 69.5% (8344 hits / 12000 lookups)
+strata serve: asynchronous adaptive tier: 275 rounds, 13399 experts swapped in, 25.2 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.19 ms/round)
+strata serve: KV streaming: 94.14% of 191028 block reads hit VRAM, 45.1 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 82 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 54.3 ms; parked=4 bytes=1008323496 evictions=10 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2104 ms (1910.3 tok/s), 24 generated in 286 ms (83.8 tok/s), drafts accepted 8 of 11, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 86.3% (11181 hits / 12960 lookups)
+strata serve: asynchronous adaptive tier: 291 rounds, 13856 experts swapped in, 24.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 94.50% of 203340 block reads hit VRAM, 45.0 MiB read from RAM
+strata serve: conversation cache: not spilling 150 tokens (evicted from RAM): reading them again (about 82 ms here) costs less than the SSD round trip of 227 MiB (about 477 ms)
+strata serve: conversation cache: parked 4042 tokens in 74.0 ms; parked=4 bytes=1063652472 evictions=11 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 4019 tokens = 0 reused + 4019 read in 2131 ms (1886.1 tok/s), 24 generated in 245 ms (97.9 tok/s), drafts accepted 9 of 11, 1 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 93.8% (11702 hits / 12480 lookups)
+strata serve: asynchronous adaptive tier: 306 rounds, 14103 experts swapped in, 24.4 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 94.32% of 197196 block reads hit VRAM, 45.2 MiB read from RAM
+strata serve: conversation cache: not spilling 142 tokens (evicted from RAM): reading them again (about 76 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 4042 tokens in 40.7 ms; parked=4 bytes=1119095176 evictions=12 snapshot_bytes=293620256 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5788 ms (2774.6 tok/s), 24 generated in 285 ms (84.3 tok/s), drafts accepted 7 of 15, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.7% (14236 hits / 15360 lookups)
+strata serve: asynchronous adaptive tier: 323 rounds, 14437 experts swapped in, 24.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.18 ms/round)
+strata serve: KV streaming: 90.42% of 234144 block reads hit VRAM, 90.4 MiB read from RAM
+strata serve: conversation cache: not spilling 145 tokens (evicted from RAM): reading them again (about 68 ms here) costs less than the SSD round trip of 227 MiB (about 476 ms)
+strata serve: conversation cache: parked 16081 tokens in 109.1 ms; parked=4 bytes=1345641656 evictions=13 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5875 ms (2733.5 tok/s), 24 generated in 256 ms (93.6 tok/s), drafts accepted 8 of 12, 1 checkpoints
+strata serve: checkpoint pool: this request took 2 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 95.5% (12833 hits / 13440 lookups)
+strata serve: asynchronous adaptive tier: 339 rounds, 14601 experts swapped in, 23.8 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 89.81% of 209508 block reads hit VRAM, 86.0 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 113.7 ms; parked=4 bytes=1516802288 evictions=14 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 206.5 ms; on SSD 1, 280 MiB
+strata serve: prompt 16058 tokens = 0 reused + 16058 read in 5863 ms (2739.0 tok/s), 24 generated in 231 ms (103.8 tok/s), drafts accepted 11 of 12, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.8% (10891 hits / 12000 lookups)
+strata serve: asynchronous adaptive tier: 352 rounds, 14763 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 88.71% of 191016 block reads hit VRAM, 86.9 MiB read from RAM
+strata serve: conversation cache: parked 16081 tokens in 110.8 ms; parked=4 bytes=1687962920 evictions=15 snapshot_bytes=464780888 reused_kv_bytes=0
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 258.2 ms; on SSD 2, 560 MiB
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1048 ms (580.9 tok/s), 18 generated in 232 ms (77.5 tok/s), drafts accepted 8 of 16, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 78.3% (9778 hits / 12480 lookups)
+strata serve: asynchronous adaptive tier: 362 rounds, 15358 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.17 ms/round)
+strata serve: KV streaming: 96.80% of 59280 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5000 tokens = 626 reused + 4374 read in 2146 ms (2038.2 tok/s), 64 generated in 693 ms (92.4 tok/s), drafts accepted 35 of 50, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 83.2% (31553 hits / 37920 lookups)
+strata serve: asynchronous adaptive tier: 391 rounds, 16752 experts swapped in, 23.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 97.63% of 583044 block reads hit VRAM, 55.7 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 6536 tokens = 5063 reused + 1473 read in 1293 ms (1139.0 tok/s), 64 generated in 727 ms (88.0 tok/s), drafts accepted 34 of 69, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 86.1% (40892 hits / 47520 lookups)
+strata serve: asynchronous adaptive tier: 421 rounds, 18135 experts swapped in, 23.7 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.49% of 1230000 block reads hit VRAM, 74.6 MiB read from RAM
+strata serve: prompt 9833 tokens = 6599 reused + 3234 read in 2021 ms (1600.0 tok/s), 38 generated in 366 ms (103.9 tok/s), drafts accepted 18 of 26, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.5% (20428 hits / 22080 lookups)
+strata serve: asynchronous adaptive tier: 441 rounds, 18535 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.16 ms/round)
+strata serve: KV streaming: 98.26% of 1550436 block reads hit VRAM, 108.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 0 of 2 drafts accepted
+strata serve: prompt 11903 tokens = 9870 reused + 2033 read in 1461 ms (1391.6 tok/s), 48 generated in 420 ms (114.4 tok/s), drafts accepted 32 of 50, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 88.5% (28040 hits / 31680 lookups)
+strata serve: asynchronous adaptive tier: 457 rounds, 19145 experts swapped in, 23.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.33% of 1994112 block reads hit VRAM, 134.1 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 3 drafts accepted
+strata serve: prompt 14836 tokens = 11950 reused + 2886 read in 1863 ms (1548.8 tok/s), 17 generated in 218 ms (77.9 tok/s), drafts accepted 7 of 14, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 89.6% (10318 hits / 11520 lookups)
+strata serve: asynchronous adaptive tier: 467 rounds, 19279 experts swapped in, 23.5 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.19% of 2178984 block reads hit VRAM, 158.7 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 3 drafts accepted
+strata serve: conversation cache: spilled 4042 tokens to the SSD tier (evicted from RAM, written in the background) in 202.1 ms; on SSD 3, 840 MiB
+strata serve: conversation cache: parked 14852 tokens in 256.7 ms; parked=4 bytes=2432068100 evictions=16 snapshot_bytes=1037725436 reused_kv_bytes=0
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1221 ms (498.9 tok/s), 13 generated in 168 ms (77.6 tok/s), drafts accepted 6 of 14, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 80.7% (8130 hits / 10080 lookups)
+strata serve: asynchronous adaptive tier: 474 rounds, 19746 experts swapped in, 23.6 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 96.24% of 49752 block reads hit VRAM, 7.5 MiB read from RAM
+strata serve: prompt 4995 tokens = 621 reused + 4374 read in 2138 ms (2045.9 tok/s), 64 generated in 528 ms (121.1 tok/s), drafts accepted 36 of 45, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 94.2% (33019 hits / 35040 lookups)
+strata serve: asynchronous adaptive tier: 502 rounds, 20081 experts swapped in, 23.3 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 97.42% of 536568 block reads hit VRAM, 55.7 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 2 drafts accepted
+strata serve: prompt 6531 tokens = 5058 reused + 1473 read in 1222 ms (1205.5 tok/s), 64 generated in 629 ms (101.7 tok/s), drafts accepted 32 of 51, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 91.7% (36516 hits / 39840 lookups)
+strata serve: asynchronous adaptive tier: 534 rounds, 20756 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.15 ms/round)
+strata serve: KV streaming: 98.29% of 1084980 block reads hit VRAM, 74.5 MiB read from RAM
+strata serve: prompt 9828 tokens = 6594 reused + 3234 read in 2012 ms (1607.3 tok/s), 60 generated in 537 ms (111.8 tok/s), drafts accepted 33 of 48, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.7% (33381 hits / 36000 lookups)
+strata serve: asynchronous adaptive tier: 561 rounds, 21227 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.28% of 1584108 block reads hit VRAM, 109.8 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 11920 tokens = 9887 reused + 2033 read in 1421 ms (1431.0 tok/s), 50 generated in 375 ms (133.3 tok/s), drafts accepted 35 of 47, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.9% (27061 hits / 29760 lookups)
+strata serve: asynchronous adaptive tier: 576 rounds, 21680 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.33% of 2003124 block reads hit VRAM, 134.9 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 14855 tokens = 11969 reused + 2886 read in 1851 ms (1558.9 tok/s), 64 generated in 605 ms (105.7 tok/s), drafts accepted 40 of 54, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.9% (31790 hits / 37440 lookups)
+strata serve: asynchronous adaptive tier: 600 rounds, 22641 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.34% of 2520744 block reads hit VRAM, 169.0 MiB read from RAM
+strata serve: suffix drafts: 4 windows, 9 of 11 drafts accepted
+strata serve: conversation cache: parked 14918 tokens in 260.8 ms; parked=4 bytes=3006034792 evictions=17 snapshot_bytes=1038747580 reused_kv_bytes=0
+strata serve: conversation cache: spilled 16081 tokens to the SSD tier (evicted from RAM, written in the background) in 300.9 ms; on SSD 4, 1283 MiB
+strata serve: prompt 609 tokens = 0 reused + 609 read in 1209 ms (503.6 tok/s), 21 generated in 271 ms (77.6 tok/s), drafts accepted 9 of 19, 1 checkpoints
+strata serve: checkpoint pool: this request took 3 checkpoints ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 81.5% (12126 hits / 14880 lookups)
+strata serve: asynchronous adaptive tier: 612 rounds, 23202 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 97.24% of 68604 block reads hit VRAM, 7.6 MiB read from RAM
+strata serve: prompt 5003 tokens = 629 reused + 4374 read in 2129 ms (2054.9 tok/s), 64 generated in 520 ms (123.2 tok/s), drafts accepted 39 of 50, 2 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 92.5% (33285 hits / 36000 lookups)
+strata serve: asynchronous adaptive tier: 637 rounds, 23654 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 97.57% of 567732 block reads hit VRAM, 55.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 1 of 3 drafts accepted
+strata serve: prompt 6539 tokens = 5066 reused + 1473 read in 1237 ms (1191.1 tok/s), 64 generated in 651 ms (98.3 tok/s), drafts accepted 32 of 53, 3 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 90.5% (36929 hits / 40800 lookups)
+strata serve: asynchronous adaptive tier: 669 rounds, 24509 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.36% of 1128480 block reads hit VRAM, 74.4 MiB read from RAM
+strata serve: prompt 9836 tokens = 6602 reused + 3234 read in 2021 ms (1600.1 tok/s), 64 generated in 611 ms (104.7 tok/s), drafts accepted 37 of 56, 4 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 88.9% (35431 hits / 39840 lookups)
+strata serve: asynchronous adaptive tier: 696 rounds, 25253 experts swapped in, 22.9 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.36% of 1676880 block reads hit VRAM, 110.8 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 11933 tokens = 9899 reused + 2034 read in 1414 ms (1438.1 tok/s), 30 generated in 272 ms (110.2 tok/s), drafts accepted 21 of 32, 5 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 89.5% (17616 hits / 19680 lookups)
+strata serve: asynchronous adaptive tier: 705 rounds, 25511 experts swapped in, 23.0 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.30% of 1966488 block reads hit VRAM, 134.6 MiB read from RAM
+strata serve: suffix drafts: 1 windows, 2 of 2 drafts accepted
+strata serve: prompt 14848 tokens = 11962 reused + 2886 read in 1888 ms (1528.9 tok/s), 64 generated in 602 ms (106.3 tok/s), drafts accepted 41 of 57, 6 checkpoints
+strata serve: checkpoint pool: this request took 1 checkpoint ready from the pool and allocated 0 fresh
+strata serve: decode expert cache hit rate: 84.3% (32379 hits / 38400 lookups)
+strata serve: asynchronous adaptive tier: 728 rounds, 26580 experts swapped in, 23.1 ms per round (start to flip, between windows) (arena, copy-in only, batch 0, wait 1, pick inline 0.14 ms/round)
+strata serve: KV streaming: 98.33% of 2496432 block reads hit VRAM, 168.1 MiB read from RAM
+strata serve: suffix drafts: 6 windows, 16 of 21 drafts accepted
