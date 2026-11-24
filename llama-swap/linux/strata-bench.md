@@ -44,6 +44,28 @@ Then add a section to the results log below and commit the results folder with i
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, per-run reports and `summary.md`
 are in the folder named in each section.
 
+### 2026-11-24: 0.2.21.1 / engine 0.1.67 (from 0.1.66)
+
+Folder: `bench/results/strata-ab-2026-11-24-llmserver/`. Engines 0.1.66 and 0.1.67 from `engine-feed/engine/`,
+defaults. Both print `sm_89 (Ada): 17 speed switches on` in every run. Warm-up + 4 runs, 18:50-19:02.
+
+| Metric (fwd / rev) | 0.1.66 | 0.1.67 | 0.1.67 vs 0.1.66 |
+| --- | ---: | ---: | ---: |
+| 4K prompt tok/s | 1926 / 1919 | 1940 / 1933 | +1% |
+| 4K first token (s) | 2.12 / 2.12 | 2.10 / 2.11 | none |
+| 16K prompt tok/s | 2194 / 2193 | 2197 / 2196 | none |
+| 16K first token (s) | 7.35 / 7.36 | 7.34 / 7.35 | none |
+| chat decode tok/s | 41.3 / 42.2 | 43.9 / 44.0 | none (+4-6%, under the noise line) |
+| chat first token (s) | 0.71 / 0.71 | 0.69 / 0.70 | none |
+| agent decode tok/s | 47.1 / 49.1 | 50.3 / 47.8 | none (noise) |
+| agent turn first token (s) | 2.38 / 2.39 | 2.39 / 2.38 | none |
+
+Result: **no change on this setup.** 0.1.67's work (Inkling CUDA K/V, sm_120 prefetch, 64-token-tile prefill MoE
+for sm_80..89, DSpark slot choice) does not move IQ3_S Qwen3.8-Flash-Next on the 4070. Prompt speeds match 0.1.66
+within 1% in both orders; decode is within the ~10% noise line.
+
+Kept: 0.1.67 with its defaults. llama-swap's profile only had its two `exe` paths changed.
+
 ### 2026-11-23: 0.2.20 / engine 0.1.66 (from 0.1.65), with 0.1.59 and two variants
 
 Folder: `bench/results/strata-ab-2026-11-23-llmserver/`. Engines 0.1.59, 0.1.65, 0.1.66 with their defaults, plus

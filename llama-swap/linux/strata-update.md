@@ -1,7 +1,8 @@
 # Updating Strata (llama-swap setup)
 
 How to update the Strata checkout and engine so llama-swap runs the new version.
-Last done 2026-11-23: 0.2.19 / engine 0.1.65 → 0.2.20 / engine 0.1.66 (no path changes).
+Last done 2026-11-24: 0.2.20 / engine 0.1.66 → 0.2.21.1 / engine 0.1.67 (Control 0.1.68, no path changes).
+Before that 2026-11-23: 0.2.19 / engine 0.1.65 → 0.2.20 / engine 0.1.66 (no path changes).
 Before that 2026-11-22: 0.2.15 / engine 0.1.60 → 0.2.19 / engine 0.1.65.
 
 ## Why this is needed
