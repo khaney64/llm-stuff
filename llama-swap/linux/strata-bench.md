@@ -44,6 +44,28 @@ Then add a section to the results log below and commit the results folder with i
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, per-run reports and `summary.md`
 are in the folder named in each section.
 
+### 2026-11-26: 0.2.22 / engine 0.1.69 (from 0.1.67)
+
+Folder: `bench/results/strata-ab-2026-11-26-llmserver/`. Engines 0.1.67 and 0.1.69 from `engine-feed/engine/`,
+defaults. Both print `sm_89 (Ada): 17 speed switches on` in every run. Warm-up + 4 runs, 22:38-22:51.
+
+| Metric (fwd / rev) | 0.1.67 | 0.1.69 | 0.1.69 vs 0.1.67 |
+| --- | ---: | ---: | ---: |
+| 4K prompt tok/s | 1939 / 1949 | 1936 / 1934 | none (under 1%) |
+| 4K first token (s) | 2.10 / 2.09 | 2.11 / 2.11 | none |
+| 16K prompt tok/s | 2199 / 2196 | 2195 / 2192 | none |
+| 16K first token (s) | 7.34 / 7.34 | 7.35 / 7.36 | none |
+| chat decode tok/s | 43.4 / 43.2 | 44.6 / 45.6 | none (+3-6%, under the noise line) |
+| chat first token (s) | 0.69 / 0.69 | 0.69 / 0.69 | none |
+| agent decode tok/s | 48.3 / 49.3 | 49.6 / 50.3 | none (noise) |
+| agent turn first token (s) | 2.38 / 2.39 | 2.38 / 2.38 | none |
+
+Result: **no change on this setup.** 0.1.69's engine work (layer-split lend reservation #7089, Inkling CUDA fixes,
+symbol files) does not touch single-card IQ3_S Qwen3.8-Flash-Next on the 4070. Prompts match 0.1.67 within 1% in
+both orders; decode is within the ~10% noise line.
+
+Kept: 0.1.69 with its defaults. llama-swap's profile only had its two `exe` paths changed.
+
 ### 2026-11-24: 0.2.21.1 / engine 0.1.67 (from 0.1.66)
 
 Folder: `bench/results/strata-ab-2026-11-24-llmserver/`. Engines 0.1.66 and 0.1.67 from `engine-feed/engine/`,

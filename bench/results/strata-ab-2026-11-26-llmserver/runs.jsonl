@@ -1,0 +1,5 @@
+{"label":"warmup1","engine":"0.1.67","env":"","start":"22:38:57","end":"22:41:30","mem_available_gib":58.4,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"fwd-0.1.67","engine":"0.1.67","env":"","start":"22:41:30","end":"22:44:04","mem_available_gib":58.6,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"fwd-0.1.69","engine":"0.1.69","env":"","start":"22:44:04","end":"22:46:33","mem_available_gib":58.6,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.69","engine":"0.1.69","env":"","start":"22:46:33","end":"22:49:03","mem_available_gib":58.7,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
+{"label":"rev-0.1.67","engine":"0.1.67","env":"","start":"22:49:03","end":"22:51:34","mem_available_gib":58.6,"exit":0,"switches":"sm_89 (Ada): 17 speed switches on"}
