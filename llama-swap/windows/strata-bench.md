@@ -129,8 +129,12 @@ engines turn on the same 17 sm_86 switches, with 7,376-7,444 expert cache slots.
 
 From 0.2.22 the server sizes the conversation cache from free RAM (#7044). Here that gave 4096-5120 MiB, varying
 from start to start, and the same for both engines, because the server, not the engine, decides it. llama-swap's
-profile gets the same (4096 MiB at the first start). Free commit during the runs was 0.4-1.6 GiB, The pagefile held
-3.8 GB at the stop and reached 6.2 GB during the bench. On 11-24 it stayed at 1.6 GB.
+profile gets the same (4096 MiB at the first start). Free commit during the runs was 0.4-1.6 GiB, about the same as
+on 11-24 (0.1-1.1 GiB, before this change), so the cache did not make the commit limit worse.
+
+The pagefile held 3.8 GB when the stack was stopped, before the bench started. That was left over from two days of
+llama-swap running, and the cause is not known. It reached 6.2 GB during the bench. The bench numbers match 0.1.67,
+so this is an observation, not a change between versions.
 
 Kept: 0.1.69 with its defaults. Nothing was changed in the profile.
 
