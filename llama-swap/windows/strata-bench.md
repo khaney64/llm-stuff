@@ -107,6 +107,33 @@ Still not checked: whether it happens every time without a settle. To check, run
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, `results.json` and per-run reports
 are in the folder named in each section.
 
+### 2026-11-26: 0.2.22 / engine 0.1.69 (from 0.1.67)
+
+Folder: `bench\results\strata-ab-2026-11-26-0.1.69-r1600\`. The standard run: `--vram-reserve-mib 1600`
+(`base-iq3_s-r1600.json`, its args identical to the 11-24 run's), a 15-minute settle, 2 discarded warm-ups (0.1.67).
+No slow start: the warm-ups gave 4K 1927 / 1917 tok/s.
+
+| Metric (fwd / rev) | 0.1.67 | 0.1.69 |
+| --- | ---: | ---: |
+| 4K prompt tok/s | 1944 / 1982 | 1951 / 1941 |
+| 16K prompt tok/s | 2703 / 2712 | 2698 / 2712 |
+| 16K first token (s) | 5.97 / 5.96 | 5.99 / 5.96 |
+| chat decode tok/s | 90.9 / 87.4 | 91.5 / 89.8 |
+| chat first token (s) | 0.39 / 0.39 | 0.38 / 0.37 |
+| agent decode tok/s | 102.0 / 101.3 | 103.9 / 102.9 |
+| agent turn first token (s) | 1.94 / 1.86 | 1.88 / 1.90 |
+
+Result: **no measurable change**, as expected: 0.2.22 has no Qwen engine change on NVIDIA. No difference holds in
+both orders. 0.1.67's last run (rev) read 4K 2% higher than its first, and 0.1.69 sat between the two. Both
+engines turn on the same 17 sm_86 switches, with 7,376-7,444 expert cache slots. No WDDM or low-VRAM warnings.
+
+From 0.2.22 the server sizes the conversation cache from free RAM (#7044). Here that gave 4096-5120 MiB, varying
+from start to start, and the same for both engines, because the server, not the engine, decides it. llama-swap's
+profile gets the same (4096 MiB at the first start). Free commit during the runs was 0.4-1.6 GiB, The pagefile held
+3.8 GB at the stop and reached 6.2 GB during the bench. On 11-24 it stayed at 1.6 GB.
+
+Kept: 0.1.69 with its defaults. Nothing was changed in the profile.
+
 ### 2026-11-24: 0.2.21 / engine 0.1.67 (from 0.1.66)
 
 Folder: `bench\results\strata-ab-2026-11-24-0.1.67-r1600\`. Config `--vram-reserve-mib 1600`
