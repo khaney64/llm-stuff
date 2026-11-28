@@ -19,6 +19,11 @@ How to update Strata so llama-swap actually runs the new engine.
 - `strata update` gets the newest engine from the signed feed, but it puts it in
   `terminal\engine-feed\engine\<VERSION>-windows-x86_64-cuda-cuda13\` and does **not** touch `terminal\engine\`.
   Step 4 copies it over.
+- llama-swap's model `inkling` (Inkling-2-Mini, since 2026-11-27) runs on its **own** engine, `strata-inkling`, not on
+  `terminal\engine`. Its run config `Strata-data\inkling.json` says `"exe": "component:strata-inkling"`, and the
+  llama-swap entry sets `STRATA_COMPONENTS_DIR=...\terminal\engine-feed`. The engine is in
+  `$Feed\shapes\inkling2\engine\<VERSION>-windows-x86_64-cuda-cuda13\` and the server starts the newest one there. So the
+  same `strata update --components-dir $Feed` in step 3 updates it, and there is nothing to copy. See "Inkling" below.
 
 ## Steps
 
@@ -52,6 +57,7 @@ Get-Content "$Eng\BUILD.json"             # "version" = what runs now ($Old)
 
 The check reads the feed and changes nothing. Look for
 `Engine   update available: 0.1.64 -> 0.1.65` and `selected for this PC: 0.1.65 windows-x86_64-cuda-cuda13`.
+The check does not mention the Inkling engine; only the real update in step 3 reports it.
 
 Before going on, read the release notes (`gh release view -R Niko1221/Strata`) for removed or renamed flags,
 moved paths and new defaults. If the checkout was older than 0.2.16, `strata.py` and `data\` moved under
@@ -64,7 +70,7 @@ and in `configs\devbox.yaml` exists.
 & $Manage stop
 Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
     Where-Object LocalPort -In 8080,8081,8082,8188,8190 | Select-Object LocalAddress,LocalPort,OwningProcess
-Get-Process strata, strata-vision, llama-swap -ErrorAction SilentlyContinue
+Get-Process strata, strata-vision, strata-inkling, llama-swap -ErrorAction SilentlyContinue
 ```
 
 Nothing should be left on 127.0.0.1/0.0.0.0/::. The `tailscaled` listener on 8082 (tailnet addresses only) is
@@ -90,6 +96,10 @@ usually a profile path (for example `read_expert_profile: cannot open`), not the
 `--force`.
 The `strata components rollback` it mentions switches the engine-feed folders only. It does not change
 `terminal\engine` (see "Going back").
+
+Its next line is about the Inkling engine. On 0.2.23 it said `Model engine  The engine for inkling2 is up to date.`
+When the feed has a newer one, it installs it in `$Feed\shapes\inkling2\engine\`, next to the old one, and checks it
+by starting it once with `--version` (no model load). `inkling` uses it from its next start.
 
 ### 4. Copy it into terminal\engine (old one kept in engine\.previous)
 
@@ -140,6 +150,15 @@ Check that the new engine still accepts every flag in the profile. Some flags ar
 A flag listed as `MISSING` was dropped or renamed in the new engine. Look it up in the release notes or
 `docs\DETAILS.md` before starting.
 
+Inkling: its plan, with the same component folder llama-swap gives it. `engine_exe` stays
+`component:strata-inkling` (it is resolved at the start), and `"notes"` should be empty:
+
+```powershell
+$env:STRATA_COMPONENTS_DIR = $Feed
+& $Py "$T\strata.py" serve --profile C:\development\ai\Strata-data\inkling.json --plan
+Remove-Item Env:STRATA_COMPONENTS_DIR
+```
+
 ### 6. Start and confirm
 
 ```powershell
@@ -161,10 +180,39 @@ The last line should say `session is up (engine 0.1.65)`. The process path is al
 `terminal\engine\strata.exe`, so the version only shows in the log. After a text-only request, no
 `strata-vision` process was running (seen on the 0.1.64 and 0.1.65 updates).
 
+Then the same for `inkling` (about 10-30 s including the swap and the load):
+
+```powershell
+$body = @{ model="inkling"; max_tokens=300; messages=@(@{role="user"; content="Reply with just: ok"}) } | ConvertTo-Json -Depth 5
+(Invoke-RestMethod http://127.0.0.1:8080/v1/chat/completions -Method Post -ContentType application/json -Body $body -TimeoutSec 540).choices[0].message.content
+Get-CimInstance Win32_Process -Filter "Name='strata-inkling.exe'" | Select-Object -ExpandProperty ExecutablePath
+Select-String "C:\development\ai\Strata-data\inkling.engine.log" -Pattern 'engine started|Auto Host KV' | Select-Object -Last 2
+```
+
+The path must be under `$Feed\shapes\inkling2\engine\` and name the newest version there. A path under
+`%LOCALAPPDATA%\Strata\components` means the llama-swap entry lost its `STRATA_COMPONENTS_DIR`. Then send one
+request to `qwenflash-st` again, so that the model llama-swap preloads is the one loaded.
+
 ### 7. Benchmark against the previous engine (optional)
 
 To see whether the new engine is faster here, run `strata-bench-ab.ps1` and add the result to the log in
 `strata-bench.md`. Do it before the next update: it compares against `engine\.previous`, which step 4 overwrites.
+
+## Inkling
+
+- **Engine:** see "Why" above. Step 3 updates it, and the update keeps 2 versions in `$Feed\shapes\inkling2\engine\`.
+  `strata components engines` lists only the Qwen engines, not this one, so look in the folder.
+- **Model files are not updated by this procedure.** `UPDATE.bat` printed `[ok] inkling-2-mini-sq-20: up to date` on
+  0.2.23, but the file on disk was the 0.2.22 `Inkling-2-Mini-SQ-20.strata` (19,346,685,952 bytes). 0.2.23 offers a
+  new `Inkling-2-Mini-SQv2-20.strata` (19.37 GB). `strata launch` shows it as "Update available" and keeps the old
+  file. A new file means editing the `--native` path in `inkling.json`.
+- **Drafter:** 0.2.23 replaced DSpark with DFlash 2 (`models\inkling-2-mini\dflash2.safetensors`, 0.55 GB,
+  downloaded by `UPDATE.bat`). `inkling.json` has `"drafting": "off"` from the DSpark measurement (0.99x on the 3090),
+  so DFlash 2 is not used until that is measured again.
+- **Conversation memory on the card is at an edge.** At 128K the engine keeps the part of the conversation memory
+  that fits in the VRAM left after the model, and the rest in host RAM. With 4,046 MiB free it kept 48,128 tokens on
+  the card. With 4,000 MiB free (0.2.23, same engine) it kept 32,768. Read the `Auto Host KV Offload` line after a
+  start. The engine's `--kv fp8|k8v8|k8v4` would fit more on the card. Not measured yet.
 
 ## Going back
 

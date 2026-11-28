@@ -113,6 +113,7 @@ models:
     name: Inkling-2-Mini SQ-20 (Strata, 128K)
     env:
       - PYTHONUTF8=1
+      - STRATA_COMPONENTS_DIR=C:\development\ai\Strata\terminal\engine-feed
     cmd: >-
       C:\development\ai\Strata\terminal\.venv\Scripts\python.exe
       C:\development\ai\Strata\terminal\strata.py serve
