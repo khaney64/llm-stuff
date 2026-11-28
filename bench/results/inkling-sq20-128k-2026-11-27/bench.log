@@ -1,0 +1,63 @@
+Using the Strata server already running at http://127.0.0.1:8090.
+Running the suite (about 3-10 minutes) ...
+warming up (not measured) ...
+  calibrated: about 1.42 tokens per word
+chat: 3 short questions x 3 runs, up to 100 new tokens
+  run 1 q1: decode 80.0 tok/s, first token 0.11 s, 100 tokens
+  run 1 q2: decode 80.6 tok/s, first token 0.109 s, 100 tokens
+  run 1 q3: decode 80.5 tok/s, first token 0.107 s, 100 tokens
+  run 2 q1: decode 80.1 tok/s, first token 0.114 s, 100 tokens
+  run 2 q2: decode 79.7 tok/s, first token 0.105 s, 100 tokens
+  run 2 q3: decode 80.7 tok/s, first token 0.105 s, 100 tokens
+  run 3 q1: decode 80.9 tok/s, first token 0.116 s, 100 tokens
+  run 3 q2: decode 81.0 tok/s, first token 0.086 s, 100 tokens
+  run 3 q3: decode 81.0 tok/s, first token 0.104 s, 100 tokens
+4K prompt: 3 fresh prompts of about 4096 tokens, 24 new tokens
+  run 1: 4075 tokens, prompt 2176.8 tok/s (0 reused), first token 1.908 s
+  run 2: 4075 tokens, prompt 2165.8 tok/s (0 reused), first token 1.898 s
+  run 3: 4075 tokens, prompt 2165.2 tok/s (0 reused), first token 1.898 s
+16K prompt: 3 fresh prompts of about 16384 tokens, 24 new tokens
+  run 1: 16128 tokens, prompt 2055.0 tok/s (0 reused), first token 7.883 s
+  run 2: 16128 tokens, prompt 2052.4 tok/s (0 reused), first token 7.892 s
+  run 3: 16128 tokens, prompt 2048.8 tok/s (0 reused), first token 7.895 s
+agent: a session of 6 turns with four tools, x 3 runs (corpus: repo_docs)
+  run 1 turn 0: prompt 556, reused 0, read 556, first token 0.393 s
+  run 1 turn 1: prompt 5756, reused 555, read 5201, first token 3.112 s
+  run 1 turn 2: prompt 7371, reused 5755, read 1616, first token 1.107 s
+  run 1 turn 3: prompt 10740, reused 7370, read 3370, first token 2.184 s
+  run 1 turn 4: prompt 13035, reused 10739, read 2296, first token 1.542 s
+  run 1 turn 5: prompt 16136, reused 13093, read 3043, first token 2.003 s
+  run 2 turn 0: prompt 556, reused 0, read 556, first token 0.411 s
+  run 2 turn 1: prompt 5756, reused 555, read 5201, first token 3.126 s
+  run 2 turn 2: prompt 7397, reused 5755, read 1642, first token 1.158 s
+  run 2 turn 3: prompt 10775, reused 7456, read 3319, first token 2.114 s
+  run 2 turn 4: prompt 13048, reused 10774, read 2274, first token 1.521 s
+  run 2 turn 5: prompt 16144, reused 13101, read 3043, first token 2.007 s
+  run 3 turn 0: prompt 556, reused 0, read 556, first token 0.414 s
+  run 3 turn 1: prompt 5759, reused 555, read 5204, first token 3.126 s
+  run 3 turn 2: prompt 7374, reused 5758, read 1616, first token 1.104 s
+  run 3 turn 3: prompt 10742, reused 7373, read 3369, first token 2.157 s
+  run 3 turn 4: prompt 13037, reused 10741, read 2296, first token 1.553 s
+  run 3 turn 5: prompt 16127, reused 13084, read 3043, first token 2.011 s
+32K prompt: 3 fresh prompts of about 32768 tokens, 24 new tokens
+  run 1: 32208 tokens, prompt 1890.9 tok/s (0 reused), first token 17.065 s
+  run 2: 32208 tokens, prompt 1889.3 tok/s (0 reused), first token 17.104 s
+  run 3: 32208 tokens, prompt 1881.7 tok/s (0 reused), first token 17.148 s
+
+Results (median, range over the runs):
+  chat decode tok/s                     80.60   (79.70 - 81.00, n=9)
+  chat first token (s)                   0.11   (0.09 - 0.12, n=9)
+  4K prompt tok/s                     2165.80   (2165.20 - 2176.80, n=3)
+  4K first token (s)                     1.90   (1.90 - 1.91, n=3)
+  16K prompt tok/s                    2052.40   (2048.80 - 2055.00, n=3)
+  16K first token (s)                    7.89   (7.88 - 7.89, n=3)
+  32K prompt tok/s                    1889.30   (1881.70 - 1890.90, n=3)
+  32K first token (s)                   17.10   (17.07 - 17.15, n=3)
+  agent cache hit %                     70.73   (70.72 - 70.86, n=3)
+  agent re-read tokens/session         260.00   (196.00 - 261.00, n=3)
+  agent turn first token (s)             2.01   (1.10 - 3.13, n=15)
+  agent decode tok/s                    74.90   (72.30 - 78.40, n=15)
+
+Report: C:\development\ai\llm-stuff\bench\results\inkling-sq20-128k-2026-11-27\bench\2026-11-27-community-rtx-3090-inkling-2-mini-sq-20\README.md
+Share it: open a pull request that adds the folder C:\development\ai\llm-stuff\bench\results\inkling-sq20-128k-2026-11-27\bench\2026-11-27-community-rtx-3090-inkling-2-mini-sq-20 (see docs/COMMUNITY_BENCHMARKS.md), or paste README.md into a GitHub issue. Home folders, user and host names and IP addresses are already replaced; read it once before you share it.
+For results other people can compare with, run the standard benchmark: strata bench run (docs/BENCHMARK_PROTOCOL.md).

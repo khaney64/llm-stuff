@@ -107,6 +107,60 @@ Still not checked: whether it happens every time without a settle. To check, run
 Newest first. Medians; `fwd`/`rev` are the forward and reverse series. Raw logs, `results.json` and per-run reports
 are in the folder named in each section.
 
+### 2026-11-27: Inkling-2-Mini SQ-20 at 128K (engine strata-inkling 0.1.70)
+
+A different family, not an engine A/B. Goal: coding sessions at 128K or more (Hermes compacts at 75%).
+Folders: `bench\results\inkling-sq20-128k-2026-11-27\` (pictures on) and
+`bench\results\inkling-sq20-128k-novision-2026-11-27\` (`--vision off`). Each has `bench\` (strata_bench.py
+`--long`), `needles.json` and the logs.
+
+Set up with `strata launch --family inkling-2-mini --model SQ-20 --context 128k --port 8090` from the source
+checkout (Strata 0.2.22). Inkling has its own engine package in
+`%LOCALAPPDATA%\Strata\components\shapes\inkling2\engine\`; `terminal\engine` is not used. llama-swap was stopped
+from 21:45. The benches ran from about 22:05, so after the slow-start window. One run of each setup, run against the
+launched server with `--url`, so the server's settings are the launch's, not `strata-iq3_s.json`'s.
+
+| Metric | pictures on | pictures off | qwenflash-st 0.1.69 (11-26, fwd) |
+| --- | ---: | ---: | ---: |
+| chat decode tok/s | 80.6 | 80.2 | 91.5 |
+| chat first token (s) | 0.11 | 0.11 | 0.38 |
+| 4K prompt tok/s | 2166 | 2140 | 1951 |
+| 16K prompt tok/s | 2052 | 2030 | 2698 |
+| 16K first token (s) | 7.89 | 7.99 | 5.99 |
+| 32K prompt tok/s | 1889 | 1864 | - |
+| 32K first token (s) | 17.10 | 17.34 | - |
+| agent decode tok/s | 74.9 | 73.8 | 103.9 |
+| agent turn first token (s) | 2.01 | 2.03 | 1.88 |
+| agent cache hit % | 70.7 | 70.7 | - |
+
+Long context, `tools\needle_bench.py --lengths 32k,64k,120k --depths 10,50,90` (thinking at the model's default,
+`low`). Time is the whole request:
+
+| Prompt tokens | Found | Time, pictures on / off |
+| ---: | :---: | ---: |
+| 34,461 | 3 of 3 | 23 / 23 s |
+| 66,580 | 3 of 3 | 51 / 52 s |
+| 126,307 | 3 of 3 | 131 / 132 s |
+
+Result: **it works at 128K on the 3090, with one limit**. All the experts fit on the card (`experts=3072 VRAM / 0
+host`, 14.66 GB), but the conversation memory does not: `global KV = 47360 VRAM + 83712 mapped host tokens (2616
+MiB host RAM)`. Prompt reading falls from about 2,170 tok/s at 4K to about 960 tok/s at 126K (prompt tokens over the
+whole request time), so a cold read of a full 128K conversation takes about 2 minutes. Recall held at every depth. The
+server also cut the prompt chunk to 512 tokens (`4025 MiB free after the experts`).
+
+- **Pictures off changes nothing.** The picture reader goes on the card only with the first picture, so free VRAM
+  after load was 4025 MiB with pictures on and 4030 MiB with them off. The two columns are within 1-2%, which is
+  also this bench's run-to-run spread.
+- **DSpark drafting is off.** launch's probe measured 0.99x (32K) and 1.00x (128K) at about 80 tok/s plain decoding,
+  below its 1.10x bar. The docs say it pays off on cards that keep experts in RAM, not on this one.
+- **Not tried yet:** `--kv q4_0` (about twice the tokens on the card), and 150-160K context (launch's plan accepts
+  160K; more of the conversation would go to RAM).
+
+Kept: `Strata-data\inkling.json` (the launch's run config: SQ-20, 131072 context, `--vram-experts-gb 14.66`,
+drafting off, no picture reader, port 8082) behind llama-swap as model `inkling` in `configs\devbox.yaml`. Through
+llama-swap the first request took 28 s including the load, and the engine log gave the same split (48128 VRAM +
+82944 host tokens).
+
 ### 2026-11-26: 0.2.22 / engine 0.1.69 (from 0.1.67)
 
 Folder: `bench\results\strata-ab-2026-11-26-0.1.69-r1600\`. The standard run: `--vram-reserve-mib 1600`

@@ -109,6 +109,19 @@ models:
     checkEndpoint: /v1/models
     useModelName: qwen3.8-flash-next-iq3_s
 
+  inkling:
+    name: Inkling-2-Mini SQ-20 (Strata, 128K)
+    env:
+      - PYTHONUTF8=1
+    cmd: >-
+      C:\development\ai\Strata\terminal\.venv\Scripts\python.exe
+      C:\development\ai\Strata\terminal\strata.py serve
+      --profile C:\development\ai\Strata-data\inkling.json
+      --host 127.0.0.1 --port 8082 --shutdown-timeout 30
+    proxy: http://127.0.0.1:8081
+    checkEndpoint: /v1/models
+    useModelName: inkling-2-mini-sq-20
+
   qwenflash-lc:
     name: Qwen3.8 Flash Next IQ3_S (llama.cpp, 200K)
     cmd: >-
